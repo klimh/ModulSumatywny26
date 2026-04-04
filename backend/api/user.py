@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from backend.db.database import get_db
 from backend.db_models.user import User
 from backend.schemas.user import UserCreate, UserResponse
+from backend.core.security import get_password_hash
 
 #tworzymy router pod adresem /users
 router = APIRouter(prefix = "/users", tags = ["Użytkownicy"])
@@ -13,11 +14,13 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
     if db_user:
         raise HTTPException(status_code=400, detail="Ten email został już przypisany do istniejącego konta")
 
+    hashed_password = get_password_hash(user.password)
+
     new_user = User(
         first_name = user.first_name,
         last_name = user.last_name,
         email=user.email,
-        password=user.password,
+        password=hashed_password,
         role=user.role
     )
 
