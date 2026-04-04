@@ -2,6 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from backend.db.database import get_db
 from backend.db_models.user import User
+from backend.db_models.patient import Patient
+from backend.db_models.physiotherapist import Physiotherapist
 from backend.schemas.user import UserCreate, UserResponse
 from backend.core.security import get_password_hash
 
@@ -28,5 +30,14 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
+
+    if user.role.lower() == "pacjent":
+        new_profile = Patient(user_id = new_user.user_id)
+        db.add(new_profile)
+    elif user.role.lower() == "fizjoterapeuta":
+        new_profile = Physiotherapist(user_id = new_user.user_id)
+        db.add(new_profile)
+
+    db.commit()
 
     return new_user
