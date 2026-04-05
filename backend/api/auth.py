@@ -1,10 +1,13 @@
+import jwt
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from backend.db.database import get_db
 from backend.db_models.user import User
 from backend.core.security import verify_password, create_access_token
 from backend.schemas.token import Token
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 router = APIRouter(tags=["Autoryzacja"])
 

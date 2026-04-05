@@ -5,7 +5,7 @@ from backend.db_models.user import User
 from backend.db_models.patient import Patient
 from backend.db_models.physiotherapist import Physiotherapist
 from backend.schemas.user import UserCreate, UserResponse
-from backend.core.security import get_password_hash
+from backend.core.security import get_password_hash, get_current_user
 
 #tworzymy router pod adresem /users
 router = APIRouter(prefix = "/users", tags = ["Użytkownicy"])
@@ -41,3 +41,7 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
     db.commit()
 
     return new_user
+
+@router.get("/me", response_model = UserResponse)
+def read_users_me(current_user: User = Depends(get_current_user)):
+    return current_user
