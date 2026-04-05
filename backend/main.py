@@ -6,6 +6,7 @@ from backend.api import user as user_api
 from backend.api import auth as auth_api
 from backend.api import physio as physio_api
 from backend.api import patient as patient_api
+from backend.api import ai as ai_api
 
 Base.metadata.create_all(bind=engine)
 app = FastAPI(title = "RehabSense API", version = "1.0")
@@ -16,3 +17,5 @@ app.include_router(user_api.router)
 app.include_router(physio_api.router)
 
 app.include_router(patient_api.router)
+
+app.include_router(ai_api.router)
