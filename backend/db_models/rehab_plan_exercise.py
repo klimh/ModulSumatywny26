@@ -7,7 +7,7 @@ class RehabPlanExercise(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     rehab_id = Column(Integer, ForeignKey("rehab_plans.rehab_id"))
-    exercise_id = Column(Integer, ForeignKey("exercises.exercise_id"))
+    exercise_id = Column(Integer, ForeignKey("exercise.exercise_id"))
     reps_nr = Column(Integer) #liczba powtorzen
     sets_nr = Column(Integer)  #liczba serii
 
