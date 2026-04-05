@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from backend.db.database import engine, Base
 
-from backend.db_models import user, patient, physiotherapist, patient_physiotherapist, exercise, rehab_plan, rehab_plan_exercise
+from backend.db_models import user, patient, physiotherapist, patient_physiotherapist, exercise, rehab_plan, rehab_plan_exercise, session, exercise_result
 from backend.api import user as user_api
 from backend.api import auth as auth_api
 from backend.api import physio as physio_api
