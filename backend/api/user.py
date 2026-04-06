@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from backend.db.database import get_db
+from backend.db_models.patient_physiotherapist import PatientPhysiotherapist
 from backend.db_models.user import User
 from backend.db_models.patient import Patient
 from backend.db_models.physiotherapist import Physiotherapist
 from backend.schemas.user import UserCreate, UserResponse
-from backend.core.security import get_password_hash, get_current_user
+from backend.core.security import get_password_hash, get_current_user, RoleChecker
 
 #tworzymy router pod adresem /users
 router = APIRouter(prefix = "/users", tags = ["Użytkownicy"])
@@ -45,3 +46,24 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
 @router.get("/me", response_model = UserResponse)
 def read_users_me(current_user: User = Depends(get_current_user)):
     return current_user
+
+
+@router.post("/request-physio/{physio_id}")
+def request_physiotherapist(
+        physio_id: int,
+        current_user: User = Depends(RoleChecker(["pacjent"])),
+        db: Session = Depends(get_db)
+):
+
+    physio = db.query(Physiotherapist).filter(Physiotherapist.user_id == physio_id).first()
+    if not physio:
+        raise HTTPException(status_code=404, detail="Fizjoterapeuta nie istnieje")
+
+    new_match = PatientPhysiotherapist(
+        patient_id=current_user.user_id,
+        physio_id=physio_id,
+        status="OCZEKUJACE"
+    )
+    db.add(new_match)
+    db.commit()
+    return {"message": "Prośba o parowanie została wysłana"}

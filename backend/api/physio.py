@@ -79,3 +79,35 @@ def create_rehabilitation_plan(
 
     db.commit()
     return new_plan
+
+
+@router.get("/pending-requests")
+def get_pending_requests(
+        current_user: User = Depends(RoleChecker(["fizjoterapeuta"])),
+        db: Session = Depends(get_db)
+):
+    """Fizjoterapeuta przegląda oczekujące prośby od pacjentów"""
+    return db.query(PatientPhysiotherapist).filter(
+        PatientPhysiotherapist.physio_id == current_user.user_id,
+        PatientPhysiotherapist.status == "OCZEKUJACE"
+    ).all()
+
+
+@router.post("/respond-request/{request_id}")
+def respond_to_request(
+        request_id: int,
+        accept: bool,
+        current_user: User = Depends(RoleChecker(["fizjoterapeuta"])),
+        db: Session = Depends(get_db)
+):
+    request = db.query(PatientPhysiotherapist).filter(
+        PatientPhysiotherapist.id == request_id,
+        PatientPhysiotherapist.physio_id == current_user.user_id
+    ).first()
+
+    if not request:
+        raise HTTPException(status_code=404, detail="Nie znaleziono prośby")
+
+    request.status = "ZAAKCEPTOWANE" if accept else "ODRZUCONE"
+    db.commit()
+    return {"message": f"Status prośby zaktualizowany na: {request.status}"}
