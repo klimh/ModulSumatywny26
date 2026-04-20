@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@mediapipe/tasks-vision": "^0.10.34",
     "next": "16.2.4",
     "next-themes": "^0.4.6",
     "react": "19.2.4",
