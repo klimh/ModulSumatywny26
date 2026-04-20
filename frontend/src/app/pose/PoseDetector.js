@@ -23,6 +23,10 @@ export default function PoseDetector() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [fps, setFps] = useState(0);
+    const [isWaving, setIsWaving] = useState(false);
+    const isWavingRef = useRef(false);
+    const leftWristHistoryRef = useRef([]);
+    const rightWristHistoryRef = useRef([]);
 
     useEffect(() => {
         const originalConsoleError = console.error;
@@ -159,6 +163,10 @@ export default function PoseDetector() {
 
         setCameraActive(false);
         setFps(0);
+        setIsWaving(false);
+        isWavingRef.current = false;
+        leftWristHistoryRef.current = [];
+        rightWristHistoryRef.current = [];
     }, []);
 
     const detectPose = useCallback(() => {
@@ -253,6 +261,75 @@ export default function PoseDetector() {
                             });
                         }
                     }
+
+                    // machanie
+                    if (poseResult && poseResult.landmarks && poseResult.landmarks.length > 0) {
+                        const rawLandmarks = poseResult.landmarks[0];
+                        const leftWrist = rawLandmarks[15];
+                        const rightWrist = rawLandmarks[16];
+                        const leftShoulder = rawLandmarks[11];
+                        const rightShoulder = rawLandmarks[12];
+                        const checkWaving = (wrist, shoulder, history) => {
+                            if (!wrist || !shoulder) return false;
+
+                            history.push({ x: wrist.x, time: now });
+
+                            while (history.length > 0 && now - history[0].time > 2000) {
+                                history.shift();
+                            }
+
+                            if (wrist.y > shoulder.y + 0.35) {
+                                return false;
+                            }
+
+                            if (history.length < 5) return false;
+
+                            let changes = 0;
+                            let state = -1;
+                            let lastPivotX = history[0].x;
+
+                            const threshold = 0.05;
+
+                            for (let i = 1; i < history.length; i++) {
+                                let x = history[i].x;
+                                let dx = x - lastPivotX;
+
+                                if (state === -1) {
+                                    if (dx > threshold) { state = 1; lastPivotX = x; }
+                                    else if (dx < -threshold) { state = 0; lastPivotX = x; }
+                                } else if (state === 1) {
+                                    if (dx < -threshold) {
+                                        state = 0;
+                                        changes++;
+                                        lastPivotX = x;
+                                    } else if (dx > 0) {
+                                        lastPivotX = Math.max(lastPivotX, x);
+                                    }
+                                } else if (state === 0) {
+                                    if (dx > threshold) {
+                                        state = 1;
+                                        changes++;
+                                        lastPivotX = x;
+                                    } else if (dx < 0) {
+                                        lastPivotX = Math.min(lastPivotX, x);
+                                    }
+                                }
+                            }
+
+                            return changes >= 3;
+                        };
+
+                        const leftWaving = checkWaving(leftWrist, leftShoulder, leftWristHistoryRef.current);
+                        const rightWaving = checkWaving(rightWrist, rightShoulder, rightWristHistoryRef.current);
+
+                        const currentlyWaving = leftWaving || rightWaving;
+
+                        if (currentlyWaving !== isWavingRef.current) {
+                            isWavingRef.current = currentlyWaving;
+                            setIsWaving(currentlyWaving);
+                        }
+                    }
+
                 } catch {
                     //nic
                 }
@@ -296,37 +373,54 @@ export default function PoseDetector() {
 
     return (
         <div className="w-full max-w-4xl flex flex-col items-center gap-5 animate-scale-up">
-            <div className="flex items-center gap-4">
-                {!cameraActive ? (
-                    <button
-                        id="start-camera-btn"
-                        onClick={startCamera}
-                        disabled={loading}
-                        className={startBtnClass}
-                    >
-                        {loading ? (
-                            <span className="flex items-center gap-2">
-                                <Spinner />
-                                Ładowanie…
-                            </span>
-                        ) : (
-                            "Uruchom kamerę"
-                        )}
-                    </button>
-                ) : (
-                    <button
-                        id="stop-camera-btn"
-                        onClick={stopCamera}
-                        className={stopBtnClass}
-                    >
-                        ⏹ Zatrzymaj
-                    </button>
-                )}
+            <div className="flex flex-col items-center gap-4 w-full">
+                <div className="flex items-center gap-4">
+                    {!cameraActive ? (
+                        <button
+                            id="start-camera-btn"
+                            onClick={startCamera}
+                            disabled={loading}
+                            className={startBtnClass}
+                        >
+                            {loading ? (
+                                <span className="flex items-center gap-2">
+                                    <Spinner />
+                                    Ładowanie…
+                                </span>
+                            ) : (
+                                "Uruchom kamerę"
+                            )}
+                        </button>
+                    ) : (
+                        <button
+                            id="stop-camera-btn"
+                            onClick={stopCamera}
+                            className={stopBtnClass}
+                        >
+                            Zatrzymaj
+                        </button>
+                    )}
+
+                    {cameraActive && (
+                        <span className="px-4 py-2 rounded-xl text-xs font-mono bg-panel border border-outline shadow-panel">
+                            {fps} FPS
+                        </span>
+                    )}
+                </div>
 
                 {cameraActive && (
-                    <span className="px-4 py-2 rounded-xl text-xs font-mono bg-panel border border-outline shadow-panel">
-                        {fps} FPS
-                    </span>
+                    <div className="w-full max-w-sm bg-panel border border-outline rounded-2xl p-4 shadow-panel flex items-center justify-between animate-fade-in translate-y-1">
+                        <span className="text-sm font-medium text-muted">Test:</span>
+                        {isWaving ? (
+                            <span className="px-3 py-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-xl text-sm font-bold flex items-center gap-2 animate-pulse shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+                                Wykryto machanie! No elo elo!!
+                            </span>
+                        ) : (
+                            <span className="px-3 py-1 bg-panel border border-outline rounded-xl text-sm text-muted">
+                                We no mi pomachaj...
+                            </span>
+                        )}
+                    </div>
                 )}
             </div>
 
