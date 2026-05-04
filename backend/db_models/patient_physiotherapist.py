@@ -1,6 +1,6 @@
 """Tabela laczaca pacjenta z fizjo"""
 from sqlalchemy import Column, Integer, String, ForeignKey
-from backend.db.database import Base
+from db.database import Base
 
 class PatientPhysiotherapist(Base):
     __tablename__ = "patient_physiotherapist"

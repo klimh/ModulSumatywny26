@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
-from backend.db.database import Base
+from db.database import Base
 
 class Session(Base):
     __tablename__ = "sessions"

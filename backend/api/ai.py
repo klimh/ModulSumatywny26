@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from backend.db.database import get_db
-from backend.db_models.exercise import Exercise
+from db.database import get_db
+from db_models.exercise import Exercise
 
 router = APIRouter(prefix="/ai", tags=["Moduł AI"])
 

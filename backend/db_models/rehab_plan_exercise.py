@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, ForeignKey
 from sqlalchemy.orm import relationship
-from backend.db.database import Base
+from db.database import Base
 
 class RehabPlanExercise(Base):
     __tablename__ = "rehab_plan_exercises"

@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session as DBSession
 from typing import List
-from backend.db.database import get_db
-from backend.core.security import RoleChecker
-from backend.db_models.user import User
-from backend.db_models.rehab_plan import RehabPlan
-from backend.db_models.session import Session
-from backend.db_models.exercise_result import ExerciseResult
+from db.database import get_db
+from core.security import RoleChecker
+from db_models.user import User
+from db_models.rehab_plan import RehabPlan
+from db_models.session import Session
+from db_models.exercise_result import ExerciseResult
 
 router = APIRouter(
     prefix="/patient",

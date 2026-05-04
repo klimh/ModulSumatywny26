@@ -6,8 +6,8 @@ from dotenv import load_dotenv, dotenv_values
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
-from backend.db.database import get_db
-from backend.db_models.user import User
+from db.database import get_db
+from db_models.user import User
 
 load_dotenv()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
