@@ -1,4 +1,4 @@
-import PoseDetector from "./PoseDetector";
+import PoseDetector from "@/features/pose/PoseDetector";
 
 export const metadata = {
     title: "RehabSense — Analiza Postawy",
