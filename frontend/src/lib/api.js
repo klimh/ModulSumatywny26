@@ -21,7 +21,7 @@ async function apiFetch(endpoint, options = {}) {
   });
 
   if (!response.ok) {
-    let errorDetail = 'Wystąpił błąd podczas komunikacji z serwerem';
+    let errorDetail = 'An error occurred while communicating with the server';
     try {
       const errorData = await response.json();
       errorDetail = errorData.detail || errorDetail;
@@ -49,7 +49,7 @@ export const api = {
       });
       
       if (!response.ok) {
-        let errorDetail = 'Błąd logowania';
+        let errorDetail = 'Login failed';
         try {
           const errorData = await response.json();
           errorDetail = errorData.detail || errorDetail;

@@ -19,7 +19,7 @@ export const useAuthStore = create((set, get) => ({
                     return;
                 } catch (err) {
                     localStorage.removeItem('token');
-                    console.error('Błąd weryfikacji tokena:', err);
+                    console.error('Token verification failed:', err);
                 }
             }
         }

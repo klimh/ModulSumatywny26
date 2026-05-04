@@ -1,6 +1,7 @@
 import { Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from '@/providers/providers.jsx';
+import Header from "@/components/Header";
 
 const jakartaSans = Plus_Jakarta_Sans({
     variable: "--font-sans",
@@ -23,11 +24,15 @@ export default function RootLayout({ children }) {
             lang="en"
             suppressHydrationWarning
         >
-            <body className={`h-full flex flex-col items-center justify-center ${jakartaSans.variable} ${jetbrainsMono.variable} font-sans antialiased`}>
+            <body className={`h-full flex flex-col items-center ${jakartaSans.variable} ${jetbrainsMono.variable} font-sans antialiased`}>
                 <Providers>
-                    {children}
+                    <Header />
+                    <main className="w-full flex-1 flex flex-col items-center">
+                        {children}
+                    </main>
                 </Providers>
             </body>
         </html>
     );
 }
+

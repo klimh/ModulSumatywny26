@@ -150,7 +150,7 @@ export default function PoseDetector() {
 
             const isFirefox = /Firefox/i.test(navigator.userAgent);
             if (isFirefox) {
-                console.log("Firefox wykryty: wymuszanie CPU dla lepszej wydajności z MediaPipe.");
+                console.log("Firefox detected: forcing CPU for better MediaPipe performance.");
                 await initModels("CPU");
             } else {
                 try {
@@ -162,7 +162,7 @@ export default function PoseDetector() {
             }
         } catch (err) {
             console.error("MediaPipe init error:", err);
-            setError("Nie udało się załadować modeli MediaPipe.");
+            setError("Failed to load MediaPipe models.");
         }
     }, []);
 
@@ -194,7 +194,7 @@ export default function PoseDetector() {
             detectPose();
         } catch (err) {
             console.error("Camera error:", err);
-            setError("Nie udało się uzyskać dostępu do kamery. Sprawdź uprawnienia.");
+            setError("Failed to access the camera. Please check permissions.");
             setLoading(false);
         }
     }, [initPoseLandmarker]);
@@ -667,21 +667,21 @@ export default function PoseDetector() {
             <div className="flex bg-panel border border-outline rounded-2xl p-1 shadow-panel mb-2 z-10 relative">
                 <button
                     onClick={() => changeMode("waving")}
-                    className={`px-6 py-2 rounded-xl text-sm font-medium transition-all duration-300 ${mode === "waving"
+                    className={`px-6 py-2 rounded-xl text-sm font-medium transition-all duration-300 cursor-pointer ${mode === "waving"
                         ? "bg-gradient-to-r from-teal-500 to-emerald-500 text-white shadow-md shadow-teal-500/20"
                         : "text-muted hover:text-white hover:bg-white/5"
                         }`}
                 >
-                    Wykrywanie Machania
+                    Wave Detection
                 </button>
                 <button
                     onClick={() => changeMode("comparison")}
-                    className={`px-6 py-2 rounded-xl text-sm font-medium transition-all duration-300 flex items-center gap-2 ${mode === "comparison"
+                    className={`px-6 py-2 rounded-xl text-sm font-medium transition-all duration-300 flex items-center gap-2 cursor-pointer ${mode === "comparison"
                         ? "bg-gradient-to-r from-fuchsia-500 to-purple-500 text-white shadow-md shadow-purple-500/20"
                         : "text-muted hover:text-white hover:bg-white/5"
                         }`}
                 >
-                    Porównywanie Pozycji z Filmikiem
+                    Pose Comparison
                     {mode === "comparison" && <span className="flex w-2 h-2 rounded-full bg-white animate-pulse"></span>}
                 </button>
             </div>
@@ -693,24 +693,24 @@ export default function PoseDetector() {
                             id="start-camera-btn"
                             onClick={startCamera}
                             disabled={loading}
-                            className={startBtnClass}
+                            className={`cursor-pointer ${startBtnClass}`}
                         >
                             {loading ? (
                                 <span className="flex items-center gap-2">
                                     <Spinner />
-                                    Ładowanie…
+                                    Loading…
                                 </span>
                             ) : (
-                                "Uruchom kamerę"
+                                "Start Camera"
                             )}
                         </button>
                     ) : (
                         <button
                             id="stop-camera-btn"
                             onClick={stopCamera}
-                            className={stopBtnClass}
+                            className={`cursor-pointer ${stopBtnClass}`}
                         >
-                            Zatrzymaj wszystko
+                            Stop All
                         </button>
                     )}
 
@@ -727,7 +727,7 @@ export default function PoseDetector() {
                                 onClick={() => fileInputRef.current?.click()}
                                 className="px-6 py-3 rounded-2xl font-semibold text-sm bg-panel border-2 border-dashed border-purple-500/50 text-purple-400 hover:bg-purple-500/10 hover:border-purple-500 transition-all duration-300 cursor-pointer"
                             >
-                                {videoUrl ? "Zmień filmik referencyjny" : "Wgraj filmik referencyjny (MP4)"}
+                                {videoUrl ? "Change reference video" : "Upload reference video (MP4)"}
                             </button>
                         </div>
                     )}
@@ -744,11 +744,11 @@ export default function PoseDetector() {
                         <span className="text-sm font-medium text-muted">Test:</span>
                         {isWaving ? (
                             <span className="px-3 py-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-xl text-sm font-bold flex items-center gap-2 animate-pulse shadow-[0_0_15px_rgba(16,185,129,0.2)]">
-                                Wykryto machanie! No elo elo!!
+                                Waving detected! Great job!
                             </span>
                         ) : (
                             <span className="px-3 py-1 bg-panel border border-outline rounded-xl text-sm text-muted">
-                                We no mi pomachaj...
+                                Wave at the camera…
                             </span>
                         )}
                     </div>
@@ -757,7 +757,7 @@ export default function PoseDetector() {
                 {cameraActive && mode === "comparison" && videoUrl && (
                     <div className="w-full max-w-sm flex items-center justify-center p-3 animate-fade-in translate-y-1 bg-panel border border-outline rounded-2xl shadow-panel">
                         <div className="flex flex-col items-center w-full">
-                            <span className="text-sm font-semibold text-muted mb-2">Poprawność wykonania (na podstawie stawów):</span>
+                            <span className="text-sm font-semibold text-muted mb-2">Pose Accuracy (joint-based):</span>
                             <div className="w-full h-4 bg-black/50 rounded-full overflow-hidden relative border border-outline">
                                 <div
                                     className={`absolute top-0 left-0 h-full transition-all duration-300 ease-out ${matchPercentage > 80 ? 'bg-emerald-500' :
@@ -787,7 +787,7 @@ export default function PoseDetector() {
                 <div className={`relative w-full aspect-video rounded-2xl overflow-hidden bg-panel border border-outline shadow-panel flex-1 transition-all duration-300 ${mode === 'comparison' && cameraActive ? 'ring-2 ring-emerald-500/50 shadow-[0_0_30px_rgba(16,185,129,0.1)]' : ''}`}>
                     {mode === 'comparison' && (
                         <div className="absolute top-4 left-4 z-10 px-3 py-1 bg-black/50 backdrop-blur-md text-emerald-400 rounded-lg text-xs font-semibold border border-emerald-500/30 uppercase tracking-widest">
-                            Ty (Kamera)
+                            You (Camera)
                         </div>
                     )}
                     <video
@@ -802,7 +802,7 @@ export default function PoseDetector() {
                     />
                     {!cameraActive && !loading && (
                         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-muted">
-                            <span className="text-sm font-medium">Czekam na uruchomienie kamery...</span>
+                            <span className="text-sm font-medium">Waiting for camera to start…</span>
                         </div>
                     )}
                     {loading && (
@@ -816,7 +816,7 @@ export default function PoseDetector() {
                     <div className="relative w-full aspect-video rounded-2xl overflow-hidden bg-panel border-2 border-dashed border-purple-500/20 shadow-panel flex-1 transition-all duration-300 hover:border-purple-500/40 flex items-center justify-center">
                         {videoUrl && (
                             <div className="absolute top-4 right-4 z-10 px-3 py-1 bg-purple-500/20 text-purple-300 backdrop-blur-md rounded-lg text-xs font-semibold border border-purple-500/30 uppercase tracking-widest">
-                                Wzorzec Filmowy
+                                Reference Video
                             </div>
                         )}
                         <video
@@ -837,7 +837,7 @@ export default function PoseDetector() {
                                 <svg className="w-16 h-16 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
-                                <span className="text-sm font-medium">Brak wybranego wideo do naśladowania</span>
+                                <span className="text-sm font-medium">No reference video selected</span>
                             </div>
                         )}
                     </div>
