@@ -7,12 +7,37 @@ from db_models.user import User
 from db_models.rehab_plan import RehabPlan
 from db_models.session import Session
 from db_models.exercise_result import ExerciseResult
+from db_models.patient_physiotherapist import PatientPhysiotherapist
 
 router = APIRouter(
     prefix="/patient",
     tags=["Pacjent"],
     dependencies=[Depends(RoleChecker(["pacjent"]))]
 )
+
+
+@router.get("/my-physio")
+def get_my_physiotherapist(
+        current_user: User = Depends(RoleChecker(["pacjent"])),
+        db: DBSession = Depends(get_db)
+):
+    """Zwraca fizjoterapeutę przypisanego do zalogowanego pacjenta (ZAAKCEPTOWANE lub OCZEKUJACE)"""
+    connection = db.query(PatientPhysiotherapist).filter(
+        PatientPhysiotherapist.patient_id == current_user.user_id,
+        PatientPhysiotherapist.status.in_(["ZAAKCEPTOWANE", "OCZEKUJACE"])
+    ).first()
+
+    if not connection:
+        raise HTTPException(status_code=404, detail="Brak przypisanego fizjoterapeuty")
+
+    physio_user = db.query(User).filter(User.user_id == connection.physio_id).first()
+    return {
+        "physio_id": physio_user.user_id,
+        "first_name": physio_user.first_name,
+        "last_name": physio_user.last_name,
+        "email": physio_user.email,
+        "status": connection.status
+    }
 
 
 @router.get("/my-plan")

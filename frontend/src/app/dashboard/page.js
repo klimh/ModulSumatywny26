@@ -8,17 +8,61 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 function PatientDashboard() {
-    const { plan, loading, error, fetchMyPlan } = usePatient();
+    const { plan, physio, physioLoading, loading, error, fetchMyPlan, fetchMyPhysio } = usePatient();
 
     useEffect(() => {
         fetchMyPlan();
-    }, [fetchMyPlan]);
+        fetchMyPhysio();
+    }, [fetchMyPlan, fetchMyPhysio]);
 
     return (
         <div className="w-full max-w-4xl flex flex-col gap-6 animate-fade-in">
             <h2 className="section-title">My Rehabilitation</h2>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Physio tile — conditional */}
+                {physioLoading ? (
+                    <div className="card-hover p-6 flex flex-col gap-3">
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500/20 to-purple-500/20 flex items-center justify-center">
+                            <svg className="w-6 h-6 text-violet-400 spinner" viewBox="0 0 24 24" fill="none">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                            </svg>
+                        </div>
+                        <span className="font-semibold text-lg">Loading…</span>
+                    </div>
+                ) : physio ? (
+                    <div className="card-hover p-6 flex flex-col gap-3">
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500/20 to-purple-500/20 flex items-center justify-center">
+                            <svg className="w-6 h-6 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <span className="font-semibold text-lg text-violet-400">My Physiotherapist</span>
+                        <span className="text-sm font-medium">{physio.first_name} {physio.last_name}</span>
+                        <span className="text-xs text-muted">{physio.email}</span>
+                        <span className={`text-xs font-mono px-2 py-1 rounded-full w-fit ${
+                            physio.status === "ZAAKCEPTOWANE"
+                                ? "bg-emerald-500/20 text-emerald-400"
+                                : "bg-amber-500/20 text-amber-400"
+                        }`}>
+                            {physio.status === "ZAAKCEPTOWANE" ? "✓ Connected" : "⏳ Pending"}
+                        </span>
+                    </div>
+                ) : (
+                    <Link href="/dashboard/find-physio" className="card-hover p-6 flex flex-col gap-3 no-underline group">
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500/20 to-purple-500/20 flex items-center justify-center">
+                            <svg className="w-6 h-6 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </div>
+                        <span className="font-semibold text-lg group-hover:text-violet-400 transition-colors">Find Physiotherapist</span>
+                        <span className="text-xs text-muted">
+                            Search and connect with a physiotherapist
+                        </span>
+                    </Link>
+                )}
+
                 <Link href="/dashboard/plan" className="card-hover p-6 flex flex-col gap-3 no-underline group">
                     <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 flex items-center justify-center">
                         <svg className="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -130,6 +174,9 @@ export default function DashboardPage() {
         if (!loading && !user) {
             router.push("/login");
         }
+        if (!loading && user && user.role === "admin") {
+            router.push("/dashboard/admin");
+        }
     }, [user, loading, router]);
 
     if (loading) {
@@ -140,7 +187,7 @@ export default function DashboardPage() {
         );
     }
 
-    if (!user) return null;
+    if (!user || user.role === "admin") return null;
 
     return (
         <div className="page-container">

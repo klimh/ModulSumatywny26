@@ -55,6 +55,15 @@ def request_physiotherapist(
     if not physio:
         raise HTTPException(status_code=404, detail="Fizjoterapeuta nie istnieje")
 
+    # Sprawdz czy juz istnieje aktywne polaczenie
+    existing = db.query(PatientPhysiotherapist).filter(
+        PatientPhysiotherapist.patient_id == current_user.user_id,
+        PatientPhysiotherapist.physio_id == physio_id,
+        PatientPhysiotherapist.status.in_(["ZAAKCEPTOWANE", "OCZEKUJACE"])
+    ).first()
+    if existing:
+        raise HTTPException(status_code=400, detail="Już masz aktywne połączenie lub oczekujące zapytanie do tego fizjoterapeuty")
+
     new_match = PatientPhysiotherapist(
         patient_id=current_user.user_id,
         physio_id=physio_id,
@@ -63,3 +72,26 @@ def request_physiotherapist(
     db.add(new_match)
     db.commit()
     return {"message": "Prośba o parowanie została wysłana"}
+
+
+@router.get("/physiotherapists")
+def get_all_physiotherapists(
+        current_user: User = Depends(get_current_user),
+        db: Session = Depends(get_db)
+):
+    """Zwraca listę wszystkich fizjoterapeutów z ich specjalizacjami"""
+    physios = db.query(User, Physiotherapist).join(
+        Physiotherapist, User.user_id == Physiotherapist.user_id
+    ).all()
+
+    return [
+        {
+            "user_id": user.user_id,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "email": user.email,
+            "specialization": physio.specialization
+        }
+        for user, physio in physios
+    ]
+

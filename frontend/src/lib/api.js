@@ -59,17 +59,19 @@ export const api = {
       return response.json();
     }
   },
-  users: {
-    register: (userData) => apiFetch('/users/register', { method: 'POST', body: JSON.stringify(userData) }),
-    getMe: () => apiFetch('/users/me'),
-    requestPhysio: (physioId) => apiFetch(`/users/request-physio/${physioId}`, { method: 'POST' }),
-  },
   patient: {
     getMyPlan: () => apiFetch('/patient/my-plan'),
+    getMyPhysio: () => apiFetch('/patient/my-physio'),
     submitSession: (rehabId, resultsList) => apiFetch(`/patient/submit-session?rehab_id=${rehabId}`, { 
       method: 'POST', 
       body: JSON.stringify(resultsList) 
     }),
+  },
+  users: {
+    register: (userData) => apiFetch('/users/register', { method: 'POST', body: JSON.stringify(userData) }),
+    getMe: () => apiFetch('/users/me'),
+    requestPhysio: (physioId) => apiFetch(`/users/request-physio/${physioId}`, { method: 'POST' }),
+    getAllPhysiotherapists: () => apiFetch('/users/physiotherapists'),
   },
   physio: {
     getMyPatients: () => apiFetch('/physio/my-patients'),
@@ -81,5 +83,10 @@ export const api = {
   },
   ai: {
     getPattern: (exerciseId) => apiFetch(`/ai/pattern/${exerciseId}`),
+  },
+  admin: {
+    createPhysio: (data) => apiFetch('/admin/create-physio', { method: 'POST', body: JSON.stringify(data) }),
+    getPhysiotherapists: () => apiFetch('/admin/physiotherapists'),
+    deletePhysio: (userId) => apiFetch(`/admin/physiotherapist/${userId}`, { method: 'DELETE' }),
   }
 };
