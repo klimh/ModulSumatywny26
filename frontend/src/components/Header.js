@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -62,6 +62,11 @@ export default function Header() {
     const { theme, setTheme } = useTheme();
     const pathname = usePathname();
     const [mobileOpen, setMobileOpen] = useState(false);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     const navItems = !user
         ? NAV_ITEMS_GUEST
@@ -95,11 +100,10 @@ export default function Header() {
                             <Link
                                 key={item.href}
                                 href={item.href}
-                                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 no-underline ${
-                                    isActive(item.href)
-                                        ? "bg-gradient-to-r from-teal-500/15 to-cyan-500/15 text-primary border border-teal-500/20"
-                                        : "text-muted hover:text-primary hover:bg-panel"
-                                }`}
+                                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 no-underline ${isActive(item.href)
+                                    ? "bg-gradient-to-r from-teal-500/15 to-cyan-500/15 text-primary border border-teal-500/20"
+                                    : "text-muted hover:text-primary hover:bg-panel"
+                                    }`}
                             >
                                 {item.label}
                             </Link>
@@ -114,7 +118,7 @@ export default function Header() {
                             className="p-2 rounded-xl text-muted hover:text-primary hover:bg-panel transition-all duration-300 cursor-pointer"
                             aria-label="Toggle theme"
                         >
-                            {theme === "dark" ? <SunIcon /> : <MoonIcon />}
+                            {mounted && (theme === "dark" ? <SunIcon /> : <MoonIcon />)}
                         </button>
 
                         {user && !loading && (
@@ -161,11 +165,10 @@ export default function Header() {
                                     key={item.href}
                                     href={item.href}
                                     onClick={() => setMobileOpen(false)}
-                                    className={`px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300 no-underline ${
-                                        isActive(item.href)
-                                            ? "bg-gradient-to-r from-teal-500/15 to-cyan-500/15 text-primary border border-teal-500/20"
-                                            : "text-muted hover:text-primary hover:bg-main"
-                                    }`}
+                                    className={`px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300 no-underline ${isActive(item.href)
+                                        ? "bg-gradient-to-r from-teal-500/15 to-cyan-500/15 text-primary border border-teal-500/20"
+                                        : "text-muted hover:text-primary hover:bg-main"
+                                        }`}
                                 >
                                     {item.label}
                                 </Link>
