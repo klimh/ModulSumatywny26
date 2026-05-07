@@ -40,7 +40,9 @@ def get_my_physiotherapist(
     }
 
 
-@router.get("/my-plan")
+from schemas.rehab_plan import RehabPlanResponse
+
+@router.get("/my-plan", response_model=RehabPlanResponse)
 def get_my_rehab_plan(
         current_user: User = Depends(RoleChecker(["pacjent"])),
         db: DBSession = Depends(get_db)
@@ -54,7 +56,22 @@ def get_my_rehab_plan(
     if not plan:
         raise HTTPException(status_code=404, detail="Nie znaleziono aktywnego planu.")
 
-    return plan
+    exercises_with_names = []
+    for pe in plan.exercises:
+        exercises_with_names.append({
+            "exercise_id": pe.exercise_id,
+            "name": pe.exercise.name,
+            "reps_nr": pe.reps_nr,
+            "sets_nr": pe.sets_nr
+        })
+
+    return {
+        "rehab_id": plan.rehab_id,
+        "patient_id": plan.patient_id,
+        "title": plan.title,
+        "is_active": plan.is_active,
+        "exercises": exercises_with_names
+    }
 
 
 @router.post("/submit-session")
@@ -65,7 +82,6 @@ def submit_exercise_session(
         db: DBSession = Depends(get_db)
 ):
     """Zapisuje wyniki ukończonej sesji ćwiczeń"""
-    #tworzymy nową sesję
     new_session = Session(
         rehab_id=rehab_id,
         patient_id=current_user.user_id,
@@ -75,7 +91,6 @@ def submit_exercise_session(
     db.commit()
     db.refresh(new_session)
 
-    #zapisujemy wyniki poszczególnych ćwiczeń
     for res in results_list:
         db_result = ExerciseResult(
             session_id=new_session.session_id,

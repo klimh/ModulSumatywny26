@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePhysio } from "@/hooks/usePhysio";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 export default function PatientsPage() {
     const { user, loading: authLoading } = useAuth();
@@ -58,7 +59,15 @@ export default function PatientsPage() {
                                         <span className="text-xs text-muted">{patient.email}</span>
                                     </div>
                                 </div>
-                                <span className="badge-success">Active</span>
+                                <div className="flex items-center gap-2">
+                                    <Link
+                                        href={`/dashboard/create-plan?patient_id=${patient.user_id}`}
+                                        className="btn-ghost text-teal-400 hover:bg-teal-500/10 text-xs py-2 px-3"
+                                    >
+                                        Assign Plan
+                                    </Link>
+                                    <span className="badge-success">Active</span>
+                                </div>
                             </div>
                         ))}
                     </div>

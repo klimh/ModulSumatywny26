@@ -55,19 +55,25 @@ def create_rehabilitation_plan(
         db: Session = Depends(get_db)
 ):
     """Tworzy plan rehabilitacji i przypisuje do niego wybrane ćwiczenia"""
+    db.query(RehabPlan).filter(
+        RehabPlan.patient_id == plan_data.patient_id,
+        RehabPlan.is_active == True
+    ).update({"is_active": False})
 
     new_plan = RehabPlan(
         physio_id=current_user.user_id,
         patient_id=plan_data.patient_id,
-        title=plan_data.title
+        title=plan_data.title or "Plan Rehabilitacji"
     )
     db.add(new_plan)
     db.commit()
     db.refresh(new_plan)
 
+    exercises_with_names = []
     for ex in plan_data.exercise:
-        if not db.query(Exercise).filter(Exercise.exercise_id == ex.exercise_id).first():
-            continue #walidacja integralności
+        db_ex = db.query(Exercise).filter(Exercise.exercise_id == ex.exercise_id).first()
+        if not db_ex:
+            continue
 
         plan_exercise = RehabPlanExercise(
             rehab_id=new_plan.rehab_id,
@@ -76,9 +82,50 @@ def create_rehabilitation_plan(
             sets_nr=ex.sets_nr
         )
         db.add(plan_exercise)
+        exercises_with_names.append({
+            "exercise_id": ex.exercise_id,
+            "name": db_ex.name,
+            "reps_nr": ex.reps_nr,
+            "sets_nr": ex.sets_nr
+        })
 
     db.commit()
-    return new_plan
+    
+    return {
+        "rehab_id": new_plan.rehab_id,
+        "patient_id": new_plan.patient_id,
+        "title": new_plan.title,
+        "is_active": new_plan.is_active,
+        "exercises": exercises_with_names
+    }
+
+
+@router.get("/my-plans", response_model=List[RehabPlanResponse])
+def get_my_created_plans(
+        current_user: User = Depends(RoleChecker(["fizjoterapeuta"])),
+        db: Session = Depends(get_db)
+):
+    """Pobiera listę planów stworzonych przez fizjoterapeutę"""
+    plans = db.query(RehabPlan).filter(RehabPlan.physio_id == current_user.user_id).all()
+    
+    result = []
+    for plan in plans:
+        exs = []
+        for pe in plan.exercises:
+            exs.append({
+                "exercise_id": pe.exercise_id,
+                "name": pe.exercise.name,
+                "reps_nr": pe.reps_nr,
+                "sets_nr": pe.sets_nr
+            })
+        result.append({
+            "rehab_id": plan.rehab_id,
+            "patient_id": plan.patient_id,
+            "title": plan.title,
+            "is_active": plan.is_active,
+            "exercises": exs
+        })
+    return result
 
 
 @router.get("/pending-requests")

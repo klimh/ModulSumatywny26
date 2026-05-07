@@ -3,12 +3,15 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePhysio } from "@/hooks/usePhysio";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 
-export default function CreatePlanPage() {
+function CreatePlanForm() {
     const { user, loading: authLoading } = useAuth();
     const { patients, exercises, loading, error, fetchMyPatients, fetchExercises, createPlan } = usePhysio();
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const preselectedPatient = searchParams.get("patient_id");
 
     const [selectedPatient, setSelectedPatient] = useState("");
     const [planTitle, setPlanTitle] = useState("");
@@ -29,6 +32,12 @@ export default function CreatePlanPage() {
             fetchExercises();
         }
     }, [user, fetchMyPatients, fetchExercises]);
+
+    useEffect(() => {
+        if (preselectedPatient && patients.length > 0) {
+            setSelectedPatient(preselectedPatient);
+        }
+    }, [preselectedPatient, patients]);
 
     const addExerciseRow = () => {
         setSelectedExercises(prev => [...prev, { exercise_id: "", reps_nr: 10, sets_nr: 3 }]);
@@ -244,6 +253,18 @@ export default function CreatePlanPage() {
                 )}
             </div>
         </div>
+    );
+}
+
+export default function CreatePlanPage() {
+    return (
+        <Suspense fallback={
+            <div className="page-container justify-center items-center">
+                <Spinner size="lg" />
+            </div>
+        }>
+            <CreatePlanForm />
+        </Suspense>
     );
 }
 
