@@ -58,9 +58,9 @@ System został zaprojektowany w modelu trójwarstwowym:
 
 ---
 
-## Zespół Projektowy (Full-Stack Developers)
-* **Remigiusz Tomecki**
-* **Kacper Błaszczyk**
-* **Maciej Miazek**
-* **Klim Hudzenko**
-* **Kacper Romek**
+## Zespół Projektowy
+* **Kacper Błaszczyk** - Project Manager
+* **Klim Hudzenko** - Backend Developer
+* **Maciej Miazek** - Frontend Developer
+* **Remigiusz Tomecki** - Frontend Developer
+* **Kacper Romek** - Tester
