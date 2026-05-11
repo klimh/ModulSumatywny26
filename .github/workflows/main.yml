@@ -42,9 +42,15 @@ jobs:
         
   # budowanie obrazu Docker 
   docker-check:
-    needs: [backend-tests, frontend-build] 
+    needs: [backend-tests, frontend-build]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Testowy Build Dockera
+
+      - name: Budowanie obrazu Backend (Python)
+        working-directory: ./backend
+        run: docker build . --file Dockerfile
+
+      - name: Budowanie obrazu Frontend (Next.js)
+        working-directory: ./frontend
         run: docker build . --file Dockerfile
