@@ -14,6 +14,8 @@ class RehabPlanCreate(BaseModel):
 class PlanExerciseResponse(BaseModel):
     exercise_id: int
     name: str = ""
+    description: str = ""
+    video_url: str | None = None
     reps_nr: int
     sets_nr: int
 

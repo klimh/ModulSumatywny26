@@ -33,6 +33,30 @@ async function apiFetch(endpoint, options = {}) {
   return response.json();
 }
 
+async function apiFetchRaw(endpoint, options = {}) {
+  const headers = {
+    ...getAuthHeader(),
+    ...options.headers,
+  };
+
+  const response = await fetch(`${API_URL}${endpoint}`, {
+    ...options,
+    headers,
+  });
+
+  if (!response.ok) {
+    let errorDetail = 'An error occurred while communicating with the server';
+    try {
+      const errorData = await response.json();
+      errorDetail = errorData.detail || errorDetail;
+    } catch (e) {
+    }
+    throw new Error(errorDetail);
+  }
+
+  return response.json();
+}
+
 export const api = {
   auth: {
     login: async (username, password) => {
@@ -80,6 +104,15 @@ export const api = {
     createPlan: (planData) => apiFetch('/physio/create-plan', { method: 'POST', body: JSON.stringify(planData) }),
     getPendingRequests: () => apiFetch('/physio/pending-requests'),
     respondRequest: (requestId, accept) => apiFetch(`/physio/respond-request/${requestId}?accept=${accept}`, { method: 'POST' }),
+    uploadExerciseVideo: (exerciseId, file) => {
+      const formData = new FormData();
+      formData.append('file', file);
+      return apiFetchRaw(`/physio/exercises/${exerciseId}/upload-video`, {
+        method: 'POST',
+        body: formData,
+      });
+    },
+    deleteExerciseVideo: (exerciseId) => apiFetch(`/physio/exercises/${exerciseId}/video`, { method: 'DELETE' }),
   },
   ai: {
     getPattern: (exerciseId) => apiFetch(`/ai/pattern/${exerciseId}`),

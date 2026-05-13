@@ -51,7 +51,7 @@ const comparePoses = (pose1, pose2) => {
     return match;
 };
 
-export default function PoseDetector() {
+export default function PoseDetector({ referenceVideoUrl = null }) {
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
     const refVideoRef = useRef(null);
@@ -63,10 +63,14 @@ export default function PoseDetector() {
     const animFrameRef = useRef(null);
     const streamRef = useRef(null);
 
-    const [mode, setModeState] = useState("waving");
-    const modeRef = useRef("waving");
-    const [videoUrl, setVideoUrl] = useState(null);
-    const videoUrlRef = useRef(null);
+    const hasExternalVideo = !!referenceVideoUrl;
+    const initialMode = hasExternalVideo ? "comparison" : "waving";
+    const initialVideoUrl = referenceVideoUrl || null;
+
+    const [mode, setModeState] = useState(initialMode);
+    const modeRef = useRef(initialMode);
+    const [videoUrl, setVideoUrl] = useState(initialVideoUrl);
+    const videoUrlRef = useRef(initialVideoUrl);
 
     const [cameraActive, setCameraActive] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -80,6 +84,36 @@ export default function PoseDetector() {
     const leftWristHistoryRef = useRef([]);
     const rightWristHistoryRef = useRef([]);
 
+    // Tracker zapewniający ściśle rosnące timestampy dla MediaPipe
+    const lastPoseTimestampRef = useRef(0);
+    const lastHandTimestampRef = useRef(0);
+
+    const getNextPoseTs = () => {
+        const now = performance.now();
+        const next = Math.max(Math.ceil(now), lastPoseTimestampRef.current + 1);
+        lastPoseTimestampRef.current = next;
+        return next;
+    };
+
+    const getNextHandTs = () => {
+        const now = performance.now();
+        const next = Math.max(Math.ceil(now), lastHandTimestampRef.current + 1);
+        lastHandTimestampRef.current = next;
+        return next;
+    };
+
+    // Sync with external referenceVideoUrl prop changes
+    useEffect(() => {
+        if (referenceVideoUrl) {
+            setVideoUrl(referenceVideoUrl);
+            videoUrlRef.current = referenceVideoUrl;
+            setModeState("comparison");
+            modeRef.current = "comparison";
+            setMatchPercentage(0);
+            matchPercentageRef.current = 0;
+        }
+    }, [referenceVideoUrl]);
+
     useEffect(() => {
         const originalConsoleError = console.error;
         const originalConsoleWarn = console.warn;
@@ -89,7 +123,9 @@ export default function PoseDetector() {
                 const msg = args[0];
                 if (msg.includes("TensorFlow Lite XNNPACK delegate") ||
                     msg.includes("[browser]") ||
-                    msg.includes("landmark_projection_calculator")) {
+                    msg.includes("landmark_projection_calculator") ||
+                    msg.includes("Packet timestamp mismatch") ||
+                    msg.includes("gl_graph_runner")) {
                     return true;
                 }
             }
@@ -515,7 +551,7 @@ export default function PoseDetector() {
 
                 let currentPose = null;
                 try {
-                    const poseResult = poseLandmarker.detectForVideo(video, now);
+                    const poseResult = poseLandmarker.detectForVideo(video, getNextPoseTs());
                     if (poseResult?.landmarks?.length > 0) {
                         currentPose = poseResult.landmarks[0];
                         lastCameraPoseRef.current = currentPose;
@@ -524,7 +560,7 @@ export default function PoseDetector() {
                         drawingUtils.drawLandmarks(mirrored, { color: "rgba(255, 255, 255, 0.9)", fillColor: "rgba(0, 200, 160, 0.85)", lineWidth: 2, radius: 5 });
                     }
                     if (handLandmarker) {
-                        const handResult = handLandmarker.detectForVideo(video, now);
+                        const handResult = handLandmarker.detectForVideo(video, getNextHandTs());
                         if (handResult?.landmarks?.length > 0) {
                             for (const landmarks of handResult.landmarks) {
                                 const mirrored = landmarks.map((lm) => ({ ...lm, x: 1 - lm.x }));
@@ -589,7 +625,7 @@ export default function PoseDetector() {
                         rCtx.drawImage(refVideo, 0, 0, refCanvas.width, refCanvas.height);
                         rCtx.restore();
 
-                        const refPoseResult = poseLandmarker.detectForVideo(refVideo, performance.now());
+                        const refPoseResult = poseLandmarker.detectForVideo(refVideo, getNextPoseTs());
 
                         if (refPoseResult?.landmarks?.length > 0) {
                             const refPose = refPoseResult.landmarks[0];
@@ -605,9 +641,9 @@ export default function PoseDetector() {
                                 setMatchPercentage(Math.round(smoothed));
                             }
                         }
-                        
+
                         if (handLandmarker) {
-                            const refHandResult = handLandmarker.detectForVideo(refVideo, performance.now());
+                            const refHandResult = handLandmarker.detectForVideo(refVideo, getNextHandTs());
                             if (refHandResult?.landmarks?.length > 0) {
                                 for (const landmarks of refHandResult.landmarks) {
                                     const mirroredRefHand = landmarks.map((lm) => ({ ...lm, x: 1 - lm.x }));
@@ -633,12 +669,18 @@ export default function PoseDetector() {
     useEffect(() => {
         return () => {
             stopCamera();
-            if (poseLandmarkerRef.current) {
-                poseLandmarkerRef.current.close();
-            }
-            if (handLandmarkerRef.current) {
-                handLandmarkerRef.current.close();
-            }
+            try {
+                if (poseLandmarkerRef.current) {
+                    poseLandmarkerRef.current.close();
+                    poseLandmarkerRef.current = null;
+                }
+            } catch (e) { /*nic */ }
+            try {
+                if (handLandmarkerRef.current) {
+                    handLandmarkerRef.current.close();
+                    handLandmarkerRef.current = null;
+                }
+            } catch (e) { /*nic */ }
         };
     }, [stopCamera]);
 
@@ -664,27 +706,29 @@ export default function PoseDetector() {
     return (
         <div className={`w-full ${mode === 'comparison' ? 'max-w-7xl' : 'max-w-4xl'} flex flex-col items-center gap-5 animate-scale-up transition-all duration-500`}>
 
-            <div className="flex bg-panel border border-outline rounded-2xl p-1 shadow-panel mb-2 z-10 relative">
-                <button
-                    onClick={() => changeMode("waving")}
-                    className={`px-6 py-2 rounded-xl text-sm font-medium transition-all duration-300 cursor-pointer ${mode === "waving"
-                        ? "bg-gradient-to-r from-teal-500 to-emerald-500 text-white shadow-md shadow-teal-500/20"
-                        : "text-muted hover:text-white hover:bg-white/5"
-                        }`}
-                >
-                    Wave Detection
-                </button>
-                <button
-                    onClick={() => changeMode("comparison")}
-                    className={`px-6 py-2 rounded-xl text-sm font-medium transition-all duration-300 flex items-center gap-2 cursor-pointer ${mode === "comparison"
-                        ? "bg-gradient-to-r from-fuchsia-500 to-purple-500 text-white shadow-md shadow-purple-500/20"
-                        : "text-muted hover:text-white hover:bg-white/5"
-                        }`}
-                >
-                    Pose Comparison
-                    {mode === "comparison" && <span className="flex w-2 h-2 rounded-full bg-white animate-pulse"></span>}
-                </button>
-            </div>
+            {!hasExternalVideo && (
+                <div className="flex bg-panel border border-outline rounded-2xl p-1 shadow-panel mb-2 z-10 relative">
+                    <button
+                        onClick={() => changeMode("waving")}
+                        className={`px-6 py-2 rounded-xl text-sm font-medium transition-all duration-300 cursor-pointer ${mode === "waving"
+                            ? "bg-gradient-to-r from-teal-500 to-emerald-500 text-white shadow-md shadow-teal-500/20"
+                            : "text-muted hover:text-white hover:bg-white/5"
+                            }`}
+                    >
+                        Wave Detection
+                    </button>
+                    <button
+                        onClick={() => changeMode("comparison")}
+                        className={`px-6 py-2 rounded-xl text-sm font-medium transition-all duration-300 flex items-center gap-2 cursor-pointer ${mode === "comparison"
+                            ? "bg-gradient-to-r from-fuchsia-500 to-purple-500 text-white shadow-md shadow-purple-500/20"
+                            : "text-muted hover:text-white hover:bg-white/5"
+                            }`}
+                    >
+                        Pose Comparison
+                        {mode === "comparison" && <span className="flex w-2 h-2 rounded-full bg-white animate-pulse"></span>}
+                    </button>
+                </div>
+            )}
 
             <div className="flex flex-col items-center gap-4 w-full">
                 <div className="flex flex-wrap justify-center items-center gap-4">
@@ -714,7 +758,7 @@ export default function PoseDetector() {
                         </button>
                     )}
 
-                    {mode === "comparison" && (
+                    {mode === "comparison" && !hasExternalVideo && (
                         <div className="relative z-10">
                             <input
                                 type="file"
@@ -822,6 +866,7 @@ export default function PoseDetector() {
                         <video
                             ref={refVideoRef}
                             src={videoUrl || undefined}
+                            crossOrigin="anonymous"
                             playsInline
                             muted
                             autoPlay

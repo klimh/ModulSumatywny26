@@ -61,6 +61,8 @@ def get_my_rehab_plan(
         exercises_with_names.append({
             "exercise_id": pe.exercise_id,
             "name": pe.exercise.name,
+            "description": pe.exercise.description or "",
+            "video_url": pe.exercise.video_url,
             "reps_nr": pe.reps_nr,
             "sets_nr": pe.sets_nr
         })

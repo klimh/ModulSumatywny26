@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException
+import re
+import cloudinary.uploader
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
 from db.database import get_db
 from core.security import RoleChecker
@@ -85,6 +87,8 @@ def create_rehabilitation_plan(
         exercises_with_names.append({
             "exercise_id": ex.exercise_id,
             "name": db_ex.name,
+            "description": db_ex.description or "",
+            "video_url": db_ex.video_url,
             "reps_nr": ex.reps_nr,
             "sets_nr": ex.sets_nr
         })
@@ -115,6 +119,8 @@ def get_my_created_plans(
             exs.append({
                 "exercise_id": pe.exercise_id,
                 "name": pe.exercise.name,
+                "description": pe.exercise.description or "",
+                "video_url": pe.exercise.video_url,
                 "reps_nr": pe.reps_nr,
                 "sets_nr": pe.sets_nr
             })
@@ -158,3 +164,77 @@ def respond_to_request(
     request.status = "ZAAKCEPTOWANE" if accept else "ODRZUCONE"
     db.commit()
     return {"message": f"Status prośby zaktualizowany na: {request.status}"}
+
+
+@router.post("/exercises/{exercise_id}/upload-video")
+def upload_exercise_video(
+        exercise_id: int,
+        file: UploadFile = File(...),
+        current_user: User = Depends(RoleChecker(["fizjoterapeuta"])),
+        db: Session = Depends(get_db)
+):
+    """Dodaje filmik instruktażowy do ćwiczenia (upload do Cloudinary)"""
+    exercise = db.query(Exercise).filter(Exercise.exercise_id == exercise_id).first()
+    if not exercise:
+        raise HTTPException(status_code=404, detail="Ćwiczenie nie istnieje")
+
+    # Walidacja typu pliku
+    allowed_types = ["video/mp4", "video/webm", "video/quicktime", "video/x-msvideo"]
+    if file.content_type not in allowed_types:
+        raise HTTPException(status_code=400, detail="Nieobsługiwany format wideo. Dozwolone: MP4, WebM, MOV, AVI")
+
+    # Usunięcie starego filmiku z Cloudinary jeśli istnieje
+    if exercise.video_url:
+        _delete_cloudinary_video(exercise.video_url)
+
+    # Upload do Cloudinary
+    try:
+        result = cloudinary.uploader.upload(
+            file.file,
+            resource_type="video",
+            folder="rehabsense/exercises",
+            public_id=f"exercise_{exercise_id}",
+            overwrite=True,
+        )
+        video_url = result["secure_url"]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Błąd uploadu do Cloudinary: {str(e)}")
+
+    exercise.video_url = video_url
+    db.commit()
+    db.refresh(exercise)
+
+    return {"message": "Filmik został dodany", "video_url": exercise.video_url}
+
+
+@router.delete("/exercises/{exercise_id}/video")
+def delete_exercise_video(
+        exercise_id: int,
+        current_user: User = Depends(RoleChecker(["fizjoterapeuta"])),
+        db: Session = Depends(get_db)
+):
+    """Usuwa filmik instruktażowy z ćwiczenia (usuwanie z Cloudinary)"""
+    exercise = db.query(Exercise).filter(Exercise.exercise_id == exercise_id).first()
+    if not exercise:
+        raise HTTPException(status_code=404, detail="Ćwiczenie nie istnieje")
+
+    if exercise.video_url:
+        _delete_cloudinary_video(exercise.video_url)
+
+    exercise.video_url = None
+    db.commit()
+
+    return {"message": "Filmik został usunięty"}
+
+
+def _delete_cloudinary_video(video_url: str):
+    """Pomocnicza funkcja do usuwania wideo z Cloudinary na podstawie URL"""
+    try:
+        # Wyciągamy public_id z URL Cloudinary
+        # np. https://res.cloudinary.com/xxx/video/upload/v123/rehabsense/exercises/exercise_1.mp4
+        match = re.search(r'/upload/(?:v\d+/)?(.+?)\.[^.]+$', video_url)
+        if match:
+            public_id = match.group(1)
+            cloudinary.uploader.destroy(public_id, resource_type="video")
+    except Exception:
+        pass  # Nie blokujemy jeśli usuwanie z chmury się nie uda

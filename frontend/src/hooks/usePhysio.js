@@ -83,9 +83,33 @@ export function usePhysio() {
         }
     };
 
+    const uploadVideo = async (exerciseId, file) => {
+        setError(null);
+        try {
+            const result = await api.physio.uploadExerciseVideo(exerciseId, file);
+            await fetchExercises();
+            return result;
+        } catch (err) {
+            setError(err.message);
+            throw err;
+        }
+    };
+
+    const deleteVideo = async (exerciseId) => {
+        setError(null);
+        try {
+            await api.physio.deleteExerciseVideo(exerciseId);
+            await fetchExercises();
+        } catch (err) {
+            setError(err.message);
+            throw err;
+        }
+    };
+
     return {
         patients, exercises, requests, loading, error,
         fetchMyPatients, fetchExercises, fetchRequests,
-        addExercise, createPlan, respondToRequest
+        addExercise, createPlan, respondToRequest,
+        uploadVideo, deleteVideo
     };
 }

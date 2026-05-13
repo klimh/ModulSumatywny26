@@ -1,18 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePhysio } from "@/hooks/usePhysio";
 import { useRouter } from "next/navigation";
 
 export default function ExercisesPage() {
     const { user, loading: authLoading } = useAuth();
-    const { exercises, loading, error, fetchExercises, addExercise } = usePhysio();
+    const { exercises, loading, error, fetchExercises, addExercise, uploadVideo, deleteVideo } = usePhysio();
     const router = useRouter();
     const [showForm, setShowForm] = useState(false);
     const [form, setForm] = useState({ name: "", description: "", body_part: "" });
     const [formError, setFormError] = useState(null);
     const [formLoading, setFormLoading] = useState(false);
+    const [uploadingId, setUploadingId] = useState(null);
+    const [previewVideo, setPreviewVideo] = useState(null);
+    const fileInputRefs = useRef({});
 
     useEffect(() => {
         if (!authLoading && (!user || user.role !== "fizjoterapeuta")) {
@@ -36,6 +39,31 @@ export default function ExercisesPage() {
             setFormError(err.message);
         } finally {
             setFormLoading(false);
+        }
+    };
+
+    const handleVideoUpload = async (exerciseId, file) => {
+        if (!file) return;
+        setUploadingId(exerciseId);
+        try {
+            await uploadVideo(exerciseId, file);
+        } catch (err) {
+            // error is set in hook
+        } finally {
+            setUploadingId(null);
+        }
+    };
+
+    const handleVideoDelete = async (exerciseId) => {
+        if (!confirm("Czy na pewno chcesz usunąć filmik?")) return;
+        setUploadingId(exerciseId);
+        try {
+            await deleteVideo(exerciseId);
+            if (previewVideo === exerciseId) setPreviewVideo(null);
+        } catch (err) {
+            // error is set in hook
+        } finally {
+            setUploadingId(null);
         }
     };
 
@@ -129,19 +157,102 @@ export default function ExercisesPage() {
                 {exercises.length > 0 ? (
                     <div className="flex flex-col gap-3">
                         {exercises.map((ex, i) => (
-                            <div key={ex.exercise_id || i} className="card p-5 flex items-start gap-4">
-                                <span className="w-10 h-10 rounded-xl bg-gradient-to-br from-fuchsia-500/20 to-purple-500/20 flex items-center justify-center text-fuchsia-400 font-bold text-sm flex-shrink-0">
-                                    {i + 1}
-                                </span>
-                                <div className="flex flex-col gap-1 flex-1">
-                                    <span className="font-semibold">{ex.name}</span>
-                                    {ex.body_part && (
-                                        <span className="badge-info w-fit">{ex.body_part}</span>
-                                    )}
-                                    {ex.description && (
-                                        <span className="text-xs text-muted mt-1">{ex.description}</span>
-                                    )}
+                            <div key={ex.exercise_id || i} className="card p-5 flex flex-col gap-3">
+                                <div className="flex items-start gap-4">
+                                    <span className="w-10 h-10 rounded-xl bg-gradient-to-br from-fuchsia-500/20 to-purple-500/20 flex items-center justify-center text-fuchsia-400 font-bold text-sm flex-shrink-0">
+                                        {i + 1}
+                                    </span>
+                                    <div className="flex flex-col gap-1 flex-1">
+                                        <span className="font-semibold">{ex.name}</span>
+                                        {ex.body_part && (
+                                            <span className="badge-info w-fit">{ex.body_part}</span>
+                                        )}
+                                        {ex.description && (
+                                            <span className="text-xs text-muted mt-1">{ex.description}</span>
+                                        )}
+                                    </div>
+
+                                    {/* Video actions */}
+                                    <div className="flex items-center gap-2 flex-shrink-0">
+                                        {ex.video_url ? (
+                                            <>
+                                                <button
+                                                    onClick={() => setPreviewVideo(previewVideo === ex.exercise_id ? null : ex.exercise_id)}
+                                                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25 transition-all duration-300 cursor-pointer flex items-center gap-1.5"
+                                                    title="Podgląd filmiku"
+                                                >
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
+                                                    {previewVideo === ex.exercise_id ? "Ukryj" : "Filmik"}
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        fileInputRefs.current[ex.exercise_id]?.click();
+                                                    }}
+                                                    disabled={uploadingId === ex.exercise_id}
+                                                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/30 hover:bg-amber-500/25 transition-all duration-300 cursor-pointer disabled:opacity-50"
+                                                    title="Zmień filmik"
+                                                >
+                                                    {uploadingId === ex.exercise_id ? <Spinner /> : "Zmień"}
+                                                </button>
+                                                <button
+                                                    onClick={() => handleVideoDelete(ex.exercise_id)}
+                                                    disabled={uploadingId === ex.exercise_id}
+                                                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-500/15 text-rose-400 border border-rose-500/30 hover:bg-rose-500/25 transition-all duration-300 cursor-pointer disabled:opacity-50"
+                                                    title="Usuń filmik"
+                                                >
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                    </svg>
+                                                </button>
+                                            </>
+                                        ) : (
+                                            <button
+                                                onClick={() => {
+                                                    fileInputRefs.current[ex.exercise_id]?.click();
+                                                }}
+                                                disabled={uploadingId === ex.exercise_id}
+                                                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-purple-500/15 text-purple-400 border border-dashed border-purple-500/40 hover:bg-purple-500/25 hover:border-purple-500 transition-all duration-300 cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+                                            >
+                                                {uploadingId === ex.exercise_id ? (
+                                                    <><Spinner /> Uploading…</>
+                                                ) : (
+                                                    <>
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                                        </svg>
+                                                        Dodaj filmik
+                                                    </>
+                                                )}
+                                            </button>
+                                        )}
+                                        <input
+                                            type="file"
+                                            accept="video/mp4,video/webm,video/quicktime,video/x-msvideo"
+                                            ref={(el) => { fileInputRefs.current[ex.exercise_id] = el; }}
+                                            onChange={(e) => {
+                                                const file = e.target.files?.[0];
+                                                if (file) handleVideoUpload(ex.exercise_id, file);
+                                                e.target.value = "";
+                                            }}
+                                            className="hidden"
+                                        />
+                                    </div>
                                 </div>
+
+                                {/* Video preview */}
+                                {previewVideo === ex.exercise_id && ex.video_url && (
+                                    <div className="animate-fade-in rounded-xl overflow-hidden border border-outline bg-black/20">
+                                        <video
+                                            src={ex.video_url}
+                                            controls
+                                            className="w-full max-h-80 object-contain"
+                                            preload="metadata"
+                                        />
+                                    </div>
+                                )}
                             </div>
                         ))}
                     </div>
