@@ -13,6 +13,7 @@ const NAV_ITEMS_GUEST = [
 
 const NAV_ITEMS_PATIENT = [
     { href: "/dashboard", label: "Dashboard" },
+    { href: "/dashboard/chat", label: "Chat" },
     { href: "/pose", label: "Pose Analysis" },
 ];
 
@@ -21,6 +22,7 @@ const NAV_ITEMS_PHYSIO = [
     { href: "/dashboard/patients", label: "Patients" },
     { href: "/dashboard/exercises", label: "Exercises" },
     { href: "/dashboard/requests", label: "Requests" },
+    { href: "/dashboard/chat", label: "Chat" },
 ];
 
 function SunIcon() {

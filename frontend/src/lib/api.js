@@ -121,5 +121,10 @@ export const api = {
     createPhysio: (data) => apiFetch('/admin/create-physio', { method: 'POST', body: JSON.stringify(data) }),
     getPhysiotherapists: () => apiFetch('/admin/physiotherapists'),
     deletePhysio: (userId) => apiFetch(`/admin/physiotherapist/${userId}`, { method: 'DELETE' }),
+  },
+  chat: {
+    getContacts: () => apiFetch('/chat/contacts'),
+    getMessages: (contactId) => apiFetch(`/chat/${contactId}`),
+    sendMessage: (data) => apiFetch('/chat/', { method: 'POST', body: JSON.stringify(data) })
   }
 };

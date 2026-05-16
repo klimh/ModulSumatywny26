@@ -18,9 +18,33 @@ function PatientDashboard() {
     return (
         <div className="w-full max-w-4xl flex flex-col gap-6 animate-fade-in">
             <h2 className="section-title">My Rehabilitation</h2>
-
+            {error && <div className="error-box">⚠️ {error}</div>}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Physio tile — conditional */}
+                <Link href="/dashboard/plan" className="card-hover p-6 flex flex-col gap-3 no-underline group">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 flex items-center justify-center">
+                        <svg className="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                    </div>
+                    <span className="font-semibold text-lg group-hover:text-emerald-400 transition-colors">My Plan</span>
+                    <span className="text-xs text-muted">
+                        {plan ? `Active: ${plan.title}` : loading ? "Loading…" : "No active plan"}
+                    </span>
+                </Link>
+
+                <Link href="/dashboard/chat" className="card-hover p-6 flex flex-col gap-3 no-underline group">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-pink-500/20 to-rose-500/20 flex items-center justify-center">
+                        <svg className="w-6 h-6 text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                        </svg>
+                    </div>
+                    <span className="font-semibold text-lg group-hover:text-pink-400 transition-colors">Chat</span>
+                    <span className="text-xs text-muted">
+                        Message your physiotherapist
+                    </span>
+                </Link>
+
+
                 {physioLoading ? (
                     <div className="card-hover p-6 flex flex-col gap-3">
                         <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500/20 to-purple-500/20 flex items-center justify-center">
@@ -41,11 +65,10 @@ function PatientDashboard() {
                         <span className="font-semibold text-lg text-violet-400">My Physiotherapist</span>
                         <span className="text-sm font-medium">{physio.first_name} {physio.last_name}</span>
                         <span className="text-xs text-muted">{physio.email}</span>
-                        <span className={`text-xs font-mono px-2 py-1 rounded-full w-fit ${
-                            physio.status === "ZAAKCEPTOWANE"
-                                ? "bg-emerald-500/20 text-emerald-400"
-                                : "bg-amber-500/20 text-amber-400"
-                        }`}>
+                        <span className={`text-xs font-mono px-2 py-1 rounded-full w-fit ${physio.status === "ZAAKCEPTOWANE"
+                            ? "bg-emerald-500/20 text-emerald-400"
+                            : "bg-amber-500/20 text-amber-400"
+                            }`}>
                             {physio.status === "ZAAKCEPTOWANE" ? "✓ Connected" : "⏳ Pending"}
                         </span>
                     </div>
@@ -63,18 +86,6 @@ function PatientDashboard() {
                     </Link>
                 )}
 
-                <Link href="/dashboard/plan" className="card-hover p-6 flex flex-col gap-3 no-underline group">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 flex items-center justify-center">
-                        <svg className="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                        </svg>
-                    </div>
-                    <span className="font-semibold text-lg group-hover:text-emerald-400 transition-colors">My Plan</span>
-                    <span className="text-xs text-muted">
-                        {plan ? `Active: ${plan.title}` : loading ? "Loading…" : "No active plan"}
-                    </span>
-                </Link>
-
                 <Link href="/pose" className="card-hover p-6 flex flex-col gap-3 no-underline group">
                     <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center">
                         <svg className="w-6 h-6 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -87,8 +98,6 @@ function PatientDashboard() {
                     </span>
                 </Link>
             </div>
-
-            {error && <div className="error-box">⚠️ {error}</div>}
         </div>
     );
 }
@@ -139,6 +148,18 @@ function PhysioDashboard() {
                 </svg>
             ),
         },
+        {
+            label: "Chat",
+            value: "💬",
+            href: "/dashboard/chat",
+            gradient: "from-blue-500/20 to-indigo-500/20",
+            textColor: "text-blue-400",
+            icon: (
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+            ),
+        },
     ];
 
     return (
@@ -151,7 +172,9 @@ function PhysioDashboard() {
                         <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${card.gradient} flex items-center justify-center ${card.textColor}`}>
                             {card.icon}
                         </div>
-                        <span className={`text-3xl font-black ${card.textColor}`}>{loading ? "…" : card.value}</span>
+                        <span className={`text-3xl font-black ${card.textColor}`}>
+                            {card.label === "Chat" ? card.value : loading ? "…" : card.value}
+                        </span>
                         <span className="text-sm font-medium text-muted group-hover:text-primary transition-colors">{card.label}</span>
                     </Link>
                 ))}
