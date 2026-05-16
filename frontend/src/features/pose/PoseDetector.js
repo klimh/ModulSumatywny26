@@ -17,16 +17,72 @@ const BODY_CONNECTIONS = POSE_CONNECTIONS.filter(
     (c) => !FACE_INDICES.has(c.start) && !FACE_INDICES.has(c.end)
 );
 
-const SMOOTHING = 0.6;
-const smoothLandmarks = (prev, curr) => {
-    if (!prev || prev.length !== curr.length) return curr;
-    return curr.map((lm, i) => ({
-        ...lm,
-        x: prev[i].x * SMOOTHING + lm.x * (1 - SMOOTHING),
-        y: prev[i].y * SMOOTHING + lm.y * (1 - SMOOTHING),
-        z: prev[i].z * SMOOTHING + lm.z * (1 - SMOOTHING),
-    }));
-};
+class OneEuroFilter {
+    constructor(freq = 30, minCutoff = 1.0, beta = 0.007, dCutoff = 1.0) {
+        this.freq = freq;
+        this.minCutoff = minCutoff;
+        this.beta = beta;
+        this.dCutoff = dCutoff;
+        this.xPrev = null;
+        this.dxPrev = 0;
+        this.lastTime = null;
+    }
+    _alpha(cutoff) {
+        const te = 1.0 / this.freq;
+        const tau = 1.0 / (2 * Math.PI * cutoff);
+        return 1.0 / (1.0 + tau / te);
+    }
+    filter(x, timestamp) {
+        if (this.lastTime !== null && timestamp !== this.lastTime) {
+            this.freq = 1.0 / ((timestamp - this.lastTime) / 1000);
+        }
+        this.lastTime = timestamp;
+        if (this.xPrev === null) {
+            this.xPrev = x;
+            this.dxPrev = 0;
+            return x;
+        }
+        const dx = (x - this.xPrev) * this.freq;
+        const adx = this._alpha(this.dCutoff);
+        this.dxPrev = adx * dx + (1 - adx) * this.dxPrev;
+        const cutoff = this.minCutoff + this.beta * Math.abs(this.dxPrev);
+        const ax = this._alpha(cutoff);
+        this.xPrev = ax * x + (1 - ax) * this.xPrev;
+        return this.xPrev;
+    }
+    reset() {
+        this.xPrev = null;
+        this.dxPrev = 0;
+        this.lastTime = null;
+    }
+}
+
+class LandmarkSmoother {
+    constructor(freq = 30, minCutoff = 1.7, beta = 0.01) {
+        this.freq = freq;
+        this.minCutoff = minCutoff;
+        this.beta = beta;
+        this.filters = null;
+    }
+    filter(landmarks, timestamp) {
+        if (!this.filters) {
+            this.filters = landmarks.map(() => ({
+                x: new OneEuroFilter(this.freq, this.minCutoff, this.beta),
+                y: new OneEuroFilter(this.freq, this.minCutoff, this.beta),
+                z: new OneEuroFilter(this.freq, this.minCutoff, this.beta),
+            }));
+        }
+        return landmarks.map((lm, i) => ({
+            ...lm,
+            x: this.filters[i].x.filter(lm.x, timestamp),
+            y: this.filters[i].y.filter(lm.y, timestamp),
+            z: this.filters[i].z.filter(lm.z, timestamp),
+        }));
+    }
+    reset() {
+        this.filters = null;
+    }
+}
 
 const calculateAngle = (a, b, c) => {
     if (!a || !b || !c) return 0;
@@ -61,8 +117,8 @@ export default function PoseDetector({ referenceVideoUrl = null }) {
     const animFrameRef = useRef(null);
     const streamRef = useRef(null);
     const dtwAnalyzerRef = useRef(null);
-    const smoothedCamPoseRef = useRef(null);
-    const smoothedRefPoseRef = useRef(null);
+    const camSmootherRef = useRef(new LandmarkSmoother());
+    const refSmootherRef = useRef(new LandmarkSmoother());
 
     const hasExternalVideo = !!referenceVideoUrl;
     const initialMode = hasExternalVideo ? "comparison" : "waving";
@@ -76,7 +132,6 @@ export default function PoseDetector({ referenceVideoUrl = null }) {
     const [cameraActive, setCameraActive] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-    const [fps, setFps] = useState(0);
     const [isWaving, setIsWaving] = useState(false);
     const [matchPercentage, setMatchPercentage] = useState(0);
 
@@ -254,7 +309,6 @@ export default function PoseDetector({ referenceVideoUrl = null }) {
         }
 
         setCameraActive(false);
-        setFps(0);
         setIsWaving(false);
         setMatchPercentage(0);
         isWavingRef.current = false;
@@ -262,6 +316,8 @@ export default function PoseDetector({ referenceVideoUrl = null }) {
         leftWristHistoryRef.current = [];
         rightWristHistoryRef.current = [];
         if (dtwAnalyzerRef.current) dtwAnalyzerRef.current.reset();
+        camSmootherRef.current.reset();
+        refSmootherRef.current.reset();
     }, []);
 
     const handleFileUpload = (e) => {
@@ -274,6 +330,7 @@ export default function PoseDetector({ referenceVideoUrl = null }) {
             setMatchPercentage(0);
             matchPercentageRef.current = 0;
             if (dtwAnalyzerRef.current) dtwAnalyzerRef.current.reset();
+            refSmootherRef.current.reset();
         }
     };
 
@@ -305,20 +362,11 @@ export default function PoseDetector({ referenceVideoUrl = null }) {
 
         let lastTime = -1;
         let lastRefTime = -1;
-        let frameCount = 0;
-        let fpsAccum = 0;
 
         const loop = () => {
             if (!videoRef.current?.srcObject) return;
 
             const now = performance.now();
-
-            frameCount++;
-            if (now - fpsAccum >= 1000) {
-                setFps(frameCount);
-                frameCount = 0;
-                fpsAccum = now;
-            }
 
             let currentPoseLandmarks = null;
             if (video.currentTime !== lastTime) {
@@ -354,9 +402,7 @@ export default function PoseDetector({ referenceVideoUrl = null }) {
                                 }
                             );
 
-                            const bodyLandmarks = mirrored.map((lm, i) =>
-                                FACE_INDICES.has(i) ? { ...lm, visibility: 0 } : lm
-                            );
+                            const bodyLandmarks = mirrored.filter((_, i) => !FACE_INDICES.has(i));
                             drawingUtils.drawLandmarks(bodyLandmarks, {
                                 color: "rgba(255, 255, 255, 0.9)",
                                 fillColor: "rgba(0, 200, 160, 0.85)",
@@ -500,21 +546,12 @@ export default function PoseDetector({ referenceVideoUrl = null }) {
 
         if (!video || !canvas || !cameraActive || !poseLandmarker) return;
 
-        let frameCount = 0;
-        let fpsAccum = 0;
         let lastTime = -1;
         let lastRefTime = -1;
 
         const loop = () => {
             if (!videoRef.current?.srcObject) return;
             const now = performance.now();
-
-            frameCount++;
-            if (now - fpsAccum >= 1000) {
-                setFps(frameCount);
-                frameCount = 0;
-                fpsAccum = now;
-            }
 
             const ctx = canvas.getContext("2d");
             const drawingUtils = new DrawingUtils(ctx);
@@ -536,14 +573,11 @@ export default function PoseDetector({ referenceVideoUrl = null }) {
                         currentPose = poseResult.landmarks[0];
                         lastCameraPoseRef.current = currentPose;
 
-                        const smoothed = smoothLandmarks(smoothedCamPoseRef.current, currentPose);
-                        smoothedCamPoseRef.current = smoothed;
+                        const smoothed = camSmootherRef.current.filter(currentPose, now);
 
                         const mirrored = smoothed.map((lm) => ({ ...lm, x: 1 - lm.x }));
                         drawingUtils.drawConnectors(mirrored, BODY_CONNECTIONS, { color: "rgba(0, 230, 180, 0.7)", lineWidth: 4 });
-                        const bodyLandmarks = mirrored.map((lm, i) =>
-                            FACE_INDICES.has(i) ? { ...lm, visibility: 0 } : lm
-                        );
+                        const bodyLandmarks = mirrored.filter((_, i) => !FACE_INDICES.has(i));
                         drawingUtils.drawLandmarks(bodyLandmarks, { color: "rgba(255, 255, 255, 0.9)", fillColor: "rgba(0, 200, 160, 0.85)", lineWidth: 2, radius: 5 });
 
                         if (modeRef.current === "comparison") {
@@ -612,14 +646,11 @@ export default function PoseDetector({ referenceVideoUrl = null }) {
                         if (refPoseResult?.landmarks?.length > 0) {
                             const refPose = refPoseResult.landmarks[0];
 
-                            const smoothedRef = smoothLandmarks(smoothedRefPoseRef.current, refPose);
-                            smoothedRefPoseRef.current = smoothedRef;
+                            const smoothedRef = refSmootherRef.current.filter(refPose, now);
 
                             const mirroredRefPose = smoothedRef.map((lm) => ({ ...lm, x: 1 - lm.x }));
                             rUtils.drawConnectors(mirroredRefPose, BODY_CONNECTIONS, { color: "rgba(180, 0, 230, 0.7)", lineWidth: 4 });
-                            const refBodyLandmarks = mirroredRefPose.map((lm, i) =>
-                                FACE_INDICES.has(i) ? { ...lm, visibility: 0 } : lm
-                            );
+                            const refBodyLandmarks = mirroredRefPose.filter((_, i) => !FACE_INDICES.has(i));
                             rUtils.drawLandmarks(refBodyLandmarks, { color: "rgba(255, 255, 255, 0.9)", fillColor: "rgba(160, 0, 200, 0.85)", lineWidth: 2, radius: 4 });
 
                             if (dtwAnalyzerRef.current) {
@@ -753,12 +784,6 @@ export default function PoseDetector({ referenceVideoUrl = null }) {
                                 {videoUrl ? "Change reference video" : "Upload reference video (MP4)"}
                             </button>
                         </div>
-                    )}
-
-                    {cameraActive && (
-                        <span className="px-4 py-2 rounded-xl text-xs font-mono bg-panel border border-outline shadow-panel">
-                            {fps} FPS
-                        </span>
                     )}
                 </div>
 
