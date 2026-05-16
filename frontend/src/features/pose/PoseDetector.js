@@ -7,9 +7,26 @@ import {
     FilesetResolver,
     DrawingUtils,
 } from "@mediapipe/tasks-vision";
+import { DTWAnalyzer } from "./dtwAnalyzer";
 
 const POSE_CONNECTIONS = PoseLandmarker.POSE_CONNECTIONS;
 const HAND_CONNECTIONS = HandLandmarker.HAND_CONNECTIONS;
+
+const FACE_INDICES = new Set([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+const BODY_CONNECTIONS = POSE_CONNECTIONS.filter(
+    (c) => !FACE_INDICES.has(c.start) && !FACE_INDICES.has(c.end)
+);
+
+const SMOOTHING = 0.6;
+const smoothLandmarks = (prev, curr) => {
+    if (!prev || prev.length !== curr.length) return curr;
+    return curr.map((lm, i) => ({
+        ...lm,
+        x: prev[i].x * SMOOTHING + lm.x * (1 - SMOOTHING),
+        y: prev[i].y * SMOOTHING + lm.y * (1 - SMOOTHING),
+        z: prev[i].z * SMOOTHING + lm.z * (1 - SMOOTHING),
+    }));
+};
 
 const calculateAngle = (a, b, c) => {
     if (!a || !b || !c) return 0;
@@ -32,25 +49,6 @@ const getPoseAngles = (landmarks) => {
     };
 };
 
-const comparePoses = (pose1, pose2) => {
-    if (!pose1 || !pose2) return 0;
-    const angles1 = getPoseAngles(pose1);
-    const angles2 = getPoseAngles(pose2);
-
-    const keys = Object.keys(angles1);
-    let totalDiff = 0;
-
-    keys.forEach(k => {
-        let diff = Math.abs(angles1[k] - angles2[k]);
-        totalDiff += diff;
-    });
-
-    const avgDiff = totalDiff / keys.length;
-
-    const match = Math.max(0, 100 - (avgDiff / 90 * 100));
-    return match;
-};
-
 export default function PoseDetector({ referenceVideoUrl = null }) {
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
@@ -62,6 +60,9 @@ export default function PoseDetector({ referenceVideoUrl = null }) {
     const handLandmarkerRef = useRef(null);
     const animFrameRef = useRef(null);
     const streamRef = useRef(null);
+    const dtwAnalyzerRef = useRef(null);
+    const smoothedCamPoseRef = useRef(null);
+    const smoothedRefPoseRef = useRef(null);
 
     const hasExternalVideo = !!referenceVideoUrl;
     const initialMode = hasExternalVideo ? "comparison" : "waving";
@@ -84,7 +85,6 @@ export default function PoseDetector({ referenceVideoUrl = null }) {
     const leftWristHistoryRef = useRef([]);
     const rightWristHistoryRef = useRef([]);
 
-    // Tracker zapewniający ściśle rosnące timestampy dla MediaPipe
     const lastPoseTimestampRef = useRef(0);
     const lastHandTimestampRef = useRef(0);
 
@@ -102,7 +102,6 @@ export default function PoseDetector({ referenceVideoUrl = null }) {
         return next;
     };
 
-    // Sync with external referenceVideoUrl prop changes
     useEffect(() => {
         if (referenceVideoUrl) {
             setVideoUrl(referenceVideoUrl);
@@ -262,6 +261,7 @@ export default function PoseDetector({ referenceVideoUrl = null }) {
         matchPercentageRef.current = 0;
         leftWristHistoryRef.current = [];
         rightWristHistoryRef.current = [];
+        if (dtwAnalyzerRef.current) dtwAnalyzerRef.current.reset();
     }, []);
 
     const handleFileUpload = (e) => {
@@ -273,6 +273,7 @@ export default function PoseDetector({ referenceVideoUrl = null }) {
 
             setMatchPercentage(0);
             matchPercentageRef.current = 0;
+            if (dtwAnalyzerRef.current) dtwAnalyzerRef.current.reset();
         }
     };
 
@@ -288,6 +289,7 @@ export default function PoseDetector({ referenceVideoUrl = null }) {
             leftWristHistoryRef.current = [];
             rightWristHistoryRef.current = [];
         }
+        if (dtwAnalyzerRef.current) dtwAnalyzerRef.current.reset();
     };
 
     const detectPose = useCallback(() => {
@@ -345,43 +347,21 @@ export default function PoseDetector({ referenceVideoUrl = null }) {
 
                             drawingUtils.drawConnectors(
                                 mirrored,
-                                POSE_CONNECTIONS,
+                                BODY_CONNECTIONS,
                                 {
                                     color: "rgba(0, 230, 180, 0.7)",
                                     lineWidth: 4,
                                 }
                             );
 
-                            drawingUtils.drawLandmarks(mirrored, {
+                            const bodyLandmarks = mirrored.map((lm, i) =>
+                                FACE_INDICES.has(i) ? { ...lm, visibility: 0 } : lm
+                            );
+                            drawingUtils.drawLandmarks(bodyLandmarks, {
                                 color: "rgba(255, 255, 255, 0.9)",
                                 fillColor: "rgba(0, 200, 160, 0.85)",
                                 lineWidth: 2,
                                 radius: 5,
-                            });
-                        }
-                    }
-
-                    if (handResult && handResult.landmarks && handResult.landmarks.length > 0) {
-                        for (const landmarks of handResult.landmarks) {
-                            const mirrored = landmarks.map((lm) => ({
-                                ...lm,
-                                x: 1 - lm.x,
-                            }));
-
-                            drawingUtils.drawConnectors(
-                                mirrored,
-                                HAND_CONNECTIONS,
-                                {
-                                    color: "rgba(255, 120, 120, 0.7)",
-                                    lineWidth: 3,
-                                }
-                            );
-
-                            drawingUtils.drawLandmarks(mirrored, {
-                                color: "rgba(255, 255, 255, 0.9)",
-                                fillColor: "rgba(255, 80, 80, 0.85)",
-                                lineWidth: 1,
-                                radius: 3,
                             });
                         }
                     }
@@ -555,23 +535,26 @@ export default function PoseDetector({ referenceVideoUrl = null }) {
                     if (poseResult?.landmarks?.length > 0) {
                         currentPose = poseResult.landmarks[0];
                         lastCameraPoseRef.current = currentPose;
-                        const mirrored = currentPose.map((lm) => ({ ...lm, x: 1 - lm.x }));
-                        drawingUtils.drawConnectors(mirrored, POSE_CONNECTIONS, { color: "rgba(0, 230, 180, 0.7)", lineWidth: 4 });
-                        drawingUtils.drawLandmarks(mirrored, { color: "rgba(255, 255, 255, 0.9)", fillColor: "rgba(0, 200, 160, 0.85)", lineWidth: 2, radius: 5 });
-                    }
-                    if (handLandmarker) {
-                        const handResult = handLandmarker.detectForVideo(video, getNextHandTs());
-                        if (handResult?.landmarks?.length > 0) {
-                            for (const landmarks of handResult.landmarks) {
-                                const mirrored = landmarks.map((lm) => ({ ...lm, x: 1 - lm.x }));
-                                drawingUtils.drawConnectors(mirrored, HAND_CONNECTIONS, { color: "rgba(255, 120, 120, 0.7)", lineWidth: 3 });
-                                drawingUtils.drawLandmarks(mirrored, { color: "rgba(255, 255, 255, 0.9)", fillColor: "rgba(255, 80, 80, 0.85)", lineWidth: 1, radius: 3 });
+
+                        const smoothed = smoothLandmarks(smoothedCamPoseRef.current, currentPose);
+                        smoothedCamPoseRef.current = smoothed;
+
+                        const mirrored = smoothed.map((lm) => ({ ...lm, x: 1 - lm.x }));
+                        drawingUtils.drawConnectors(mirrored, BODY_CONNECTIONS, { color: "rgba(0, 230, 180, 0.7)", lineWidth: 4 });
+                        const bodyLandmarks = mirrored.map((lm, i) =>
+                            FACE_INDICES.has(i) ? { ...lm, visibility: 0 } : lm
+                        );
+                        drawingUtils.drawLandmarks(bodyLandmarks, { color: "rgba(255, 255, 255, 0.9)", fillColor: "rgba(0, 200, 160, 0.85)", lineWidth: 2, radius: 5 });
+
+                        if (modeRef.current === "comparison") {
+                            if (!dtwAnalyzerRef.current) {
+                                dtwAnalyzerRef.current = new DTWAnalyzer();
                             }
+                            dtwAnalyzerRef.current.addCameraFrame(getPoseAngles(currentPose));
                         }
                     }
                 } catch (e) { }
 
-                // machanie
                 if (modeRef.current === "waving" && currentPose) {
                     const l = currentPose[15], r = currentPose[16], ls = currentPose[11], rs = currentPose[12];
                     const checkWave = (wrist, shoulder, history) => {
@@ -607,7 +590,6 @@ export default function PoseDetector({ referenceVideoUrl = null }) {
             const refVideo = refVideoRef.current;
             const refCanvas = refCanvasRef.current;
 
-            // porownywanie z filmikiem
             if (modeRef.current === "comparison" && videoUrlRef.current && refVideo && refCanvas && refVideo.readyState >= 2) {
                 if (refVideo.currentTime !== lastRefTime) {
                     lastRefTime = refVideo.currentTime;
@@ -629,26 +611,23 @@ export default function PoseDetector({ referenceVideoUrl = null }) {
 
                         if (refPoseResult?.landmarks?.length > 0) {
                             const refPose = refPoseResult.landmarks[0];
-                            const mirroredRefPose = refPose.map((lm) => ({ ...lm, x: 1 - lm.x }));
 
-                            rUtils.drawConnectors(mirroredRefPose, POSE_CONNECTIONS, { color: "rgba(180, 0, 230, 0.7)", lineWidth: 4 });
-                            rUtils.drawLandmarks(mirroredRefPose, { color: "rgba(255, 255, 255, 0.9)", fillColor: "rgba(160, 0, 200, 0.85)", lineWidth: 2, radius: 4 });
+                            const smoothedRef = smoothLandmarks(smoothedRefPoseRef.current, refPose);
+                            smoothedRefPoseRef.current = smoothedRef;
 
-                            if (lastCameraPoseRef.current) {
-                                const match = comparePoses(lastCameraPoseRef.current, refPose);
-                                const smoothed = matchPercentageRef.current * 0.8 + match * 0.2;
-                                matchPercentageRef.current = smoothed;
-                                setMatchPercentage(Math.round(smoothed));
-                            }
-                        }
+                            const mirroredRefPose = smoothedRef.map((lm) => ({ ...lm, x: 1 - lm.x }));
+                            rUtils.drawConnectors(mirroredRefPose, BODY_CONNECTIONS, { color: "rgba(180, 0, 230, 0.7)", lineWidth: 4 });
+                            const refBodyLandmarks = mirroredRefPose.map((lm, i) =>
+                                FACE_INDICES.has(i) ? { ...lm, visibility: 0 } : lm
+                            );
+                            rUtils.drawLandmarks(refBodyLandmarks, { color: "rgba(255, 255, 255, 0.9)", fillColor: "rgba(160, 0, 200, 0.85)", lineWidth: 2, radius: 4 });
 
-                        if (handLandmarker) {
-                            const refHandResult = handLandmarker.detectForVideo(refVideo, getNextHandTs());
-                            if (refHandResult?.landmarks?.length > 0) {
-                                for (const landmarks of refHandResult.landmarks) {
-                                    const mirroredRefHand = landmarks.map((lm) => ({ ...lm, x: 1 - lm.x }));
-                                    rUtils.drawConnectors(mirroredRefHand, HAND_CONNECTIONS, { color: "rgba(255, 120, 120, 0.7)", lineWidth: 3 });
-                                    rUtils.drawLandmarks(mirroredRefHand, { color: "rgba(255, 255, 255, 0.9)", fillColor: "rgba(255, 80, 80, 0.85)", lineWidth: 1, radius: 3 });
+                            if (dtwAnalyzerRef.current) {
+                                dtwAnalyzerRef.current.addReferenceFrame(getPoseAngles(refPose));
+                                const dtwMatch = dtwAnalyzerRef.current.getMatch();
+                                if (dtwMatch !== null) {
+                                    matchPercentageRef.current = dtwMatch;
+                                    setMatchPercentage(Math.round(dtwMatch));
                                 }
                             }
                         }
@@ -801,7 +780,7 @@ export default function PoseDetector({ referenceVideoUrl = null }) {
                 {cameraActive && mode === "comparison" && videoUrl && (
                     <div className="w-full max-w-sm flex items-center justify-center p-3 animate-fade-in translate-y-1 bg-panel border border-outline rounded-2xl shadow-panel">
                         <div className="flex flex-col items-center w-full">
-                            <span className="text-sm font-semibold text-muted mb-2">Pose Accuracy (joint-based):</span>
+                            <span className="text-sm font-semibold text-muted mb-2">DTW Movement Accuracy:</span>
                             <div className="w-full h-4 bg-black/50 rounded-full overflow-hidden relative border border-outline">
                                 <div
                                     className={`absolute top-0 left-0 h-full transition-all duration-300 ease-out ${matchPercentage > 80 ? 'bg-emerald-500' :
