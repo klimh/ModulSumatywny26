@@ -48,12 +48,20 @@ def get_contacts(db: Session = Depends(get_db), current_user: User = Depends(get
         
         last_time = latest_msg.timestamp.timestamp() if latest_msg and latest_msg.timestamp else 0
         
+        # Check unread messages from this contact
+        unread_count = db.query(Message).filter(
+            Message.sender_id == c.user_id,
+            Message.receiver_id == current_user.user_id,
+            Message.is_read == False
+        ).count()
+        
         result.append({
             "user_id": c.user_id,
             "first_name": c.first_name,
             "last_name": c.last_name,
             "role": c.role,
-            "last_activity": last_time
+            "last_activity": last_time,
+            "has_unread": unread_count > 0
         })
         
     result.sort(key=lambda x: x["last_activity"], reverse=True)
@@ -82,6 +90,14 @@ def get_messages(contact_id: int, db: Session = Depends(get_db), current_user: U
 
     if not is_valid:
         raise HTTPException(status_code=403, detail="No active relationship with this user.")
+
+    # Mark all unread messages from this contact to current user as read
+    db.query(Message).filter(
+        Message.sender_id == contact_id,
+        Message.receiver_id == current_user.user_id,
+        Message.is_read == False
+    ).update({"is_read": True})
+    db.commit()
 
     messages = db.query(Message).filter(
         or_(
@@ -127,3 +143,14 @@ def send_message(msg: MessageCreate, db: Session = Depends(get_db), current_user
     db.commit()
     db.refresh(db_msg)
     return db_msg
+
+@router.get("/status/unread-count")
+def get_unread_count(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """
+    Returns the total number of unread messages for the current user.
+    """
+    count = db.query(Message).filter(
+        Message.receiver_id == current_user.user_id,
+        Message.is_read == False
+    ).count()
+    return {"unread_count": count}

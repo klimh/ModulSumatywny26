@@ -12,6 +12,7 @@ class MessageResponse(MessageBase):
     sender_id: int
     receiver_id: int
     timestamp: datetime
+    is_read: bool
 
     class Config:
         from_attributes = True

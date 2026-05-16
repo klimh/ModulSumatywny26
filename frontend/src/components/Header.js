@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useTheme } from "next-themes";
 import { useAuth } from "@/hooks/useAuth";
+import { api } from "@/lib/api";
 
 const NAV_ITEMS_GUEST = [
     { href: "/login", label: "Log In" },
@@ -65,10 +66,33 @@ export default function Header() {
     const pathname = usePathname();
     const [mobileOpen, setMobileOpen] = useState(false);
     const [mounted, setMounted] = useState(false);
+    const [unreadCount, setUnreadCount] = useState(0);
 
     useEffect(() => {
         setMounted(true);
     }, []);
+
+    useEffect(() => {
+        let interval;
+        const fetchUnread = async () => {
+            if (!user) return;
+            try {
+                const res = await api.chat.getUnreadCount();
+                setUnreadCount(res.unread_count || 0);
+            } catch (e) {
+                //nic
+            }
+        };
+
+        if (user) {
+            fetchUnread();
+            interval = setInterval(fetchUnread, 5000);
+        }
+
+        return () => {
+            if (interval) clearInterval(interval);
+        }
+    }, [user]);
 
     const navItems = !user
         ? NAV_ITEMS_GUEST
@@ -102,12 +126,15 @@ export default function Header() {
                             <Link
                                 key={item.href}
                                 href={item.href}
-                                className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 no-underline ${isActive(item.href)
+                                className={`relative px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 no-underline ${isActive(item.href)
                                     ? "bg-gradient-to-r from-teal-500/15 to-cyan-500/15 text-primary border border-teal-500/20"
                                     : "text-muted hover:text-primary hover:bg-panel"
                                     }`}
                             >
                                 {item.label}
+                                {item.label === "Chat" && unreadCount > 0 && (
+                                    <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]"></span>
+                                )}
                             </Link>
                         ))}
                     </nav>
@@ -167,12 +194,15 @@ export default function Header() {
                                     key={item.href}
                                     href={item.href}
                                     onClick={() => setMobileOpen(false)}
-                                    className={`px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300 no-underline ${isActive(item.href)
+                                    className={`relative px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300 no-underline ${isActive(item.href)
                                         ? "bg-gradient-to-r from-teal-500/15 to-cyan-500/15 text-primary border border-teal-500/20"
                                         : "text-muted hover:text-primary hover:bg-main"
                                         }`}
                                 >
                                     {item.label}
+                                    {item.label === "Chat" && unreadCount > 0 && (
+                                        <span className="absolute top-3 right-3 w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]"></span>
+                                    )}
                                 </Link>
                             ))}
                         </nav>

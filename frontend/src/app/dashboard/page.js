@@ -1,19 +1,34 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePhysio } from "@/hooks/usePhysio";
 import { usePatient } from "@/hooks/usePatient";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { api } from "@/lib/api";
 
 function PatientDashboard() {
     const { plan, physio, physioLoading, loading, error, fetchMyPlan, fetchMyPhysio } = usePatient();
+    const [unreadCount, setUnreadCount] = useState(0);
 
     useEffect(() => {
         fetchMyPlan();
         fetchMyPhysio();
     }, [fetchMyPlan, fetchMyPhysio]);
+
+    useEffect(() => {
+        let interval;
+        const fetchUnread = async () => {
+            try {
+                const res = await api.chat.getUnreadCount();
+                setUnreadCount(res.unread_count || 0);
+            } catch (e) {}
+        };
+        fetchUnread();
+        interval = setInterval(fetchUnread, 5000);
+        return () => clearInterval(interval);
+    }, []);
 
     return (
         <div className="w-full max-w-4xl flex flex-col gap-6 animate-fade-in">
@@ -32,7 +47,10 @@ function PatientDashboard() {
                     </span>
                 </Link>
 
-                <Link href="/dashboard/chat" className="card-hover p-6 flex flex-col gap-3 no-underline group">
+                <Link href="/dashboard/chat" className="relative card-hover p-6 flex flex-col gap-3 no-underline group">
+                    {unreadCount > 0 && (
+                        <div className="absolute top-4 right-4 w-3 h-3 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.8)] animate-pulse"></div>
+                    )}
                     <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-pink-500/20 to-rose-500/20 flex items-center justify-center">
                         <svg className="w-6 h-6 text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
@@ -104,12 +122,26 @@ function PatientDashboard() {
 
 function PhysioDashboard() {
     const { patients, requests, exercises, loading, error, fetchMyPatients, fetchRequests, fetchExercises } = usePhysio();
+    const [unreadCount, setUnreadCount] = useState(0);
 
     useEffect(() => {
         fetchMyPatients();
         fetchRequests();
         fetchExercises();
     }, [fetchMyPatients, fetchRequests, fetchExercises]);
+
+    useEffect(() => {
+        let interval;
+        const fetchUnread = async () => {
+            try {
+                const res = await api.chat.getUnreadCount();
+                setUnreadCount(res.unread_count || 0);
+            } catch (e) {}
+        };
+        fetchUnread();
+        interval = setInterval(fetchUnread, 5000);
+        return () => clearInterval(interval);
+    }, []);
 
     const statCards = [
         {
@@ -168,7 +200,10 @@ function PhysioDashboard() {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {statCards.map((card) => (
-                    <Link key={card.href} href={card.href} className="card-hover p-6 flex flex-col gap-3 no-underline group">
+                    <Link key={card.href} href={card.href} className="relative card-hover p-6 flex flex-col gap-3 no-underline group">
+                        {card.label === "Chat" && unreadCount > 0 && (
+                            <div className="absolute top-4 right-4 w-3 h-3 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.8)] animate-pulse"></div>
+                        )}
                         <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${card.gradient} flex items-center justify-center ${card.textColor}`}>
                             {card.icon}
                         </div>

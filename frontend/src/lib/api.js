@@ -125,6 +125,7 @@ export const api = {
   chat: {
     getContacts: () => apiFetch('/chat/contacts'),
     getMessages: (contactId) => apiFetch(`/chat/${contactId}`),
-    sendMessage: (data) => apiFetch('/chat/', { method: 'POST', body: JSON.stringify(data) })
+    sendMessage: (data) => apiFetch('/chat/', { method: 'POST', body: JSON.stringify(data) }),
+    getUnreadCount: () => apiFetch('/chat/status/unread-count'),
   }
 };

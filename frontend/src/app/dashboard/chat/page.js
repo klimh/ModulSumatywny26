@@ -23,24 +23,34 @@ export default function ChatPage() {
     }, [user, authLoading, router]);
 
     // Fetch contacts
+    const fetchContacts = async () => {
+        try {
+            const res = await api.chat.getContacts();
+            setContacts(res);
+            // If we don't have a selected contact yet, pick the first one
+            setContacts((prevContacts) => {
+                // we can't reliably set selectedContact here without dependencies, so we do it below
+                return res;
+            });
+        } catch (err) {
+            console.error("Error fetching contacts:", err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const fetchContacts = async () => {
-            try {
-                const res = await api.chat.getContacts();
-                setContacts(res);
-                if (res.length > 0) {
-                    setSelectedContact(res[0]);
-                }
-            } catch (err) {
-                console.error("Error fetching contacts:", err);
-            } finally {
-                setLoading(false);
-            }
-        };
         fetchContacts();
     }, []);
 
-    // Polling messages
+    // Set initial selected contact
+    useEffect(() => {
+        if (contacts.length > 0 && !selectedContact) {
+            setSelectedContact(contacts[0]);
+        }
+    }, [contacts, selectedContact]);
+
+    // Polling messages and contacts
     useEffect(() => {
         let interval;
         const fetchMessages = async () => {
@@ -48,6 +58,9 @@ export default function ChatPage() {
             try {
                 const res = await api.chat.getMessages(selectedContact.user_id);
                 setMessages(res);
+                // Also refresh contacts to clear unread flag or see new messages
+                const contactsRes = await api.chat.getContacts();
+                setContacts(contactsRes);
             } catch (err) {
                 console.error("Error fetching messages:", err);
             }
@@ -128,13 +141,24 @@ export default function ChatPage() {
                                         {contact.first_name?.[0]?.toUpperCase()}
                                     </span>
                                 </div>
-                                <div className="flex-1 overflow-hidden">
-                                    <p className={`font-semibold text-sm truncate ${selectedContact?.user_id === contact.user_id ? "text-teal-500" : "text-primary"}`}>
-                                        {contact.first_name} {contact.last_name}
-                                    </p>
-                                    <p className="text-xs text-muted truncate">
-                                        {contact.role === "fizjoterapeuta" ? "Physiotherapist" : "Patient"}
-                                    </p>
+                                <div className="flex-1 overflow-hidden flex justify-between items-center">
+                                    <div>
+                                        <p className={`text-sm truncate ${
+                                            selectedContact?.user_id === contact.user_id 
+                                                ? "text-teal-500 font-bold" 
+                                                : contact.has_unread 
+                                                    ? "text-primary font-black" 
+                                                    : "text-primary font-medium"
+                                        }`}>
+                                            {contact.first_name} {contact.last_name}
+                                        </p>
+                                        <p className={`text-xs truncate ${contact.has_unread ? "text-primary font-bold" : "text-muted"}`}>
+                                            {contact.role === "fizjoterapeuta" ? "Physiotherapist" : "Patient"}
+                                        </p>
+                                    </div>
+                                    {contact.has_unread && (
+                                        <div className="w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)] shrink-0"></div>
+                                    )}
                                 </div>
                             </button>
                         ))
