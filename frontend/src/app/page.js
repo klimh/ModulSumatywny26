@@ -1,6 +1,11 @@
+"use client";
+
 import Link from "next/link";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function Home() {
+    const { user } = useAuth();
+
     return (
         <div className="flex flex-col items-center gap-12 py-20 px-4 w-full max-w-5xl">
             {/* Hero Section */}
@@ -21,12 +26,20 @@ export default function Home() {
 
             {/* CTA Buttons */}
             <div className="flex flex-wrap items-center justify-center gap-4 animate-scale-up">
-                <Link href="/register" className="btn-primary text-center no-underline">
-                    Get Started
-                </Link>
-                <Link href="/login" className="btn-outline text-center no-underline">
-                    Sign In
-                </Link>
+                {user ? (
+                    <Link href="/dashboard" className="btn-primary text-center no-underline">
+                        Go to Dashboard
+                    </Link>
+                ) : (
+                    <>
+                        <Link href="/register" className="btn-primary text-center no-underline">
+                            Get Started
+                        </Link>
+                        <Link href="/login" className="btn-outline text-center no-underline">
+                            Sign In
+                        </Link>
+                    </>
+                )}
             </div>
 
             {/* Feature Cards */}
