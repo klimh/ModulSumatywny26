@@ -61,6 +61,12 @@ export default function PatientsPage() {
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <Link
+                                        href={`/dashboard/patients/${patient.user_id}/progress`}
+                                        className="btn-ghost text-orange-400 hover:bg-orange-500/10 text-xs py-2 px-3"
+                                    >
+                                        View Progress
+                                    </Link>
+                                    <Link
                                         href={`/dashboard/create-plan?patient_id=${patient.user_id}`}
                                         className="btn-ghost text-teal-400 hover:bg-teal-500/10 text-xs py-2 px-3"
                                     >

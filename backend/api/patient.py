@@ -87,7 +87,7 @@ def submit_exercise_session(
     new_session = Session(
         rehab_id=rehab_id,
         patient_id=current_user.user_id,
-        title="Sesja treningowa"
+        title="Training Session"
     )
     db.add(new_session)
     db.commit()
@@ -99,7 +99,7 @@ def submit_exercise_session(
             exercise_id=res["exercise_id"],
             reps_completed=res["reps"],
             avg_accuracy=res["accuracy"],
-            ai_feedback=res.get("feedback", "Dobra robota!")
+            ai_feedback=res.get("feedback", "Good job!")
         )
         db.add(db_result)
 

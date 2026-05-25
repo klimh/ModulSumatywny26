@@ -127,5 +127,10 @@ export const api = {
     getMessages: (contactId) => apiFetch(`/chat/${contactId}`),
     sendMessage: (data) => apiFetch('/chat/', { method: 'POST', body: JSON.stringify(data) }),
     getUnreadCount: () => apiFetch('/chat/status/unread-count'),
+  },
+  progress: {
+    createNote: (data) => apiFetch('/progress/', { method: 'POST', body: JSON.stringify(data) }),
+    getNotesByPatient: (patientId) => apiFetch(`/progress/patient/${patientId}/notes`),
+    getSessionsByPatient: (patientId) => apiFetch(`/progress/patient/${patientId}/sessions`),
   }
 };

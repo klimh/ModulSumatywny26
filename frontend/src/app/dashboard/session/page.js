@@ -47,7 +47,7 @@ export default function SessionPage() {
                 exercise_id: currentExercise.exercise_id,
                 reps: currentExercise.reps_nr,
                 accuracy: 0,
-                feedback: "Ćwiczenie wykonane",
+                feedback: "Exercise completed",
             },
         ]);
 
