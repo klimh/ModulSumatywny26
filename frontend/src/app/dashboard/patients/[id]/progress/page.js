@@ -119,7 +119,7 @@ export default function PhysioPatientProgressPage({ params }) {
                 const d = new Date(s.created_at);
                 return d.toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit' });
             }
-            return `Sesja ${i + 1}`;
+            return `Session ${i + 1}`;
         });
 
         const accuracyData = filteredHistory.map(s => {
@@ -139,7 +139,7 @@ export default function PhysioPatientProgressPage({ params }) {
 
         const datasets = [
             {
-                label: "Dokładność (%)",
+                label: "Accuracy (%)",
                 data: accuracyData,
                 borderColor: "rgb(52, 211, 153)",
                 backgroundColor: "rgba(52, 211, 153, 0.05)",
@@ -168,7 +168,7 @@ export default function PhysioPatientProgressPage({ params }) {
                 borderDash: [5, 5],
             },
             {
-                label: "Łączne powtórzenia",
+                label: "Total repetitions",
                 data: repsData,
                 borderColor: "rgb(251, 191, 36)",
                 backgroundColor: "transparent",
@@ -225,7 +225,7 @@ export default function PhysioPatientProgressPage({ params }) {
                 type: "linear",
                 display: true,
                 position: "left",
-                title: { display: true, text: "Dokładność (%)", color: "rgba(52,211,153,0.7)", font: { size: 11 } },
+                title: { display: true, text: "Accuracy (%)", color: "rgba(52,211,153,0.7)", font: { size: 11 } },
                 ticks: { color: "rgba(52,211,153,0.6)", font: { size: 10 } },
                 grid: { color: "rgba(255,255,255,0.05)" },
                 beginAtZero: true,
@@ -235,7 +235,7 @@ export default function PhysioPatientProgressPage({ params }) {
                 type: "linear",
                 display: true,
                 position: "right",
-                title: { display: true, text: "ROM (°) / Powtórzenia", color: "rgba(96,165,250,0.7)", font: { size: 11 } },
+                title: { display: true, text: "ROM (°) / Repetitions", color: "rgba(96,165,250,0.7)", font: { size: 11 } },
                 ticks: { color: "rgba(96,165,250,0.6)", font: { size: 10 } },
                 grid: { drawOnChartArea: false },
             },
@@ -255,11 +255,11 @@ export default function PhysioPatientProgressPage({ params }) {
             <div className="flex flex-col items-center gap-2 animate-scale-up">
                 <div className="w-full max-w-5xl flex items-center justify-between">
                     <Link href="/dashboard/patients" className="btn-ghost text-muted">
-                        ← Powrót do pacjentów
+                        ← Back to patients
                     </Link>
                 </div>
-                <h1 className="page-title text-3xl md:text-4xl">Postępy Pacjenta</h1>
-                <p className="text-sm text-muted">Szczegółowa analityka i notatki o postępach</p>
+                <h1 className="page-title text-3xl md:text-4xl">Patient Progress</h1>
+                <p className="text-sm text-muted">Detailed analytics and progress notes</p>
             </div>
 
             <div className="w-full max-w-5xl animate-fade-in flex flex-col gap-8">
@@ -280,20 +280,20 @@ export default function PhysioPatientProgressPage({ params }) {
                                         summary.status === "red" ? "text-red-400" :
                                             "text-amber-400"
                                     }`}>
-                                    {summary.status === "green" ? "OK" : summary.status === "red" ? "Uwaga" : "Brak planu"}
+                                    {summary.status === "green" ? "OK" : summary.status === "red" ? "Warning" : "No plan"}
                                 </span>
                             </div>
                         </div>
 
                         <div className="card p-4 flex flex-col gap-1.5 relative overflow-hidden">
                             <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-blue-500/10 to-transparent rounded-bl-full"></div>
-                            <span className="text-xs text-muted uppercase tracking-wider font-semibold">Łączne sesje</span>
+                            <span className="text-xs text-muted uppercase tracking-wider font-semibold">Total sessions</span>
                             <span className="text-2xl font-black text-blue-400">{summary.total_sessions}</span>
                         </div>
 
                         <div className="card p-4 flex flex-col gap-1.5 relative overflow-hidden">
                             <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-violet-500/10 to-transparent rounded-bl-full"></div>
-                            <span className="text-xs text-muted uppercase tracking-wider font-semibold">Śr. dokładność</span>
+                            <span className="text-xs text-muted uppercase tracking-wider font-semibold">Avg. accuracy</span>
                             <span className="text-2xl font-black text-violet-400">
                                 {summary.overall_avg_accuracy != null ? `${summary.overall_avg_accuracy}%` : "—"}
                             </span>
@@ -310,11 +310,11 @@ export default function PhysioPatientProgressPage({ params }) {
 
                         <div className="card p-4 flex flex-col gap-1.5 relative overflow-hidden">
                             <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-rose-500/10 to-transparent rounded-bl-full"></div>
-                            <span className="text-xs text-muted uppercase tracking-wider font-semibold">Ostatnia aktywność</span>
+                            <span className="text-xs text-muted uppercase tracking-wider font-semibold">Last activity</span>
                             <span className="text-lg font-bold text-rose-400">
                                 {summary.days_since_activity != null
-                                    ? summary.days_since_activity === 0 ? "Dziś" : `${summary.days_since_activity}d temu`
-                                    : "Brak"}
+                                    ? summary.days_since_activity === 0 ? "Today" : `${summary.days_since_activity}d ago`
+                                    : "None"}
                             </span>
                         </div>
                     </div>
@@ -325,8 +325,8 @@ export default function PhysioPatientProgressPage({ params }) {
                     <section className="card p-6">
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                             <div>
-                                <h2 className="text-xl font-bold">Analityka Postępów</h2>
-                                <p className="text-xs text-muted mt-1">Dokładność, ROM i powtórzenia w jednym widoku</p>
+                                <h2 className="text-xl font-bold">Progress Analytics</h2>
+                                <p className="text-xs text-muted mt-1">Accuracy, ROM and repetitions in one view</p>
                             </div>
                             {exercises.length > 0 && (
                                 <select
@@ -334,7 +334,7 @@ export default function PhysioPatientProgressPage({ params }) {
                                     onChange={e => setExerciseFilter(e.target.value)}
                                     className="input-field w-auto text-xs !py-1.5 !px-3 !rounded-lg"
                                 >
-                                    <option value="">Wszystkie ćwiczenia</option>
+                                    <option value="">All exercises</option>
                                     {exercises.map(ex => (
                                         <option key={ex.id} value={ex.id}>{ex.name}</option>
                                     ))}
@@ -346,7 +346,7 @@ export default function PhysioPatientProgressPage({ params }) {
                                 <Line data={combinedChartData} options={combinedChartOptions} />
                             ) : (
                                 <div className="flex items-center justify-center h-full text-muted text-sm">
-                                    Brak danych do wyświetlenia
+                                    None danych do wyświetlenia
                                 </div>
                             )}
                         </div>
@@ -355,21 +355,21 @@ export default function PhysioPatientProgressPage({ params }) {
 
                 {/* Add Progress Note Form */}
                 <section className="card p-6 border border-emerald-500/30">
-                    <h2 className="text-xl font-bold mb-4 text-emerald-400">Dodaj Notatkę</h2>
+                    <h2 className="text-xl font-bold mb-4 text-emerald-400">Add Note</h2>
                     <form onSubmit={handleAddNote} className="flex flex-col gap-4">
                         <div className="flex flex-col gap-1">
-                            <label className="text-sm text-muted">Treść notatki</label>
+                            <label className="text-sm text-muted">Note content</label>
                             <textarea
                                 required
                                 value={noteContent}
                                 onChange={(e) => setNoteContent(e.target.value)}
                                 className="input-field min-h-[100px] resize-y"
-                                placeholder="Opisz postępy pacjenta, problemy lub kolejne kroki..."
+                                placeholder="Describe patient progress, issues or next steps..."
                             />
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="flex flex-col gap-1">
-                                <label className="text-sm text-muted">Poziom bólu (1-10)</label>
+                                <label className="text-sm text-muted">Pain level (1-10)</label>
                                 <input
                                     type="number"
                                     min="1"
@@ -377,11 +377,11 @@ export default function PhysioPatientProgressPage({ params }) {
                                     value={painLevel}
                                     onChange={(e) => setPainLevel(e.target.value)}
                                     className="input-field"
-                                    placeholder="Opcjonalnie"
+                                    placeholder="Optional"
                                 />
                             </div>
                             <div className="flex flex-col gap-1">
-                                <label className="text-sm text-muted">Poziom mobilności (1-10)</label>
+                                <label className="text-sm text-muted">Mobility level (1-10)</label>
                                 <input
                                     type="number"
                                     min="1"
@@ -389,12 +389,12 @@ export default function PhysioPatientProgressPage({ params }) {
                                     value={mobilityLevel}
                                     onChange={(e) => setMobilityLevel(e.target.value)}
                                     className="input-field"
-                                    placeholder="Opcjonalnie"
+                                    placeholder="Optional"
                                 />
                             </div>
                         </div>
                         <button type="submit" disabled={submitting} className="btn-primary w-fit self-end mt-2">
-                            {submitting ? "Zapisywanie..." : "Zapisz Notatkę"}
+                            {submitting ? "Saving..." : "Save Note"}
                         </button>
                     </form>
                 </section>
@@ -402,7 +402,7 @@ export default function PhysioPatientProgressPage({ params }) {
                 {/* Notes & Sessions in two columns */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <section>
-                        <h2 className="section-title text-2xl mb-4">Notatki</h2>
+                        <h2 className="section-title text-2xl mb-4">Notes</h2>
                         {notes.length > 0 ? (
                             <div className="flex flex-col gap-4">
                                 {notes.map((note) => (
@@ -416,13 +416,13 @@ export default function PhysioPatientProgressPage({ params }) {
                                         <div className="flex gap-4">
                                             {note.pain_level !== null && (
                                                 <div className="flex items-center gap-2 text-sm bg-red-500/10 text-red-400 px-3 py-1 rounded-full border border-red-500/20">
-                                                    <span>Ból:</span>
+                                                    <span>Pain:</span>
                                                     <span className="font-bold">{note.pain_level}/10</span>
                                                 </div>
                                             )}
                                             {note.mobility_level !== null && (
                                                 <div className="flex items-center gap-2 text-sm bg-blue-500/10 text-blue-400 px-3 py-1 rounded-full border border-blue-500/20">
-                                                    <span>Mobilność:</span>
+                                                    <span>Mobility:</span>
                                                     <span className="font-bold">{note.mobility_level}/10</span>
                                                 </div>
                                             )}
@@ -432,13 +432,13 @@ export default function PhysioPatientProgressPage({ params }) {
                             </div>
                         ) : (
                             <div className="card p-8 text-center text-muted">
-                                Brak notatek.
+                                None notatek.
                             </div>
                         )}
                     </section>
 
                     <section>
-                        <h2 className="section-title text-2xl mb-4">Sesje Ćwiczeń</h2>
+                        <h2 className="section-title text-2xl mb-4">Exercise Sessions</h2>
                         {sessions.length > 0 ? (
                             <div className="flex flex-col gap-4">
                                 {sessions.map((session) => (
@@ -457,8 +457,8 @@ export default function PhysioPatientProgressPage({ params }) {
                                                     <div key={idx} className="bg-main border border-outline rounded-lg p-3 text-sm">
                                                         <div className="font-medium text-white mb-1">{res.exercise_name}</div>
                                                         <div className="grid grid-cols-2 gap-2 text-muted mb-2">
-                                                            <div>Powt.: <span className="text-white">{res.reps_completed}</span></div>
-                                                            <div>Dokładność: <span className="text-white">{Math.round(res.avg_accuracy)}%</span></div>
+                                                            <div>Reps: <span className="text-white">{res.reps_completed}</span></div>
+                                                            <div>Accuracy: <span className="text-white">{Math.round(res.avg_accuracy)}%</span></div>
                                                             {res.max_rom != null && (
                                                                 <div>ROM: <span className="text-white">{Math.round(res.max_rom)}°</span></div>
                                                             )}
@@ -472,14 +472,14 @@ export default function PhysioPatientProgressPage({ params }) {
                                                 ))}
                                             </div>
                                         ) : (
-                                            <div className="text-sm text-muted">Brak ćwiczeń w tej sesji.</div>
+                                            <div className="text-sm text-muted">None ćwiczeń w tej sesji.</div>
                                         )}
                                     </div>
                                 ))}
                             </div>
                         ) : (
                             <div className="card p-8 text-center text-muted">
-                                Brak ukończonych sesji.
+                                None ukończonych sesji.
                             </div>
                         )}
                     </section>

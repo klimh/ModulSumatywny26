@@ -131,7 +131,7 @@ export default function PatientProgressPage() {
                 const d = new Date(s.created_at);
                 return d.toLocaleDateString('pl-PL', { day: '2-digit', month: '2-digit' });
             }
-            return `Sesja ${i + 1}`;
+            return `Session ${i + 1}`;
         });
 
         if (chartMode === "accuracy") {
@@ -143,7 +143,7 @@ export default function PatientProgressPage() {
             return {
                 labels,
                 datasets: [{
-                    label: "Średnia dokładność (%)",
+                    label: "Average Accuracy (%)",
                     data,
                     borderColor: "rgb(52, 211, 153)",
                     backgroundColor: "rgba(52, 211, 153, 0.1)",
@@ -275,38 +275,38 @@ export default function PatientProgressPage() {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <div className="card p-5 flex flex-col gap-2 relative overflow-hidden">
                             <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-emerald-500/10 to-transparent rounded-bl-full"></div>
-                            <span className="text-xs text-muted uppercase tracking-wider font-semibold">Dokładność</span>
+                            <span className="text-xs text-muted uppercase tracking-wider font-semibold">Accuracy</span>
                             <span className="text-3xl font-black text-emerald-400">
                                 {kpis.latestAvg != null ? `${kpis.latestAvg}%` : "—"}
                             </span>
                             {kpis.accuracyDiff != null && (
                                 <span className={`text-xs font-semibold ${kpis.accuracyDiff >= 0 ? "text-emerald-400" : "text-red-400"}`}>
-                                    {kpis.accuracyDiff >= 0 ? "▲" : "▼"} {Math.abs(kpis.accuracyDiff)}% vs poprzednia sesja
+                                    {kpis.accuracyDiff >= 0 ? "▲" : "▼"} {Math.abs(kpis.accuracyDiff)}% vs previous session
                                 </span>
                             )}
                         </div>
 
                         <div className="card p-5 flex flex-col gap-2 relative overflow-hidden">
                             <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-blue-500/10 to-transparent rounded-bl-full"></div>
-                            <span className="text-xs text-muted uppercase tracking-wider font-semibold">Sesje w tym tygodniu</span>
+                            <span className="text-xs text-muted uppercase tracking-wider font-semibold">Sessions this week</span>
                             <span className="text-3xl font-black text-blue-400">{kpis.sessionsThisWeek}</span>
-                            <span className="text-xs text-muted">z {kpis.totalSessions} łącznie</span>
+                            <span className="text-xs text-muted">out of {kpis.totalSessions} total</span>
                         </div>
 
                         <div className="card p-5 flex flex-col gap-2 relative overflow-hidden">
                             <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-amber-500/10 to-transparent rounded-bl-full"></div>
-                            <span className="text-xs text-muted uppercase tracking-wider font-semibold">Seria treningowa</span>
-                            <span className="text-3xl font-black text-amber-400">{kpis.streak} {kpis.streak === 1 ? "dzień" : "dni"}</span>
+                            <span className="text-xs text-muted uppercase tracking-wider font-semibold">Training streak</span>
+                            <span className="text-3xl font-black text-amber-400">{kpis.streak} {kpis.streak === 1 ? "day" : "days"}</span>
                             <span className="text-xs text-muted">
-                                {kpis.streak >= 7 ? "🔥 Świetna passa!" : kpis.streak >= 3 ? "💪 Tak trzymaj!" : "Zacznij serię!"}
+                                {kpis.streak >= 7 ? "🔥 Great streak!" : kpis.streak >= 3 ? "💪 Keep it up!" : "Start a streak!"}
                             </span>
                         </div>
 
                         <div className="card p-5 flex flex-col gap-2 relative overflow-hidden">
                             <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-violet-500/10 to-transparent rounded-bl-full"></div>
-                            <span className="text-xs text-muted uppercase tracking-wider font-semibold">Łączne sesje</span>
+                            <span className="text-xs text-muted uppercase tracking-wider font-semibold">Total sessions</span>
                             <span className="text-3xl font-black text-violet-400">{kpis.totalSessions}</span>
-                            <span className="text-xs text-muted">Wszystkie ukończone treningi</span>
+                            <span className="text-xs text-muted">All completed workouts</span>
                         </div>
                     </div>
                 )}
@@ -315,13 +315,13 @@ export default function PatientProgressPage() {
                 {history.length > 0 && (
                     <section className="card p-6">
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                            <h2 className="text-xl font-bold">Wykres Progresu</h2>
+                            <h2 className="text-xl font-bold">Progress Chart</h2>
                             <div className="flex gap-2 flex-wrap">
                                 <button
                                     onClick={() => setChartMode("accuracy")}
                                     className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${chartMode === "accuracy" ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : "bg-white/5 text-muted border border-transparent hover:bg-white/10"}`}
                                 >
-                                    Dokładność (%)
+                                    Accuracy (%)
                                 </button>
                                 <button
                                     onClick={() => setChartMode("rom")}
@@ -335,7 +335,7 @@ export default function PatientProgressPage() {
                                         onChange={e => setExerciseFilter(e.target.value)}
                                         className="input-field w-auto text-xs !py-1.5 !px-3 !rounded-lg"
                                     >
-                                        <option value="">Wszystkie ćwiczenia</option>
+                                        <option value="">All exercises</option>
                                         {exercises.map(ex => (
                                             <option key={ex.id} value={ex.id}>{ex.name}</option>
                                         ))}
@@ -348,7 +348,7 @@ export default function PatientProgressPage() {
                                 <Line data={chartData} options={chartOptions} />
                             ) : (
                                 <div className="flex items-center justify-center h-full text-muted text-sm">
-                                    Brak danych do wyświetlenia
+                                    No data to display
                                 </div>
                             )}
                         </div>
@@ -358,15 +358,15 @@ export default function PatientProgressPage() {
                 {/* Activity Calendar */}
                 {calendarData.length > 0 && (
                     <section className="card p-6">
-                        <h2 className="text-xl font-bold mb-4">Kalendarz Aktywności</h2>
+                        <h2 className="text-xl font-bold mb-4">Activity Calendar</h2>
                         <div className="flex gap-3 mb-2">
-                            <span className="text-xs text-muted w-8">Pon</span>
-                            <span className="text-xs text-muted w-8">Wt</span>
-                            <span className="text-xs text-muted w-8">Śr</span>
-                            <span className="text-xs text-muted w-8">Czw</span>
-                            <span className="text-xs text-muted w-8">Pt</span>
-                            <span className="text-xs text-muted w-8">Sob</span>
-                            <span className="text-xs text-muted w-8">Ndz</span>
+                            <span className="text-xs text-muted w-8">Mon</span>
+                            <span className="text-xs text-muted w-8">Tue</span>
+                            <span className="text-xs text-muted w-8">Wed</span>
+                            <span className="text-xs text-muted w-8">Thu</span>
+                            <span className="text-xs text-muted w-8">Fri</span>
+                            <span className="text-xs text-muted w-8">Sat</span>
+                            <span className="text-xs text-muted w-8">Sun</span>
                         </div>
                         <div className="flex flex-col gap-1">
                             {calendarData.map((week, wi) => (
@@ -375,11 +375,11 @@ export default function PatientProgressPage() {
                                         <div
                                             key={di}
                                             className={`w-8 h-8 rounded-md ${getCalendarColor(day.count, day.isFuture)} transition-all hover:ring-1 hover:ring-emerald-400/30 cursor-default relative group`}
-                                            title={`${day.dayLabel}: ${day.count} sesji`}
+                                            title={`${day.dayLabel}: ${day.count} sessions`}
                                         >
                                             <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-10">
                                                 <div className="bg-black/90 text-white text-xs py-1 px-2 rounded-md whitespace-nowrap">
-                                                    {day.dayLabel}: {day.count} sesji
+                                                    {day.dayLabel}: {day.count} sessions
                                                 </div>
                                             </div>
                                         </div>
@@ -388,19 +388,19 @@ export default function PatientProgressPage() {
                             ))}
                         </div>
                         <div className="flex items-center gap-2 mt-3">
-                            <span className="text-xs text-muted">Mniej</span>
+                            <span className="text-xs text-muted">Less</span>
                             <div className="w-4 h-4 rounded-sm bg-white/[0.06]"></div>
                             <div className="w-4 h-4 rounded-sm bg-emerald-500/30"></div>
                             <div className="w-4 h-4 rounded-sm bg-emerald-500/50"></div>
                             <div className="w-4 h-4 rounded-sm bg-emerald-500/80"></div>
-                            <span className="text-xs text-muted">Więcej</span>
+                            <span className="text-xs text-muted">More</span>
                         </div>
                     </section>
                 )}
 
                 {/* Notes Section */}
                 <section>
-                    <h2 className="section-title text-2xl mb-4">Notatki Fizjoterapeuty</h2>
+                    <h2 className="section-title text-2xl mb-4">Physiotherapist Notes</h2>
                     {notes.length > 0 ? (
                         <div className="flex flex-col gap-4">
                             {notes.map((note) => (
@@ -430,14 +430,14 @@ export default function PatientProgressPage() {
                         </div>
                     ) : (
                         <div className="card p-8 text-center text-muted">
-                            Brak notatek od fizjoterapeuty.
+                            No notes from physiotherapist.
                         </div>
                     )}
                 </section>
 
                 {/* Sessions Section */}
                 <section>
-                    <h2 className="section-title text-2xl mb-4">Historia Sesji</h2>
+                    <h2 className="section-title text-2xl mb-4">Session History</h2>
                     {sessions.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {sessions.map((session) => (
@@ -476,7 +476,7 @@ export default function PatientProgressPage() {
                         </div>
                     ) : (
                         <div className="card p-8 text-center text-muted">
-                            Brak ukończonych sesji ćwiczeń.
+                            Brak ukończonych sessions ćwiczeń.
                         </div>
                     )}
                 </section>
