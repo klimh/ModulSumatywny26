@@ -14,8 +14,9 @@ const NAV_ITEMS_GUEST = [
 
 const NAV_ITEMS_PATIENT = [
     { href: "/dashboard", label: "Dashboard" },
+    { href: "/dashboard/plan", label: "Rehab Plan" },
+    { href: "/dashboard/progress", label: "My Progress" },
     { href: "/dashboard/chat", label: "Chat" },
-    { href: "/pose", label: "Pose Analysis" },
 ];
 
 const NAV_ITEMS_PHYSIO = [
