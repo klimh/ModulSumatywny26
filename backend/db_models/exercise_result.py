@@ -9,7 +9,8 @@ class ExerciseResult(Base):
     exercise_id = Column(Integer, ForeignKey("exercise.exercise_id"))
     session_id = Column(Integer, ForeignKey("sessions.session_id"))
     reps_completed = Column(Integer)
-    avg_accuracy = Column(Float) # dokładność analizy przez AI
+    avg_accuracy = Column(Float)
     ai_feedback = Column(String)
+    max_rom = Column(Float, nullable=True)
 
     session = relationship("Session", back_populates="results")

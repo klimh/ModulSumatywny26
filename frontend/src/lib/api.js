@@ -132,5 +132,14 @@ export const api = {
     createNote: (data) => apiFetch('/progress/', { method: 'POST', body: JSON.stringify(data) }),
     getNotesByPatient: (patientId) => apiFetch(`/progress/patient/${patientId}/notes`),
     getSessionsByPatient: (patientId) => apiFetch(`/progress/patient/${patientId}/sessions`),
+    getHistory: (patientId, params = {}) => {
+      const query = new URLSearchParams();
+      if (params.exercise_id) query.set('exercise_id', params.exercise_id);
+      if (params.date_from) query.set('date_from', params.date_from);
+      if (params.date_to) query.set('date_to', params.date_to);
+      const qs = query.toString();
+      return apiFetch(`/progress/patient/${patientId}/history${qs ? `?${qs}` : ''}`);
+    },
+    getSummary: (patientId) => apiFetch(`/progress/patient/${patientId}/summary`),
   }
 };

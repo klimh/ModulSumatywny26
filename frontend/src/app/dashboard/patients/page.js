@@ -1,15 +1,18 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePhysio } from "@/hooks/usePhysio";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { api } from "@/lib/api";
 
 export default function PatientsPage() {
     const { user, loading: authLoading } = useAuth();
     const { patients, loading, error, fetchMyPatients } = usePhysio();
     const router = useRouter();
+    const [summaries, setSummaries] = useState({});
+    const [summariesLoading, setSummariesLoading] = useState(false);
 
     useEffect(() => {
         if (!authLoading && (!user || user.role !== "fizjoterapeuta")) {
@@ -20,6 +23,75 @@ export default function PatientsPage() {
     useEffect(() => {
         if (user?.role === "fizjoterapeuta") fetchMyPatients();
     }, [user, fetchMyPatients]);
+
+    useEffect(() => {
+        const fetchSummaries = async () => {
+            if (!patients || patients.length === 0) return;
+            setSummariesLoading(true);
+            const newSummaries = {};
+            await Promise.all(
+                patients.map(async (patient) => {
+                    try {
+                        const summary = await api.progress.getSummary(patient.user_id);
+                        newSummaries[patient.user_id] = summary;
+                    } catch {
+                        newSummaries[patient.user_id] = null;
+                    }
+                })
+            );
+            setSummaries(newSummaries);
+            setSummariesLoading(false);
+        };
+        fetchSummaries();
+    }, [patients]);
+
+    const getStatusBadge = (patientId) => {
+        const summary = summaries[patientId];
+        if (!summary) {
+            if (summariesLoading) return <span className="badge bg-white/10 text-muted">…</span>;
+            return null;
+        }
+
+        switch (summary.status) {
+            case "green":
+                return (
+                    <span className="badge-success flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.6)]"></span>
+                        Robi postępy
+                    </span>
+                );
+            case "red":
+                return (
+                    <span className="badge-danger flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-red-400 shadow-[0_0_6px_rgba(248,113,113,0.6)]"></span>
+                        {summary.days_since_activity != null && summary.days_since_activity > 3
+                            ? `Brak aktywności (${summary.days_since_activity}d)`
+                            : "Spadek formy"}
+                    </span>
+                );
+            case "yellow":
+                return (
+                    <span className="badge-warning flex items-center gap-1.5">
+                        <span className="text-sm">⚠️</span>
+                        Brak planu
+                    </span>
+                );
+            default:
+                return null;
+        }
+    };
+
+    const getStatusSortOrder = (patientId) => {
+        const summary = summaries[patientId];
+        if (!summary) return 3;
+        if (summary.status === "red") return 0;
+        if (summary.status === "yellow") return 1;
+        return 2;
+    };
+
+    const sortedPatients = [...patients].sort((a, b) => {
+        return getStatusSortOrder(a.user_id) - getStatusSortOrder(b.user_id);
+    });
 
     if (authLoading || loading) {
         return (
@@ -39,43 +111,85 @@ export default function PatientsPage() {
             <div className="w-full max-w-3xl animate-fade-in">
                 {error && <div className="error-box mb-4">⚠️ {error}</div>}
 
-                {patients.length > 0 ? (
+                {/* Status Legend */}
+                {patients.length > 0 && Object.keys(summaries).length > 0 && (
+                    <div className="flex flex-wrap gap-4 mb-6 p-4 card">
+                        <span className="text-xs text-muted font-semibold uppercase tracking-wider">Legenda:</span>
+                        <div className="flex items-center gap-1.5 text-xs">
+                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.6)]"></span>
+                            <span className="text-muted">Realizuje plan</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-xs">
+                            <span className="w-2.5 h-2.5 rounded-full bg-red-400 shadow-[0_0_6px_rgba(248,113,113,0.6)]"></span>
+                            <span className="text-muted">Wymaga uwagi</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-xs">
+                            <span>⚠️</span>
+                            <span className="text-muted">Brak planu</span>
+                        </div>
+                    </div>
+                )}
+
+                {sortedPatients.length > 0 ? (
                     <div className="flex flex-col gap-3">
-                        {patients.map((patient) => (
-                            <div
-                                key={patient.user_id}
-                                className="card p-5 flex items-center justify-between"
-                            >
-                                <div className="flex items-center gap-4">
-                                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center shadow-lg shadow-teal-500/20">
-                                        <span className="text-white font-bold text-sm">
-                                            {patient.first_name?.[0]?.toUpperCase()}{patient.last_name?.[0]?.toUpperCase()}
-                                        </span>
+                        {sortedPatients.map((patient) => {
+                            const summary = summaries[patient.user_id];
+                            return (
+                                <div
+                                    key={patient.user_id}
+                                    className="card p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                                >
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center shadow-lg shadow-teal-500/20">
+                                            <span className="text-white font-bold text-sm">
+                                                {patient.first_name?.[0]?.toUpperCase()}{patient.last_name?.[0]?.toUpperCase()}
+                                            </span>
+                                        </div>
+                                        <div className="flex flex-col">
+                                            <span className="font-semibold">
+                                                {patient.first_name} {patient.last_name}
+                                            </span>
+                                            <span className="text-xs text-muted">{patient.email}</span>
+                                            {/* Quick stats */}
+                                            {summary && (
+                                                <div className="flex gap-3 mt-1">
+                                                    {summary.total_sessions > 0 && (
+                                                        <span className="text-xs text-muted">
+                                                            {summary.total_sessions} sesji
+                                                        </span>
+                                                    )}
+                                                    {summary.overall_avg_accuracy != null && (
+                                                        <span className="text-xs text-muted">
+                                                            Śr. dokładność: {summary.overall_avg_accuracy}%
+                                                        </span>
+                                                    )}
+                                                    {summary.recent_sessions_count > 0 && (
+                                                        <span className="text-xs text-emerald-400/70">
+                                                            {summary.recent_sessions_count} w tym tyg.
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
-                                    <div className="flex flex-col">
-                                        <span className="font-semibold">
-                                            {patient.first_name} {patient.last_name}
-                                        </span>
-                                        <span className="text-xs text-muted">{patient.email}</span>
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <Link
+                                            href={`/dashboard/patients/${patient.user_id}/progress`}
+                                            className="btn-ghost text-orange-400 hover:bg-orange-500/10 text-xs py-2 px-3"
+                                        >
+                                            View Progress
+                                        </Link>
+                                        <Link
+                                            href={`/dashboard/create-plan?patient_id=${patient.user_id}`}
+                                            className="btn-ghost text-teal-400 hover:bg-teal-500/10 text-xs py-2 px-3"
+                                        >
+                                            Assign Plan
+                                        </Link>
+                                        {getStatusBadge(patient.user_id)}
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    <Link
-                                        href={`/dashboard/patients/${patient.user_id}/progress`}
-                                        className="btn-ghost text-orange-400 hover:bg-orange-500/10 text-xs py-2 px-3"
-                                    >
-                                        View Progress
-                                    </Link>
-                                    <Link
-                                        href={`/dashboard/create-plan?patient_id=${patient.user_id}`}
-                                        className="btn-ghost text-teal-400 hover:bg-teal-500/10 text-xs py-2 px-3"
-                                    >
-                                        Assign Plan
-                                    </Link>
-                                    <span className="badge-success">Active</span>
-                                </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 ) : (
                     <div className="card p-12 flex flex-col items-center gap-4">
