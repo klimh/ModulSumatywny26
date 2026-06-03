@@ -76,6 +76,9 @@ def create_rehabilitation_plan(
         db_ex = db.query(Exercise).filter(Exercise.exercise_id == ex.exercise_id).first()
         if not db_ex:
             continue
+            
+        if not db_ex.video_url:
+            raise HTTPException(status_code=400, detail=f"Ćwiczenie '{db_ex.name}' nie ma przypisanego wideo. Każde ćwiczenie w planie musi posiadać wideo.")
 
         plan_exercise = RehabPlanExercise(
             rehab_id=new_plan.rehab_id,
@@ -207,34 +210,12 @@ def upload_exercise_video(
     return {"message": "Filmik został dodany", "video_url": exercise.video_url}
 
 
-@router.delete("/exercises/{exercise_id}/video")
-def delete_exercise_video(
-        exercise_id: int,
-        current_user: User = Depends(RoleChecker(["fizjoterapeuta"])),
-        db: Session = Depends(get_db)
-):
-    """Usuwa filmik instruktażowy z ćwiczenia (usuwanie z Cloudinary)"""
-    exercise = db.query(Exercise).filter(Exercise.exercise_id == exercise_id).first()
-    if not exercise:
-        raise HTTPException(status_code=404, detail="Ćwiczenie nie istnieje")
-
-    if exercise.video_url:
-        _delete_cloudinary_video(exercise.video_url)
-
-    exercise.video_url = None
-    db.commit()
-
-    return {"message": "Filmik został usunięty"}
-
 
 def _delete_cloudinary_video(video_url: str):
-    """Pomocnicza funkcja do usuwania wideo z Cloudinary na podstawie URL"""
     try:
-        # Wyciągamy public_id z URL Cloudinary
-        # np. https://res.cloudinary.com/xxx/video/upload/v123/rehabsense/exercises/exercise_1.mp4
         match = re.search(r'/upload/(?:v\d+/)?(.+?)\.[^.]+$', video_url)
         if match:
             public_id = match.group(1)
             cloudinary.uploader.destroy(public_id, resource_type="video")
     except Exception:
-        pass  # Nie blokujemy jeśli usuwanie z chmury się nie uda
+        pass  # Nie blokujemy jeśli usuwanie z chmury się nie uda

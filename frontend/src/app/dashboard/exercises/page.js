@@ -48,7 +48,7 @@ export default function ExercisesPage() {
         try {
             await uploadVideo(exerciseId, file);
         } catch (err) {
-            // error is set in hook
+            // error
         } finally {
             setUploadingId(null);
         }
@@ -61,7 +61,7 @@ export default function ExercisesPage() {
             await deleteVideo(exerciseId);
             if (previewVideo === exerciseId) setPreviewVideo(null);
         } catch (err) {
-            // error is set in hook
+            // error
         } finally {
             setUploadingId(null);
         }
@@ -83,7 +83,7 @@ export default function ExercisesPage() {
             </div>
 
             <div className="w-full max-w-3xl flex flex-col gap-6 animate-fade-in">
-                {error && <div className="error-box">⚠️ {error}</div>}
+                {error && <div className="error-box">{error}</div>}
 
                 <div className="flex justify-between items-center">
                     <span className="text-sm text-muted">
@@ -103,7 +103,7 @@ export default function ExercisesPage() {
                             New Exercise
                         </h3>
 
-                        {formError && <div className="error-box">⚠️ {formError}</div>}
+                        {formError && <div className="error-box">{formError}</div>}
 
                         <div className="flex flex-col gap-2">
                             <label htmlFor="ex-name" className="text-xs font-semibold text-muted uppercase tracking-wider">
@@ -195,17 +195,6 @@ export default function ExercisesPage() {
                                                     className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/30 hover:bg-amber-500/25 transition-all duration-300 cursor-pointer disabled:opacity-50"
                                                     title="Zmień filmik"
                                                 >
-                                                    {uploadingId === ex.exercise_id ? <Spinner /> : "Zmień"}
-                                                </button>
-                                                <button
-                                                    onClick={() => handleVideoDelete(ex.exercise_id)}
-                                                    disabled={uploadingId === ex.exercise_id}
-                                                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-rose-500/15 text-rose-400 border border-rose-500/30 hover:bg-rose-500/25 transition-all duration-300 cursor-pointer disabled:opacity-50"
-                                                    title="Usuń filmik"
-                                                >
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                    </svg>
                                                 </button>
                                             </>
                                         ) : (

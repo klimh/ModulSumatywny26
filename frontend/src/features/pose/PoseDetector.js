@@ -105,7 +105,7 @@ const getPoseAngles = (landmarks) => {
     };
 };
 
-export default function PoseDetector({ referenceVideoUrl = null }) {
+export default function PoseDetector({ referenceVideoUrl = null, isPaused = false, onMetricsUpdate = null }) {
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
     const refVideoRef = useRef(null);
@@ -556,6 +556,24 @@ export default function PoseDetector({ referenceVideoUrl = null }) {
             const ctx = canvas.getContext("2d");
             const drawingUtils = new DrawingUtils(ctx);
 
+            if (isPaused) {
+                if (refVideoRef.current && !refVideoRef.current.paused) {
+                    refVideoRef.current.pause();
+                }
+                if (!video.paused) {
+                    video.pause();
+                }
+                animFrameRef.current = requestAnimationFrame(loop);
+                return;
+            } else {
+                if (modeRef.current === "comparison" && videoUrlRef.current && refVideoRef.current && refVideoRef.current.paused) {
+                    refVideoRef.current.play().catch(e => console.warn("Auto-play prevented", e));
+                }
+                if (video.paused) {
+                    video.play().catch(e => console.warn("Webcam play prevented", e));
+                }
+            }
+
             if (video.currentTime !== lastTime) {
                 lastTime = video.currentTime;
                 canvas.width = video.videoWidth;
@@ -658,7 +676,11 @@ export default function PoseDetector({ referenceVideoUrl = null }) {
                                 const dtwMatch = dtwAnalyzerRef.current.getMatch();
                                 if (dtwMatch !== null) {
                                     matchPercentageRef.current = dtwMatch;
-                                    setMatchPercentage(Math.round(dtwMatch));
+                                    const matchVal = Math.round(dtwMatch);
+                                    setMatchPercentage(matchVal);
+                                    if (onMetricsUpdate) {
+                                        onMetricsUpdate({ accuracy: matchVal });
+                                    }
                                 }
                             }
                         }
@@ -768,131 +790,116 @@ export default function PoseDetector({ referenceVideoUrl = null }) {
                         </button>
                     )}
 
-                    {mode === "comparison" && !hasExternalVideo && (
-                        <div className="relative z-10">
-                            <input
-                                type="file"
-                                accept="video/*"
-                                ref={fileInputRef}
-                                onChange={handleFileUpload}
-                                className="hidden"
-                            />
-                            <button
-                                onClick={() => fileInputRef.current?.click()}
-                                className="px-6 py-3 rounded-2xl font-semibold text-sm bg-panel border-2 border-dashed border-purple-500/50 text-purple-400 hover:bg-purple-500/10 hover:border-purple-500 transition-all duration-300 cursor-pointer"
-                            >
-                                {videoUrl ? "Change reference video" : "Upload reference video (MP4)"}
-                            </button>
-                        </div>
-                    )}
                 </div>
-
-                {cameraActive && mode === "waving" && (
-                    <div className="w-full max-w-sm bg-panel border border-outline rounded-2xl p-4 shadow-panel flex items-center justify-between animate-fade-in translate-y-1">
-                        <span className="text-sm font-medium text-muted">Test:</span>
-                        {isWaving ? (
-                            <span className="px-3 py-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-xl text-sm font-bold flex items-center gap-2 animate-pulse shadow-[0_0_15px_rgba(16,185,129,0.2)]">
-                                Waving detected! Great job!
-                            </span>
-                        ) : (
-                            <span className="px-3 py-1 bg-panel border border-outline rounded-xl text-sm text-muted">
-                                Wave at the camera…
-                            </span>
-                        )}
-                    </div>
-                )}
-
-                {cameraActive && mode === "comparison" && videoUrl && (
-                    <div className="w-full max-w-sm flex items-center justify-center p-3 animate-fade-in translate-y-1 bg-panel border border-outline rounded-2xl shadow-panel">
-                        <div className="flex flex-col items-center w-full">
-                            <span className="text-sm font-semibold text-muted mb-2">DTW Movement Accuracy:</span>
-                            <div className="w-full h-4 bg-black/50 rounded-full overflow-hidden relative border border-outline">
-                                <div
-                                    className={`absolute top-0 left-0 h-full transition-all duration-300 ease-out ${matchPercentage > 80 ? 'bg-emerald-500' :
-                                        matchPercentage > 50 ? 'bg-amber-400' : 'bg-rose-500'
-                                        }`}
-                                    style={{ width: `${matchPercentage}%` }}
-                                />
-                            </div>
-                            <span className={`text-3xl font-black mt-2 transition-colors duration-300 ${matchPercentage > 80 ? 'text-emerald-400 drop-shadow-[0_0_10px_rgba(52,211,153,0.5)]' :
-                                matchPercentage > 50 ? 'text-amber-400 drop-shadow-[0_0_10px_rgba(251,191,36,0.3)]' : 'text-rose-500'
-                                }`}>
-                                {matchPercentage}%
-                            </span>
-                        </div>
-                    </div>
-                )}
             </div>
 
-            {error && (
-                <div className="px-6 py-3 rounded-xl text-sm bg-danger-panel border border-danger-outline text-danger animate-fade-in">
-                    ⚠️ {error}
+            {cameraActive && mode === "waving" && (
+                <div className="w-full max-w-sm bg-panel border border-outline rounded-2xl p-4 shadow-panel flex items-center justify-between animate-fade-in translate-y-1">
+                    <span className="text-sm font-medium text-muted">Test:</span>
+                    {isWaving ? (
+                        <span className="px-3 py-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-xl text-sm font-bold flex items-center gap-2 animate-pulse shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+                            Waving detected! Great job!
+                        </span>
+                    ) : (
+                        <span className="px-3 py-1 bg-panel border border-outline rounded-xl text-sm text-muted">
+                            Wave at the camera…
+                        </span>
+                    )}
                 </div>
             )}
 
-            <div className={`grid gap-6 w-full transition-all duration-500 ${mode === 'comparison' ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1'}`}>
-
-                <div className={`relative w-full aspect-video rounded-2xl overflow-hidden bg-panel border border-outline shadow-panel flex-1 transition-all duration-300 ${mode === 'comparison' && cameraActive ? 'ring-2 ring-emerald-500/50 shadow-[0_0_30px_rgba(16,185,129,0.1)]' : ''}`}>
-                    {mode === 'comparison' && (
-                        <div className="absolute top-4 left-4 z-10 px-3 py-1 bg-black/50 backdrop-blur-md text-emerald-400 rounded-lg text-xs font-semibold border border-emerald-500/30 uppercase tracking-widest">
-                            You (Camera)
+            {cameraActive && mode === "comparison" && videoUrl && !onMetricsUpdate && (
+                <div className="w-full max-w-sm flex items-center justify-center p-3 animate-fade-in translate-y-1 bg-panel border border-outline rounded-2xl shadow-panel">
+                    <div className="flex flex-col items-center w-full">
+                        <span className="text-sm font-semibold text-muted mb-2">DTW Movement Accuracy:</span>
+                        <div className="w-full h-4 bg-black/50 rounded-full overflow-hidden relative border border-outline">
+                            <div
+                                className={`absolute top-0 left-0 h-full transition-all duration-300 ease-out ${matchPercentage > 80 ? 'bg-emerald-500' :
+                                    matchPercentage > 50 ? 'bg-amber-400' : 'bg-rose-500'
+                                    }`}
+                                style={{ width: `${matchPercentage}%` }}
+                            />
                         </div>
-                    )}
-                    <video
-                        ref={videoRef}
-                        playsInline
-                        muted
-                        className="absolute inset-0 w-full h-full object-cover opacity-0 pointer-events-none"
-                    />
-                    <canvas
-                        ref={canvasRef}
-                        className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${cameraActive ? "opacity-100" : "opacity-0"}`}
-                    />
-                    {!cameraActive && !loading && (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-muted">
-                            <span className="text-sm font-medium">Waiting for camera to start…</span>
-                        </div>
-                    )}
-                    {loading && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-panel/80 backdrop-blur-sm">
-                            <Spinner size="lg" />
-                        </div>
-                    )}
+                        <span className={`text-3xl font-black mt-2 transition-colors duration-300 ${matchPercentage > 80 ? 'text-emerald-400 drop-shadow-[0_0_10px_rgba(52,211,153,0.5)]' :
+                            matchPercentage > 50 ? 'text-amber-400 drop-shadow-[0_0_10px_rgba(251,191,36,0.3)]' : 'text-rose-500'
+                            }`}>
+                            {matchPercentage}%
+                        </span>
+                    </div>
                 </div>
+            )}
 
-                {mode === "comparison" && (
-                    <div className="relative w-full aspect-video rounded-2xl overflow-hidden bg-panel border-2 border-dashed border-purple-500/20 shadow-panel flex-1 transition-all duration-300 hover:border-purple-500/40 flex items-center justify-center">
-                        {videoUrl && (
-                            <div className="absolute top-4 right-4 z-10 px-3 py-1 bg-purple-500/20 text-purple-300 backdrop-blur-md rounded-lg text-xs font-semibold border border-purple-500/30 uppercase tracking-widest">
-                                Reference Video
-                            </div>
-                        )}
-                        <video
-                            ref={refVideoRef}
-                            src={videoUrl || undefined}
-                            crossOrigin="anonymous"
-                            playsInline
-                            muted
-                            autoPlay
-                            loop
-                            className="absolute inset-0 w-full h-full object-cover opacity-0 pointer-events-none"
-                        />
-                        <canvas
-                            ref={refCanvasRef}
-                            className={`absolute z-0 inset-0 w-full h-full object-cover transition-opacity duration-500 ${videoUrl ? "opacity-100" : "opacity-0"}`}
-                        />
-                        {!videoUrl && (
-                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-purple-400/50">
-                                <svg className="w-16 h-16 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                <span className="text-sm font-medium">No reference video selected</span>
-                            </div>
-                        )}
+            {
+        error && (
+            <div className="px-6 py-3 rounded-xl text-sm bg-danger-panel border border-danger-outline text-danger animate-fade-in">
+                ⚠️ {error}
+            </div>
+        )
+    }
+
+    <div className={`grid gap-6 w-full transition-all duration-500 ${mode === 'comparison' ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1'}`}>
+
+        <div className={`relative w-full aspect-video rounded-2xl overflow-hidden bg-panel border border-outline shadow-panel flex-1 transition-all duration-300 ${mode === 'comparison' && cameraActive ? 'ring-2 ring-emerald-500/50 shadow-[0_0_30px_rgba(16,185,129,0.1)]' : ''}`}>
+            {mode === 'comparison' && (
+                <div className="absolute top-4 left-4 z-10 px-3 py-1 bg-black/50 backdrop-blur-md text-emerald-400 rounded-lg text-xs font-semibold border border-emerald-500/30 uppercase tracking-widest">
+                    You (Camera)
+                </div>
+            )}
+            <video
+                ref={videoRef}
+                playsInline
+                muted
+                className="absolute inset-0 w-full h-full object-cover opacity-0 pointer-events-none"
+            />
+            <canvas
+                ref={canvasRef}
+                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${cameraActive ? "opacity-100" : "opacity-0"}`}
+            />
+            {!cameraActive && !loading && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-muted">
+                    <span className="text-sm font-medium">Waiting for camera to start…</span>
+                </div>
+            )}
+            {loading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-panel/80 backdrop-blur-sm">
+                    <Spinner size="lg" />
+                </div>
+            )}
+        </div>
+
+        {mode === "comparison" && (
+            <div className="relative w-full aspect-video rounded-2xl overflow-hidden bg-panel border-2 border-dashed border-purple-500/20 shadow-panel flex-1 transition-all duration-300 hover:border-purple-500/40 flex items-center justify-center">
+                {videoUrl && (
+                    <div className="absolute top-4 right-4 z-10 px-3 py-1 bg-purple-500/20 text-purple-300 backdrop-blur-md rounded-lg text-xs font-semibold border border-purple-500/30 uppercase tracking-widest">
+                        Reference Video
+                    </div>
+                )}
+                <video
+                    ref={refVideoRef}
+                    src={videoUrl || undefined}
+                    crossOrigin="anonymous"
+                    playsInline
+                    muted
+                    autoPlay
+                    loop
+                    className="absolute inset-0 w-full h-full object-cover opacity-0 pointer-events-none"
+                />
+                <canvas
+                    ref={refCanvasRef}
+                    className={`absolute z-0 inset-0 w-full h-full object-cover transition-opacity duration-500 ${videoUrl ? "opacity-100" : "opacity-0"}`}
+                />
+                {!videoUrl && (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-purple-400/50">
+                        <svg className="w-16 h-16 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span className="text-sm font-medium">No reference video selected</span>
                     </div>
                 )}
             </div>
-        </div>
+        )}
+    </div>
+        </div >
     );
 }
 

@@ -12,5 +12,7 @@ class ExerciseResult(Base):
     avg_accuracy = Column(Float)
     ai_feedback = Column(String)
     max_rom = Column(Float, nullable=True)
+    pain_level = Column(Integer, nullable=True)
+    patient_note = Column(String, nullable=True)
 
     session = relationship("Session", back_populates="results")

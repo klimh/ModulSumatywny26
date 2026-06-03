@@ -99,7 +99,9 @@ def submit_exercise_session(
             exercise_id=res["exercise_id"],
             reps_completed=res["reps"],
             avg_accuracy=res["accuracy"],
-            ai_feedback=res.get("feedback", "Good job!")
+            ai_feedback=res.get("feedback", "Good job!"),
+            pain_level=res.get("pain_level"),
+            patient_note=res.get("patient_note")
         )
         db.add(db_result)
 
