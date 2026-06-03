@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session as DBSession
 from sqlalchemy import func as sql_func
 from typing import List, Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from db.database import get_db
 from core.security import RoleChecker
@@ -173,7 +173,7 @@ def get_patient_summary(
 ):
     _check_patient_access(current_user, patient_id, db)
     
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     three_days_ago = now - timedelta(days=3)
     seven_days_ago = now - timedelta(days=7)
 
@@ -246,7 +246,10 @@ def get_patient_summary(
 
     days_since_activity = None
     if last_session and last_session.created_at:
-        days_since_activity = (now - last_session.created_at.replace(tzinfo=None)).days
+        try:
+            days_since_activity = (now - last_session.created_at).days
+        except TypeError:
+            days_since_activity = (now.replace(tzinfo=None) - last_session.created_at.replace(tzinfo=None)).days
     
     return {
         "patient_id": patient_id,

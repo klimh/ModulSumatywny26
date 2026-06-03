@@ -179,22 +179,32 @@ export default function ExercisesPage() {
                                                 <button
                                                     onClick={() => setPreviewVideo(previewVideo === ex.exercise_id ? null : ex.exercise_id)}
                                                     className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25 transition-all duration-300 cursor-pointer flex items-center gap-1.5"
-                                                    title="Podgląd filmiku"
+                                                    title="Preview video"
                                                 >
                                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                                     </svg>
-                                                    {previewVideo === ex.exercise_id ? "Ukryj" : "Filmik"}
+                                                    {previewVideo === ex.exercise_id ? "Hide" : "Video"}
                                                 </button>
                                                 <button
                                                     onClick={() => {
                                                         fileInputRefs.current[ex.exercise_id]?.click();
                                                     }}
                                                     disabled={uploadingId === ex.exercise_id}
-                                                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/30 hover:bg-amber-500/25 transition-all duration-300 cursor-pointer disabled:opacity-50"
-                                                    title="Zmień filmik"
+                                                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/30 hover:bg-amber-500/25 transition-all duration-300 cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+                                                    title="Change video"
                                                 >
+                                                    {uploadingId === ex.exercise_id ? (
+                                                        <><Spinner /> Uploading…</>
+                                                    ) : (
+                                                        <>
+                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                                            </svg>
+                                                            Change video
+                                                        </>
+                                                    )}
                                                 </button>
                                             </>
                                         ) : (
@@ -212,7 +222,7 @@ export default function ExercisesPage() {
                                                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                                                         </svg>
-                                                        Dodaj filmik
+                                                        Add video
                                                     </>
                                                 )}
                                             </button>

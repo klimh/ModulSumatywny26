@@ -251,13 +251,14 @@ export default function PhysioPatientProgressPage({ params }) {
     }
 
     return (
-        <div className="page-container">
-            <div className="flex flex-col items-center gap-2 animate-scale-up">
-                <div className="w-full max-w-5xl flex items-center justify-between">
-                    <Link href="/dashboard/patients" className="btn-ghost text-muted">
-                        ← Back to patients
-                    </Link>
-                </div>
+        <div className="page-container flex flex-col items-center">
+            <div className="w-full max-w-5xl flex items-center justify-start animate-fade-in mb-4">
+                <Link href="/dashboard/patients" className="btn-ghost text-muted text-sm font-semibold">
+                    ← Back to patients
+                </Link>
+            </div>
+
+            <div className="flex flex-col items-center gap-2 animate-scale-up mb-8">
                 <h1 className="page-title text-3xl md:text-4xl">Patient Progress</h1>
                 <p className="text-sm text-muted">Detailed analytics and progress notes</p>
             </div>
@@ -265,7 +266,6 @@ export default function PhysioPatientProgressPage({ params }) {
             <div className="w-full max-w-5xl animate-fade-in flex flex-col gap-8">
                 {error && <div className="error-box">⚠️ {error}</div>}
 
-                {/* KPI Cards for Physio */}
                 {summary && (
                     <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                         <div className="card p-4 flex flex-col gap-1.5 relative overflow-hidden">
@@ -273,12 +273,12 @@ export default function PhysioPatientProgressPage({ params }) {
                             <span className="text-xs text-muted uppercase tracking-wider font-semibold">Status</span>
                             <div className="flex items-center gap-2">
                                 <span className={`w-3 h-3 rounded-full ${summary.status === "green" ? "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]" :
-                                        summary.status === "red" ? "bg-red-400 shadow-[0_0_8px_rgba(248,113,113,0.6)]" :
-                                            "bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.6)]"
+                                    summary.status === "red" ? "bg-red-400 shadow-[0_0_8px_rgba(248,113,113,0.6)]" :
+                                        "bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.6)]"
                                     }`}></span>
                                 <span className={`text-sm font-bold ${summary.status === "green" ? "text-emerald-400" :
-                                        summary.status === "red" ? "text-red-400" :
-                                            "text-amber-400"
+                                    summary.status === "red" ? "text-red-400" :
+                                        "text-amber-400"
                                     }`}>
                                     {summary.status === "green" ? "OK" : summary.status === "red" ? "Warning" : "No plan"}
                                 </span>

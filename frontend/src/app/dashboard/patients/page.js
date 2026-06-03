@@ -57,7 +57,7 @@ export default function PatientsPage() {
                 return (
                     <span className="badge-success flex items-center gap-1.5">
                         <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.6)]"></span>
-                        Robi postępy
+                        Making progress
                     </span>
                 );
             case "red":
@@ -65,15 +65,15 @@ export default function PatientsPage() {
                     <span className="badge-danger flex items-center gap-1.5">
                         <span className="w-2 h-2 rounded-full bg-red-400 shadow-[0_0_6px_rgba(248,113,113,0.6)]"></span>
                         {summary.days_since_activity != null && summary.days_since_activity > 3
-                            ? `Brak aktywności (${summary.days_since_activity}d)`
-                            : "Spadek formy"}
+                            ? `Inactive (${summary.days_since_activity}d)`
+                            : "Needs attention"}
                     </span>
                 );
             case "yellow":
                 return (
                     <span className="badge-warning flex items-center gap-1.5">
                         <span className="text-sm">⚠️</span>
-                        Brak planu
+                        No plan
                     </span>
                 );
             default:
@@ -114,18 +114,18 @@ export default function PatientsPage() {
                 {/* Status Legend */}
                 {patients.length > 0 && Object.keys(summaries).length > 0 && (
                     <div className="flex flex-wrap gap-4 mb-6 p-4 card">
-                        <span className="text-xs text-muted font-semibold uppercase tracking-wider">Legenda:</span>
+                        <span className="text-xs text-muted font-semibold uppercase tracking-wider">LEGEND:</span>
                         <div className="flex items-center gap-1.5 text-xs">
                             <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.6)]"></span>
-                            <span className="text-muted">Realizuje plan</span>
+                            <span className="text-muted">Making progress</span>
                         </div>
                         <div className="flex items-center gap-1.5 text-xs">
                             <span className="w-2.5 h-2.5 rounded-full bg-red-400 shadow-[0_0_6px_rgba(248,113,113,0.6)]"></span>
-                            <span className="text-muted">Wymaga uwagi</span>
+                            <span className="text-muted">Needs attention</span>
                         </div>
                         <div className="flex items-center gap-1.5 text-xs">
                             <span>⚠️</span>
-                            <span className="text-muted">Brak planu</span>
+                            <span className="text-muted">No plan</span>
                         </div>
                     </div>
                 )}
@@ -155,17 +155,17 @@ export default function PatientsPage() {
                                                 <div className="flex gap-3 mt-1">
                                                     {summary.total_sessions > 0 && (
                                                         <span className="text-xs text-muted">
-                                                            {summary.total_sessions} sesji
+                                                            {summary.total_sessions} sessions
                                                         </span>
                                                     )}
                                                     {summary.overall_avg_accuracy != null && (
                                                         <span className="text-xs text-muted">
-                                                            Śr. dokładność: {summary.overall_avg_accuracy}%
+                                                            Avg. accuracy: {summary.overall_avg_accuracy}%
                                                         </span>
                                                     )}
                                                     {summary.recent_sessions_count > 0 && (
                                                         <span className="text-xs text-emerald-400/70">
-                                                            {summary.recent_sessions_count} w tym tyg.
+                                                            {summary.recent_sessions_count} this week
                                                         </span>
                                                     )}
                                                 </div>
