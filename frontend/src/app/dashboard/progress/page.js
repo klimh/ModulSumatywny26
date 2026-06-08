@@ -27,7 +27,6 @@ export default function PatientProgressPage() {
     const [history, setHistory] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
-    const [chartMode, setChartMode] = useState("accuracy");
     const [exerciseFilter, setExerciseFilter] = useState("");
 
     useEffect(() => {
@@ -134,52 +133,28 @@ export default function PatientProgressPage() {
             return `Session ${i + 1}`;
         });
 
-        if (chartMode === "accuracy") {
-            const data = filteredHistory.map(s => {
-                const accs = s.results.filter(r => r.avg_accuracy != null).map(r => r.avg_accuracy);
-                return accs.length > 0 ? Math.round(accs.reduce((a, b) => a + b, 0) / accs.length) : null;
-            });
+        const data = filteredHistory.map(s => {
+            const accs = s.results.filter(r => r.avg_accuracy != null).map(r => r.avg_accuracy);
+            return accs.length > 0 ? Math.round(accs.reduce((a, b) => a + b, 0) / accs.length) : null;
+        });
 
-            return {
-                labels,
-                datasets: [{
-                    label: "Average Accuracy (%)",
-                    data,
-                    borderColor: "rgb(52, 211, 153)",
-                    backgroundColor: "rgba(52, 211, 153, 0.1)",
-                    fill: true,
-                    tension: 0.4,
-                    pointBackgroundColor: "rgb(52, 211, 153)",
-                    pointBorderColor: "#fff",
-                    pointBorderWidth: 2,
-                    pointRadius: 5,
-                    pointHoverRadius: 7,
-                }]
-            };
-        } else {
-            const data = filteredHistory.map(s => {
-                const roms = s.results.filter(r => r.max_rom != null).map(r => r.max_rom);
-                return roms.length > 0 ? Math.round(Math.max(...roms)) : null;
-            });
-
-            return {
-                labels,
-                datasets: [{
-                    label: "Max ROM (°)",
-                    data,
-                    borderColor: "rgb(96, 165, 250)",
-                    backgroundColor: "rgba(96, 165, 250, 0.1)",
-                    fill: true,
-                    tension: 0.4,
-                    pointBackgroundColor: "rgb(96, 165, 250)",
-                    pointBorderColor: "#fff",
-                    pointBorderWidth: 2,
-                    pointRadius: 5,
-                    pointHoverRadius: 7,
-                }]
-            };
-        }
-    }, [filteredHistory, chartMode]);
+        return {
+            labels,
+            datasets: [{
+                label: "Average Accuracy (%)",
+                data,
+                borderColor: "rgb(52, 211, 153)",
+                backgroundColor: "rgba(52, 211, 153, 0.1)",
+                fill: true,
+                tension: 0.4,
+                pointBackgroundColor: "rgb(52, 211, 153)",
+                pointBorderColor: "#fff",
+                pointBorderWidth: 2,
+                pointRadius: 5,
+                pointHoverRadius: 7,
+            }]
+        };
+    }, [filteredHistory]);
 
     const chartOptions = {
         responsive: true,
@@ -204,8 +179,8 @@ export default function PatientProgressPage() {
             y: {
                 ticks: { color: "rgba(255,255,255,0.5)", font: { size: 11 } },
                 grid: { color: "rgba(255,255,255,0.05)" },
-                beginAtZero: chartMode === "accuracy",
-                max: chartMode === "accuracy" ? 100 : undefined,
+                beginAtZero: true,
+                max: 100,
             }
         }
     };
@@ -317,18 +292,6 @@ export default function PatientProgressPage() {
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                             <h2 className="text-xl font-bold">Progress Chart</h2>
                             <div className="flex gap-2 flex-wrap">
-                                <button
-                                    onClick={() => setChartMode("accuracy")}
-                                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${chartMode === "accuracy" ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : "bg-white/5 text-muted border border-transparent hover:bg-white/10"}`}
-                                >
-                                    Accuracy (%)
-                                </button>
-                                <button
-                                    onClick={() => setChartMode("rom")}
-                                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${chartMode === "rom" ? "bg-blue-500/20 text-blue-400 border border-blue-500/30" : "bg-white/5 text-muted border border-transparent hover:bg-white/10"}`}
-                                >
-                                    ROM (°)
-                                </button>
                                 {exercises.length > 0 && (
                                     <select
                                         value={exerciseFilter}
@@ -458,9 +421,6 @@ export default function PatientProgressPage() {
                                                     <div className="grid grid-cols-2 gap-2 text-muted mb-2">
                                                         <div>Reps: <span className="text-white">{res.reps_completed}</span></div>
                                                         <div>Accuracy: <span className="text-white">{Math.round(res.avg_accuracy)}%</span></div>
-                                                        {res.max_rom != null && (
-                                                            <div>ROM: <span className="text-white">{Math.round(res.max_rom)}°</span></div>
-                                                        )}
                                                     </div>
                                                     <div className="text-xs text-emerald-500/80 italic">
                                                         &ldquo;{res.ai_feedback}&rdquo;

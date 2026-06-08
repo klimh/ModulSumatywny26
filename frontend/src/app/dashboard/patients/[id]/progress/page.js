@@ -127,11 +127,6 @@ export default function PhysioPatientProgressPage({ params }) {
             return accs.length > 0 ? Math.round(accs.reduce((a, b) => a + b, 0) / accs.length * 10) / 10 : null;
         });
 
-        const romData = filteredHistory.map(s => {
-            const roms = s.results.filter(r => r.max_rom != null).map(r => r.max_rom);
-            return roms.length > 0 ? Math.round(Math.max(...roms) * 10) / 10 : null;
-        });
-
         const repsData = filteredHistory.map(s => {
             const reps = s.results.filter(r => r.reps_completed != null).map(r => r.reps_completed);
             return reps.length > 0 ? reps.reduce((a, b) => a + b, 0) : null;
@@ -151,21 +146,6 @@ export default function PhysioPatientProgressPage({ params }) {
                 pointRadius: 4,
                 pointHoverRadius: 6,
                 yAxisID: "y",
-            },
-            {
-                label: "Max ROM (°)",
-                data: romData,
-                borderColor: "rgb(96, 165, 250)",
-                backgroundColor: "transparent",
-                fill: false,
-                tension: 0.4,
-                pointBackgroundColor: "rgb(96, 165, 250)",
-                pointBorderColor: "#fff",
-                pointBorderWidth: 2,
-                pointRadius: 4,
-                pointHoverRadius: 6,
-                yAxisID: "y1",
-                borderDash: [5, 5],
             },
             {
                 label: "Total repetitions",
@@ -235,7 +215,7 @@ export default function PhysioPatientProgressPage({ params }) {
                 type: "linear",
                 display: true,
                 position: "right",
-                title: { display: true, text: "ROM (°) / Repetitions", color: "rgba(96,165,250,0.7)", font: { size: 11 } },
+                title: { display: true, text: "Repetitions", color: "rgba(96,165,250,0.7)", font: { size: 11 } },
                 ticks: { color: "rgba(96,165,250,0.6)", font: { size: 10 } },
                 grid: { drawOnChartArea: false },
             },
@@ -326,7 +306,7 @@ export default function PhysioPatientProgressPage({ params }) {
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                             <div>
                                 <h2 className="text-xl font-bold">Progress Analytics</h2>
-                                <p className="text-xs text-muted mt-1">Accuracy, ROM and repetitions in one view</p>
+                                <p className="text-xs text-muted mt-1">Accuracy and repetitions in one view</p>
                             </div>
                             {exercises.length > 0 && (
                                 <select
@@ -459,9 +439,6 @@ export default function PhysioPatientProgressPage({ params }) {
                                                         <div className="grid grid-cols-2 gap-2 text-muted mb-2">
                                                             <div>Reps: <span className="text-white">{res.reps_completed}</span></div>
                                                             <div>Accuracy: <span className="text-white">{Math.round(res.avg_accuracy)}%</span></div>
-                                                            {res.max_rom != null && (
-                                                                <div>ROM: <span className="text-white">{Math.round(res.max_rom)}°</span></div>
-                                                            )}
                                                         </div>
                                                         {res.ai_feedback && (
                                                             <div className="text-xs text-emerald-500/80 italic">

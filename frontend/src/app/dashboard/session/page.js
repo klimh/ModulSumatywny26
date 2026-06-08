@@ -18,7 +18,7 @@ export default function SessionPage() {
     const [submitting, setSubmitting] = useState(false);
 
     const [isPaused, setIsPaused] = useState(false);
-    const [currentMetrics, setCurrentMetrics] = useState({ accuracy: 0, meanAccuracy: 0, maxRom: 0, isCameraStale: false });
+    const [currentMetrics, setCurrentMetrics] = useState({ accuracy: 0, meanAccuracy: 0, isCameraStale: false });
     const poseDetectorRef = useRef(null);
     const [cameraActive, setCameraActive] = useState(false);
 
@@ -48,7 +48,7 @@ export default function SessionPage() {
         setExerciseResults([]);
         setSessionFinished(false);
         setIsPaused(false);
-        setCurrentMetrics({ accuracy: 0, meanAccuracy: 0, maxRom: 0, isCameraStale: false });
+        setCurrentMetrics({ accuracy: 0, meanAccuracy: 0, isCameraStale: false });
         setCurrentReps(0);
         setCurrentSet(1);
         setShowNextMessage(false);
@@ -59,7 +59,6 @@ export default function SessionPage() {
             ...prev,
             accuracy: metrics.accuracy !== undefined ? metrics.accuracy : prev.accuracy,
             meanAccuracy: metrics.meanAccuracy !== undefined ? metrics.meanAccuracy : prev.meanAccuracy,
-            maxRom: metrics.maxRom !== undefined ? Math.max(prev.maxRom, metrics.maxRom) : prev.maxRom,
             isCameraStale: metrics.isCameraStale !== undefined ? metrics.isCameraStale : prev.isCameraStale
         }));
     }, []);
@@ -77,7 +76,7 @@ export default function SessionPage() {
             },
         ]);
 
-        setCurrentMetrics({ accuracy: 0, meanAccuracy: 0, maxRom: 0, isCameraStale: false });
+        setCurrentMetrics({ accuracy: 0, meanAccuracy: 0, isCameraStale: false });
         setCurrentReps(0);
         setCurrentSet(1);
 
