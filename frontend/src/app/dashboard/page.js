@@ -23,7 +23,7 @@ function PatientDashboard() {
             try {
                 const res = await api.chat.getUnreadCount();
                 setUnreadCount(res.unread_count || 0);
-            } catch (e) {}
+            } catch (e) { }
         };
         fetchUnread();
         interval = setInterval(fetchUnread, 5000);
@@ -136,7 +136,7 @@ function PhysioDashboard() {
             try {
                 const res = await api.chat.getUnreadCount();
                 setUnreadCount(res.unread_count || 0);
-            } catch (e) {}
+            } catch (e) { }
         };
         fetchUnread();
         interval = setInterval(fetchUnread, 5000);
@@ -150,6 +150,7 @@ function PhysioDashboard() {
             href: "/dashboard/patients",
             gradient: "from-emerald-500/20 to-teal-500/20",
             textColor: "text-emerald-400",
+            data: patients,
             icon: (
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -195,31 +196,72 @@ function PhysioDashboard() {
     ];
 
     return (
-        <div className="w-full max-w-5xl flex flex-col gap-8 animate-fade-in">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-panel border border-outline rounded-2xl p-6 shadow-panel">
-                <div>
-                    <h2 className="text-2xl font-bold text-white">Physiotherapist Panel</h2>
-                    <p className="text-sm text-muted mt-1">Manage your patients, requests, and exercises from here.</p>
-                </div>
-            </div>
+        <div className="w-full max-w-5xl flex flex-col gap-4 animate-fade-in mt-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 md:grid-rows-3 gap-4">
+                {statCards.map((card, index) => {
+                    const isFirst = index === 0;
+                    return (
+                        <Link
+                            key={card.href}
+                            href={card.href}
+                            className={`relative card-hover flex flex-col no-underline group border border-outline/50 hover:border-outline bg-panel/50 backdrop-blur-sm min-h-[110px] ${isFirst ? 'md:col-span-3 md:row-span-3 justify-between p-8' : 'md:col-span-1 md:row-span-1 justify-center p-5 gap-3'}`}
+                        >
+                            {card.label === "Chat" && unreadCount > 0 && (
+                                <div className="absolute top-4 right-4 w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)] animate-pulse"></div>
+                            )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {statCards.map((card) => (
-                    <Link key={card.href} href={card.href} className="relative card-hover p-6 flex flex-col gap-4 no-underline group border border-outline/50 hover:border-outline bg-panel/50 backdrop-blur-sm">
-                        {card.label === "Chat" && unreadCount > 0 && (
-                            <div className="absolute top-4 right-4 w-3 h-3 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.8)] animate-pulse"></div>
-                        )}
-                        <div className="flex items-center justify-between">
-                            <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${card.gradient} flex items-center justify-center ${card.textColor} shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-                                {card.icon}
-                            </div>
-                            <span className={`text-4xl font-black ${card.textColor} drop-shadow-md`}>
-                                {card.label === "Chat" ? card.value : loading ? "…" : card.value}
-                            </span>
-                        </div>
-                        <span className="text-sm font-semibold text-muted group-hover:text-white transition-colors">{card.label}</span>
-                    </Link>
-                ))}
+                            {isFirst ? (
+                                <div className="flex flex-col h-full justify-between gap-8">
+                                    <div className="flex items-start justify-between w-full">
+                                        <div className="flex items-center gap-5">
+                                            <div className={`rounded-2xl bg-gradient-to-br ${card.gradient} flex items-center justify-center ${card.textColor} shadow-lg group-hover:scale-110 transition-transform duration-300 w-16 h-16 shrink-0`}>
+                                                <div className="scale-125">{card.icon}</div>
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="text-3xl font-bold text-white tracking-wide">{card.label}</span>
+                                                <span className="text-sm font-medium text-emerald-400/80 mt-1">Manage and monitor progress</span>
+                                            </div>
+                                        </div>
+                                        <span className={`font-black ${card.textColor} drop-shadow-md text-7xl`}>
+                                            {card.value}
+                                        </span>
+                                    </div>
+
+                                    {card.data && card.data.length > 0 && (
+                                        <div className="flex flex-col gap-3 mt-auto">
+                                            <span className="text-xs uppercase tracking-widest font-bold text-muted/70">Active Patients</span>
+                                            <div className="flex flex-wrap gap-3">
+                                                {card.data.slice(0, 5).map(p => (
+                                                    <div key={p.user_id} className="bg-main border border-outline px-4 py-2 rounded-xl text-sm font-medium text-primary flex items-center gap-2.5 shadow-sm hover:border-emerald-500/30 transition-colors">
+                                                        <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]"></div>
+                                                        {p.first_name} {p.last_name}
+                                                    </div>
+                                                ))}
+                                                {card.data.length > 5 && (
+                                                    <div className="bg-main/50 border border-outline/50 px-4 py-2 rounded-xl text-sm font-medium text-muted">
+                                                        +{card.data.length - 5} more
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
+                                <>
+                                    <div className="flex items-center justify-between flex-col sm:flex-row md:flex-col lg:flex-row gap-2">
+                                        <div className={`rounded-xl bg-gradient-to-br ${card.gradient} flex items-center justify-center ${card.textColor} shadow-lg group-hover:scale-110 transition-transform duration-300 w-10 h-10`}>
+                                            <div className="scale-75">{card.icon}</div>
+                                        </div>
+                                        <span className={`font-black ${card.textColor} drop-shadow-md text-3xl`}>
+                                            {card.label === "Chat" ? card.value : loading ? "…" : card.value}
+                                        </span>
+                                    </div>
+                                    <span className="font-semibold text-muted group-hover:text-white transition-colors text-sm">{card.label}</span>
+                                </>
+                            )}
+                        </Link>
+                    )
+                })}
             </div>
 
             {error && <div className="error-box">⚠️ {error}</div>}
