@@ -231,10 +231,13 @@ export class DTWAnalyzer {
 
         if (this._refsSinceLastCam > 5 && this._initialized) {
             const decayRate = 0.97;
-            this._currentMatch *= Math.pow(decayRate, this._refsSinceLastCam - 5);
-            this._smoothedMatch *= Math.pow(decayRate, this._refsSinceLastCam - 5);
-            this._scoreSum += this._smoothedMatch;
-            this._scoreCount++;
+            this._currentMatch *= decayRate;
+            this._smoothedMatch *= decayRate;
+
+            if (this._frameCounter % this.computeEvery === 0) {
+                this._scoreSum += this._smoothedMatch;
+                this._scoreCount++;
+            }
             return this._currentMatch;
         }
 
@@ -308,7 +311,10 @@ export class DTWAnalyzer {
 
         const delta = Math.abs(blended - this._smoothedMatch);
         let alpha;
-        if (delta > this.spikeDampenThreshold) {
+
+        if (blended > this._smoothedMatch + 20) {
+            alpha = this.smoothingFactor;
+        } else if (delta > this.spikeDampenThreshold) {
             alpha = this.spikeSmoothingFactor;
         } else {
             alpha = this.smoothingFactor;
@@ -319,9 +325,7 @@ export class DTWAnalyzer {
             this._smoothedMatch = blended;
             this._initialized = true;
         } else {
-            // Smooth match: heavy, adaptive EMA for stable mean accumulation
             this._smoothedMatch = this._smoothedMatch * alpha + blended * (1 - alpha);
-            // Current match: very light EMA (0.2) to be snappy and reflect current state
             this._currentMatch = this._currentMatch * 0.2 + blended * 0.8;
         }
 
@@ -337,6 +341,10 @@ export class DTWAnalyzer {
 
     get referenceFrameCount() {
         return this.referenceBuffer.length;
+    }
+
+    get isCameraStale() {
+        return this._refsSinceLastCam > 5 && this._initialized;
     }
 
     getMeanAccuracy() {

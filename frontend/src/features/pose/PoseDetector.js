@@ -110,13 +110,26 @@ const KEY_LANDMARK_INDICES = [11, 12, 13, 14, 15, 16, 23, 24, 25, 26, 27, 28];
 const getKeyLandmarkConfidence = (landmarks) => {
     let sum = 0;
     let count = 0;
+    let visibleCount = 0;
+
     for (const idx of KEY_LANDMARK_INDICES) {
         const lm = landmarks[idx];
         if (lm && typeof lm.visibility === 'number') {
             sum += lm.visibility;
             count++;
+
+            const inBounds = lm.x >= 0.02 && lm.x <= 0.98 && lm.y >= 0.02 && lm.y <= 0.98;
+
+            if (lm.visibility > 0.5 && inBounds) {
+                visibleCount++;
+            }
         }
     }
+
+    if (count > 0 && visibleCount < 4) {
+        return 0.0;
+    }
+
     return count > 0 ? sum / count : 1.0;
 };
 
@@ -704,7 +717,11 @@ export default function PoseDetector({ referenceVideoUrl = null, isPaused = fals
                                     const meanVal = Math.round(dtwAnalyzerRef.current.getMeanAccuracy());
                                     setMatchPercentage(matchVal);
                                     if (onMetricsUpdate) {
-                                        onMetricsUpdate({ accuracy: matchVal, meanAccuracy: meanVal });
+                                        onMetricsUpdate({
+                                            accuracy: matchVal,
+                                            meanAccuracy: meanVal,
+                                            isCameraStale: dtwAnalyzerRef.current.isCameraStale
+                                        });
                                     }
                                 }
                             }

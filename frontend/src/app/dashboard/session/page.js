@@ -18,7 +18,7 @@ export default function SessionPage() {
     const [submitting, setSubmitting] = useState(false);
 
     const [isPaused, setIsPaused] = useState(false);
-    const [currentMetrics, setCurrentMetrics] = useState({ accuracy: 0, meanAccuracy: 0, maxRom: 0 });
+    const [currentMetrics, setCurrentMetrics] = useState({ accuracy: 0, meanAccuracy: 0, maxRom: 0, isCameraStale: false });
     const [showEndModal, setShowEndModal] = useState(false);
 
     const [painLevel, setPainLevel] = useState(0);
@@ -44,7 +44,7 @@ export default function SessionPage() {
         setExerciseResults([]);
         setSessionFinished(false);
         setIsPaused(false);
-        setCurrentMetrics({ accuracy: 0, meanAccuracy: 0, maxRom: 0 });
+        setCurrentMetrics({ accuracy: 0, meanAccuracy: 0, maxRom: 0, isCameraStale: false });
     };
 
     const handleMetricsUpdate = useCallback((metrics) => {
@@ -52,7 +52,8 @@ export default function SessionPage() {
             ...prev,
             accuracy: metrics.accuracy !== undefined ? metrics.accuracy : prev.accuracy,
             meanAccuracy: metrics.meanAccuracy !== undefined ? metrics.meanAccuracy : prev.meanAccuracy,
-            maxRom: metrics.maxRom !== undefined ? Math.max(prev.maxRom, metrics.maxRom) : prev.maxRom
+            maxRom: metrics.maxRom !== undefined ? Math.max(prev.maxRom, metrics.maxRom) : prev.maxRom,
+            isCameraStale: metrics.isCameraStale !== undefined ? metrics.isCameraStale : prev.isCameraStale
         }));
     }, []);
 
@@ -77,7 +78,7 @@ export default function SessionPage() {
         setPainLevel(0);
         setPatientNote("");
         setShowEndModal(false);
-        setCurrentMetrics({ accuracy: 0, meanAccuracy: 0, maxRom: 0 });
+        setCurrentMetrics({ accuracy: 0, meanAccuracy: 0, maxRom: 0, isCameraStale: false });
 
         if (currentIndex + 1 < totalExercises) {
             setCurrentIndex((prev) => prev + 1);
@@ -339,6 +340,12 @@ export default function SessionPage() {
             </div>
 
             <div className={`w-full max-w-7xl relative transition-all duration-300 ${isPaused ? 'opacity-50 blur-[2px] pointer-events-none' : ''}`}>
+                {currentMetrics.isCameraStale && !isPaused && (
+                    <div className="absolute top-8 left-1/2 -translate-x-1/2 z-50 bg-rose-500/90 text-white px-6 py-3 rounded-full font-bold shadow-xl shadow-rose-500/30 flex items-center gap-3 animate-fade-in backdrop-blur-md border border-rose-400 pointer-events-none">
+                        <svg className="w-6 h-6 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                        Adjust your camera! Key body parts are not visible.
+                    </div>
+                )}
                 <PoseDetector
                     referenceVideoUrl={videoUrl}
                     isPaused={isPaused}
