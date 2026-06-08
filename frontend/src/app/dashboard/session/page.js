@@ -20,6 +20,8 @@ export default function SessionPage() {
     const [isPaused, setIsPaused] = useState(false);
     const [currentMetrics, setCurrentMetrics] = useState({ accuracy: 0, meanAccuracy: 0, maxRom: 0, isCameraStale: false });
     const [showEndModal, setShowEndModal] = useState(false);
+    const poseDetectorRef = useRef(null);
+    const [cameraActive, setCameraActive] = useState(false);
 
     const [painLevel, setPainLevel] = useState(0);
     const [patientNote, setPatientNote] = useState("");
@@ -260,7 +262,7 @@ export default function SessionPage() {
     const videoUrl = currentExercise.video_url;
 
     return (
-        <div className="page-container relative min-h-screen pb-32">
+        <div className="w-full flex-1 flex flex-col min-h-0 overflow-hidden relative bg-background">
             {showEndModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm px-4">
                     <div className="card p-8 w-full max-w-md animate-scale-up flex flex-col gap-6 shadow-2xl shadow-emerald-500/20 border-emerald-500/30">
@@ -314,8 +316,9 @@ export default function SessionPage() {
                 </div>
             )}
 
-            <div className="w-full max-w-7xl animate-fade-in bg-panel border border-outline rounded-2xl p-4 md:p-6 mb-6 shadow-panel">
-                <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex-1 w-full max-w-7xl mx-auto flex flex-col min-h-0 px-4 md:px-8 pt-6 pb-24">
+                <div className="w-full shrink-0 animate-fade-in bg-panel border border-outline rounded-2xl p-4 md:p-6 mb-4 shadow-panel">
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                     <div className="flex items-center gap-4">
                         <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 flex flex-col items-center justify-center border border-emerald-500/20">
                             <span className="text-emerald-400 font-bold text-lg leading-none">{currentIndex + 1}</span>
@@ -339,18 +342,24 @@ export default function SessionPage() {
                 </div>
             </div>
 
-            <div className={`w-full max-w-7xl relative transition-all duration-300 ${isPaused ? 'opacity-50 blur-[2px] pointer-events-none' : ''}`}>
+            <div className={`w-full flex-1 min-h-0 relative flex flex-col items-center justify-center transition-all duration-300 ${isPaused ? 'opacity-50 blur-[2px] pointer-events-none' : ''}`}>
                 {currentMetrics.isCameraStale && !isPaused && (
                     <div className="absolute top-8 left-1/2 -translate-x-1/2 z-50 bg-rose-500/90 text-white px-6 py-3 rounded-full font-bold shadow-xl shadow-rose-500/30 flex items-center gap-3 animate-fade-in backdrop-blur-md border border-rose-400 pointer-events-none">
                         <svg className="w-6 h-6 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
                         Adjust your camera! Key body parts are not visible.
                     </div>
                 )}
-                <PoseDetector
-                    referenceVideoUrl={videoUrl}
-                    isPaused={isPaused}
-                    onMetricsUpdate={handleMetricsUpdate}
-                />
+                <div className="w-full h-full max-h-full overflow-hidden flex items-center justify-center">
+                    <PoseDetector
+                        ref={poseDetectorRef}
+                        referenceVideoUrl={videoUrl}
+                        isPaused={isPaused}
+                        onMetricsUpdate={handleMetricsUpdate}
+                        hideControls={true}
+                        onCameraStateChange={setCameraActive}
+                    />
+                </div>
+            </div>
             </div>
 
             <div className="fixed bottom-0 left-0 w-full bg-panel/90 backdrop-blur-xl border-t border-outline p-4 z-40">
@@ -377,29 +386,39 @@ export default function SessionPage() {
                     </div>
 
                     <div className="flex items-center gap-3">
-                        <button
-                            onClick={() => setIsPaused(!isPaused)}
-                            className="px-6 py-3 rounded-2xl font-semibold text-sm bg-main border border-outline text-white hover:bg-white/5 transition-all flex items-center gap-2"
-                        >
-                            {isPaused ? (
-                                <>
-                                    <svg className="w-5 h-5 text-emerald-400" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
-                                    Resume
-                                </>
-                            ) : (
-                                <>
-                                    <svg className="w-5 h-5 text-amber-400" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" /></svg>
-                                    Pause
-                                </>
-                            )}
-                        </button>
+                        {!cameraActive ? (
+                            <button
+                                onClick={() => poseDetectorRef.current?.startCamera()}
+                                className="px-8 py-3 rounded-2xl font-semibold text-sm bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-white shadow-lg shadow-teal-500/30 hover:shadow-xl hover:scale-105 active:scale-95 transition-all duration-300 ease-out flex items-center gap-2"
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                                Start
+                            </button>
+                        ) : (
+                            <button
+                                onClick={() => setIsPaused(!isPaused)}
+                                className="px-6 py-3 rounded-2xl font-semibold text-sm bg-main border border-outline text-white hover:bg-white/5 transition-all flex items-center gap-2"
+                            >
+                                {isPaused ? (
+                                    <>
+                                        <svg className="w-5 h-5 text-emerald-400" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                                        Resume
+                                    </>
+                                ) : (
+                                    <>
+                                        <svg className="w-5 h-5 text-amber-400" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" /></svg>
+                                        Pause
+                                    </>
+                                )}
+                            </button>
+                        )}
 
                         <button
                             onClick={triggerEndExercise}
-                            className="px-8 py-3 rounded-2xl font-semibold text-sm bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-teal-500/30 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
+                            className="px-6 py-3 rounded-2xl font-semibold text-sm bg-main border border-outline text-white hover:bg-white/5 transition-all flex items-center gap-2"
                         >
                             Next
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                            <svg className="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                         </button>
 
                         <div className="w-px h-8 bg-outline mx-2 hidden md:block"></div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect, useState, useCallback } from "react";
+import { useRef, useEffect, useState, useCallback, forwardRef, useImperativeHandle } from "react";
 import {
     PoseLandmarker,
     HandLandmarker,
@@ -133,7 +133,7 @@ const getKeyLandmarkConfidence = (landmarks) => {
     return count > 0 ? sum / count : 1.0;
 };
 
-export default function PoseDetector({ referenceVideoUrl = null, isPaused = false, onMetricsUpdate = null }) {
+const PoseDetector = forwardRef(({ referenceVideoUrl = null, isPaused = false, onMetricsUpdate = null, hideControls = false, onCameraStateChange = null }, ref) => {
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
     const refVideoRef = useRef(null);
@@ -158,6 +158,19 @@ export default function PoseDetector({ referenceVideoUrl = null, isPaused = fals
     const videoUrlRef = useRef(initialVideoUrl);
 
     const [cameraActive, setCameraActive] = useState(false);
+    const cameraActiveRef = useRef(false);
+
+    useImperativeHandle(ref, () => ({
+        startCamera,
+        stopCamera
+    }));
+
+    useEffect(() => {
+        if (onCameraStateChange) {
+            onCameraStateChange(cameraActive);
+        }
+    }, [cameraActive, onCameraStateChange]);
+
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [isWaving, setIsWaving] = useState(false);
@@ -309,7 +322,6 @@ export default function PoseDetector({ referenceVideoUrl = null, isPaused = fals
 
             setCameraActive(true);
             setLoading(false);
-            detectPose();
         } catch (err) {
             console.error("Camera error:", err);
             setError("Failed to access the camera. Please check permissions.");
@@ -348,20 +360,6 @@ export default function PoseDetector({ referenceVideoUrl = null, isPaused = fals
         refSmootherRef.current.reset();
     }, []);
 
-    const handleFileUpload = (e) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            const url = URL.createObjectURL(file);
-            setVideoUrl(url);
-            videoUrlRef.current = url;
-
-            setMatchPercentage(0);
-            matchPercentageRef.current = 0;
-            if (dtwAnalyzerRef.current) dtwAnalyzerRef.current.reset();
-            refSmootherRef.current.reset();
-        }
-    };
-
     const changeMode = (newMode) => {
         setModeState(newMode);
         modeRef.current = newMode;
@@ -377,200 +375,11 @@ export default function PoseDetector({ referenceVideoUrl = null, isPaused = fals
         if (dtwAnalyzerRef.current) dtwAnalyzerRef.current.reset();
     };
 
-    const detectPose = useCallback(() => {
-        const video = videoRef.current;
-        const canvas = canvasRef.current;
-        const poseLandmarker = poseLandmarkerRef.current;
-        const handLandmarker = handLandmarkerRef.current;
-
-        if (!video || !canvas || (!poseLandmarker && !handLandmarker)) return;
-
-        const ctx = canvas.getContext("2d");
-        const drawingUtils = new DrawingUtils(ctx);
-
-        let lastTime = -1;
-        let lastRefTime = -1;
-
-        const loop = () => {
-            if (!videoRef.current?.srcObject) return;
-
-            const now = performance.now();
-
-            let currentPoseLandmarks = null;
-            if (video.currentTime !== lastTime) {
-                lastTime = video.currentTime;
-
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-
-                ctx.save();
-                ctx.translate(canvas.width, 0);
-                ctx.scale(-1, 1);
-                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                ctx.restore();
-
-                try {
-                    const poseResult = poseLandmarker ? poseLandmarker.detectForVideo(video, now) : null;
-                    const handResult = handLandmarker ? handLandmarker.detectForVideo(video, now) : null;
-
-                    if (poseResult && poseResult.landmarks && poseResult.landmarks.length > 0) {
-                        currentPoseLandmarks = poseResult.landmarks[0];
-                        for (const landmarks of poseResult.landmarks) {
-                            const mirrored = landmarks.map((lm) => ({
-                                ...lm,
-                                x: 1 - lm.x,
-                            }));
-
-                            drawingUtils.drawConnectors(
-                                mirrored,
-                                BODY_CONNECTIONS,
-                                {
-                                    color: "rgba(0, 230, 180, 0.7)",
-                                    lineWidth: 4,
-                                }
-                            );
-
-                            const bodyLandmarks = mirrored.filter((_, i) => !FACE_INDICES.has(i));
-                            drawingUtils.drawLandmarks(bodyLandmarks, {
-                                color: "rgba(255, 255, 255, 0.9)",
-                                fillColor: "rgba(0, 200, 160, 0.85)",
-                                lineWidth: 2,
-                                radius: 5,
-                            });
-                        }
-                    }
-
-                    if (modeRef.current === "waving" && currentPoseLandmarks) {
-                        const rawLandmarks = currentPoseLandmarks;
-                        const leftWrist = rawLandmarks[15];
-                        const rightWrist = rawLandmarks[16];
-                        const leftShoulder = rawLandmarks[11];
-                        const rightShoulder = rawLandmarks[12];
-                        const checkWaving = (wrist, shoulder, history) => {
-                            if (!wrist || !shoulder) return false;
-
-                            history.push({ x: wrist.x, time: now });
-
-                            while (history.length > 0 && now - history[0].time > 2000) {
-                                history.shift();
-                            }
-
-                            if (wrist.y > shoulder.y + 0.35) {
-                                return false;
-                            }
-
-                            if (history.length < 5) return false;
-
-                            let changes = 0;
-                            let state = -1;
-                            let lastPivotX = history[0].x;
-
-                            const threshold = 0.05;
-
-                            for (let i = 1; i < history.length; i++) {
-                                let x = history[i].x;
-                                let dx = x - lastPivotX;
-
-                                if (state === -1) {
-                                    if (dx > threshold) { state = 1; lastPivotX = x; }
-                                    else if (dx < -threshold) { state = 0; lastPivotX = x; }
-                                } else if (state === 1) {
-                                    if (dx < -threshold) {
-                                        state = 0;
-                                        changes++;
-                                        lastPivotX = x;
-                                    } else if (dx > 0) {
-                                        lastPivotX = Math.max(lastPivotX, x);
-                                    }
-                                } else if (state === 0) {
-                                    if (dx > threshold) {
-                                        state = 1;
-                                        changes++;
-                                        lastPivotX = x;
-                                    } else if (dx < 0) {
-                                        lastPivotX = Math.min(lastPivotX, x);
-                                    }
-                                }
-                            }
-
-                            return changes >= 3;
-                        };
-
-                        const leftWaving = checkWaving(leftWrist, leftShoulder, leftWristHistoryRef.current);
-                        const rightWaving = checkWaving(rightWrist, rightShoulder, rightWristHistoryRef.current);
-
-                        const currentlyWaving = leftWaving || rightWaving;
-
-                        if (currentlyWaving !== isWavingRef.current) {
-                            isWavingRef.current = currentlyWaving;
-                            setIsWaving(currentlyWaving);
-                        }
-                    }
-                } catch (e) {
-                    console.warn(e);
-                }
-            }
-
-            const refVideo = refVideoRef.current;
-            const refCanvas = refCanvasRef.current;
-
-            if (modeRef.current === "comparison" && videoUrlRef.current && refVideo && refCanvas && refVideo.readyState >= 2) {
-                const refCtx = refCanvas.getContext("2d");
-                const refDrawingUtils = new DrawingUtils(refCtx);
-
-                try {
-                    let refPoseLandmarks = null;
-                    if (refVideo.currentTime !== lastRefTime) {
-                        lastRefTime = refVideo.currentTime;
-
-                        if (refCanvas.width !== refVideo.videoWidth || refCanvas.height !== refVideo.videoHeight) {
-                            refCanvas.width = refVideo.videoWidth;
-                            refCanvas.height = refVideo.videoHeight;
-                        }
-
-                        refCtx.save();
-                        refCtx.drawImage(refVideo, 0, 0, refCanvas.width, refCanvas.height);
-                        refCtx.restore();
-
-                        const refPoseResult = poseLandmarker ? poseLandmarker.detectForVideo(refVideo, performance.now()) : null;
-
-                        if (refPoseResult && refPoseResult.landmarks && refPoseResult.landmarks.length > 0) {
-                            refPoseLandmarks = refPoseResult.landmarks[0];
-                            for (const landmarks of refPoseResult.landmarks) {
-                                refDrawingUtils.drawConnectors(
-                                    landmarks,
-                                    POSE_CONNECTIONS,
-                                    { color: "rgba(180, 0, 230, 0.7)", lineWidth: 4 }
-                                );
-                                refDrawingUtils.drawLandmarks(landmarks, {
-                                    color: "rgba(255, 255, 255, 0.9)",
-                                    fillColor: "rgba(160, 0, 200, 0.85)",
-                                    lineWidth: 2, radius: 4
-                                });
-                            }
-                        }
-                    }
-
-                    if (refPoseLandmarks) {
-
-                    }
-
-                } catch (e) {
-                    console.warn(e);
-                }
-            }
-
-            animFrameRef.current = requestAnimationFrame(loop);
-        };
-
-        loop();
-    }, []);
     const lastCameraPoseRef = useRef(null);
     useEffect(() => {
         const video = videoRef.current;
         const canvas = canvasRef.current;
         const poseLandmarker = poseLandmarkerRef.current;
-        const handLandmarker = handLandmarkerRef.current;
 
         if (!video || !canvas || !cameraActive || !poseLandmarker) return;
 
@@ -738,7 +547,7 @@ export default function PoseDetector({ referenceVideoUrl = null, isPaused = fals
         return () => {
             if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
         }
-    }, [cameraActive]);
+    }, [cameraActive, isPaused]);
 
     useEffect(() => {
         return () => {
@@ -804,9 +613,10 @@ export default function PoseDetector({ referenceVideoUrl = null, isPaused = fals
                 </div>
             )}
 
-            <div className="flex flex-col items-center gap-4 w-full">
-                <div className="flex flex-wrap justify-center items-center gap-4">
-                    {!cameraActive ? (
+            {!hideControls && (
+                <div className="flex flex-col items-center gap-4 w-full">
+                    <div className="flex flex-wrap justify-center items-center gap-4">
+                        {!cameraActive ? (
                         <button
                             id="start-camera-btn"
                             onClick={startCamera}
@@ -834,6 +644,7 @@ export default function PoseDetector({ referenceVideoUrl = null, isPaused = fals
 
                 </div>
             </div>
+            )}
 
             {cameraActive && mode === "waving" && (
                 <div className="w-full max-w-sm bg-panel border border-outline rounded-2xl p-4 shadow-panel flex items-center justify-between animate-fade-in translate-y-1">
@@ -943,7 +754,9 @@ export default function PoseDetector({ referenceVideoUrl = null, isPaused = fals
             </div>
         </div >
     );
-}
+});
+
+export default PoseDetector;
 
 function Spinner({ size = "sm" }) {
     const dim = size === "lg" ? "w-8 h-8" : "w-4 h-4";
