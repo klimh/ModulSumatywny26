@@ -23,7 +23,9 @@ export default function SessionPage() {
     const [cameraActive, setCameraActive] = useState(false);
 
     const [currentReps, setCurrentReps] = useState(0);
+    const [currentSet, setCurrentSet] = useState(1);
     const [showNextMessage, setShowNextMessage] = useState(false);
+    const [nextMessageType, setNextMessageType] = useState("exercise");
     const autoNextTimeoutRef = useRef(null);
 
     useEffect(() => {
@@ -48,6 +50,7 @@ export default function SessionPage() {
         setIsPaused(false);
         setCurrentMetrics({ accuracy: 0, meanAccuracy: 0, maxRom: 0, isCameraStale: false });
         setCurrentReps(0);
+        setCurrentSet(1);
         setShowNextMessage(false);
     };
 
@@ -76,6 +79,7 @@ export default function SessionPage() {
 
         setCurrentMetrics({ accuracy: 0, meanAccuracy: 0, maxRom: 0, isCameraStale: false });
         setCurrentReps(0);
+        setCurrentSet(1);
 
         if (currentIndex + 1 < totalExercises) {
             setCurrentIndex((prev) => prev + 1);
@@ -92,15 +96,28 @@ export default function SessionPage() {
             if (nextReps >= currentExercise.reps_nr) {
                 setIsPaused(true);
                 setShowNextMessage(true);
-                if (autoNextTimeoutRef.current) clearTimeout(autoNextTimeoutRef.current);
-                autoNextTimeoutRef.current = setTimeout(() => {
-                    setShowNextMessage(false);
-                    moveToNextExercise(nextReps);
-                }, 2500);
+                
+                if (currentSet < currentExercise.sets_nr) {
+                    setNextMessageType("set");
+                    if (autoNextTimeoutRef.current) clearTimeout(autoNextTimeoutRef.current);
+                    autoNextTimeoutRef.current = setTimeout(() => {
+                        setShowNextMessage(false);
+                        setCurrentReps(0);
+                        setCurrentSet(prev => prev + 1);
+                        setIsPaused(false);
+                    }, 2500);
+                } else {
+                    setNextMessageType("exercise");
+                    if (autoNextTimeoutRef.current) clearTimeout(autoNextTimeoutRef.current);
+                    autoNextTimeoutRef.current = setTimeout(() => {
+                        setShowNextMessage(false);
+                        moveToNextExercise(nextReps);
+                    }, 2500);
+                }
             }
             return nextReps;
         });
-    }, [currentExercise, showNextMessage, isPaused, moveToNextExercise]);
+    }, [currentExercise, showNextMessage, isPaused, moveToNextExercise, currentSet]);
 
     const handleManualNext = () => {
         if (autoNextTimeoutRef.current) clearTimeout(autoNextTimeoutRef.current);
@@ -323,8 +340,12 @@ export default function SessionPage() {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                             </svg>
                         </div>
-                        <h2 className="text-4xl font-black text-white drop-shadow-lg">Completed!</h2>
-                        <p className="text-lg font-medium text-emerald-200">Moving to next exercise...</p>
+                        <h2 className="text-4xl font-black text-white drop-shadow-lg">
+                            {nextMessageType === "set" ? "Set Completed!" : "Completed!"}
+                        </h2>
+                        <p className="text-lg font-medium text-emerald-200">
+                            {nextMessageType === "set" ? "Get ready for the next set..." : "Moving to next exercise..."}
+                        </p>
                     </div>
                 </div>
             )}
@@ -345,7 +366,7 @@ export default function SessionPage() {
                         <div className="flex flex-wrap gap-4 items-center justify-center">
                             <div className="flex flex-col items-center justify-center px-4 py-2 bg-main rounded-xl border border-outline">
                                 <span className="text-xs text-muted uppercase font-bold tracking-wider">Set</span>
-                                <span className="text-xl font-bold text-white">1/{currentExercise.sets_nr}</span>
+                                <span className="text-xl font-bold text-white">{currentSet}/{currentExercise.sets_nr}</span>
                             </div>
                             <div className="flex flex-col items-center justify-center px-4 py-2 bg-main rounded-xl border border-outline">
                                 <span className="text-xs text-muted uppercase font-bold tracking-wider">Reps</span>

@@ -195,29 +195,35 @@ function PhysioDashboard() {
     ];
 
     return (
-        <div className="w-full max-w-4xl flex flex-col gap-6 animate-fade-in">
-            <h2 className="section-title">Physiotherapist Panel</h2>
+        <div className="w-full max-w-5xl flex flex-col gap-8 animate-fade-in">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-panel border border-outline rounded-2xl p-6 shadow-panel">
+                <div>
+                    <h2 className="text-2xl font-bold text-white">Physiotherapist Panel</h2>
+                    <p className="text-sm text-muted mt-1">Manage your patients, requests, and exercises from here.</p>
+                </div>
+                <Link href="/dashboard/create-plan" className="btn-primary text-center no-underline whitespace-nowrap shadow-lg shadow-teal-500/20 hover:shadow-teal-500/40">
+                    + Create Rehabilitation Plan
+                </Link>
+            </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {statCards.map((card) => (
-                    <Link key={card.href} href={card.href} className="relative card-hover p-6 flex flex-col gap-3 no-underline group">
+                    <Link key={card.href} href={card.href} className="relative card-hover p-6 flex flex-col gap-4 no-underline group border border-outline/50 hover:border-outline bg-panel/50 backdrop-blur-sm">
                         {card.label === "Chat" && unreadCount > 0 && (
                             <div className="absolute top-4 right-4 w-3 h-3 rounded-full bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.8)] animate-pulse"></div>
                         )}
-                        <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${card.gradient} flex items-center justify-center ${card.textColor}`}>
-                            {card.icon}
+                        <div className="flex items-center justify-between">
+                            <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${card.gradient} flex items-center justify-center ${card.textColor} shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                                {card.icon}
+                            </div>
+                            <span className={`text-4xl font-black ${card.textColor} drop-shadow-md`}>
+                                {card.label === "Chat" ? card.value : loading ? "…" : card.value}
+                            </span>
                         </div>
-                        <span className={`text-3xl font-black ${card.textColor}`}>
-                            {card.label === "Chat" ? card.value : loading ? "…" : card.value}
-                        </span>
-                        <span className="text-sm font-medium text-muted group-hover:text-primary transition-colors">{card.label}</span>
+                        <span className="text-sm font-semibold text-muted group-hover:text-white transition-colors">{card.label}</span>
                     </Link>
                 ))}
             </div>
-
-            <Link href="/dashboard/create-plan" className="btn-primary text-center no-underline w-fit self-start">
-                + Create Rehabilitation Plan
-            </Link>
 
             {error && <div className="error-box">⚠️ {error}</div>}
         </div>
