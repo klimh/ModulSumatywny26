@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/api";
 
@@ -15,21 +16,17 @@ export default function ChatPage() {
     const [loading, setLoading] = useState(true);
     const messagesEndRef = useRef(null);
 
-    // Redirect if not logged in
     useEffect(() => {
         if (!authLoading && !user) {
             router.push("/");
         }
     }, [user, authLoading, router]);
 
-    // Fetch contacts
     const fetchContacts = async () => {
         try {
             const res = await api.chat.getContacts();
             setContacts(res);
-            // If we don't have a selected contact yet, pick the first one
             setContacts((prevContacts) => {
-                // we can't reliably set selectedContact here without dependencies, so we do it below
                 return res;
             });
         } catch (err) {
@@ -43,14 +40,12 @@ export default function ChatPage() {
         fetchContacts();
     }, []);
 
-    // Set initial selected contact
     useEffect(() => {
         if (contacts.length > 0 && !selectedContact) {
             setSelectedContact(contacts[0]);
         }
     }, [contacts, selectedContact]);
 
-    // Polling messages and contacts
     useEffect(() => {
         let interval;
         const fetchMessages = async () => {
@@ -58,7 +53,6 @@ export default function ChatPage() {
             try {
                 const res = await api.chat.getMessages(selectedContact.user_id);
                 setMessages(res);
-                // Also refresh contacts to clear unread flag or see new messages
                 const contactsRes = await api.chat.getContacts();
                 setContacts(contactsRes);
             } catch (err) {
@@ -76,7 +70,6 @@ export default function ChatPage() {
         };
     }, [selectedContact]);
 
-    // Scroll to bottom on new message
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages]);
@@ -84,7 +77,7 @@ export default function ChatPage() {
     const handleSend = async (e) => {
         e.preventDefault();
         if (!inputMsg.trim() || !selectedContact) return;
-        
+
         const tempMsg = inputMsg;
         setInputMsg("");
 
@@ -93,12 +86,10 @@ export default function ChatPage() {
                 content: tempMsg,
                 receiver_id: selectedContact.user_id
             });
-            // Fetch immediately after send
             const res = await api.chat.getMessages(selectedContact.user_id);
             setMessages(res);
         } catch (err) {
             console.error("Error sending message:", err);
-            // Revert on fail
             setInputMsg(tempMsg);
         }
     };
@@ -110,12 +101,11 @@ export default function ChatPage() {
             </div>
         );
     }
-    
+
     if (!user) return null;
 
     return (
         <div className="max-w-6xl mx-auto w-full h-[calc(100vh-120px)] flex bg-panel border border-outline rounded-3xl shadow-panel overflow-hidden">
-            {/* Sidebar */}
             <div className="w-1/3 border-r border-outline flex flex-col bg-main">
                 <div className="p-5 border-b border-outline">
                     <h2 className="text-xl font-bold bg-gradient-to-r from-teal-500 to-cyan-500 bg-clip-text text-transparent">
@@ -130,11 +120,10 @@ export default function ChatPage() {
                             <button
                                 key={contact.user_id}
                                 onClick={() => setSelectedContact(contact)}
-                                className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-all duration-300 text-left ${
-                                    selectedContact?.user_id === contact.user_id
+                                className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-all duration-300 text-left ${selectedContact?.user_id === contact.user_id
                                         ? "bg-teal-500/10 border border-teal-500/20 shadow-sm"
                                         : "hover:bg-panel border border-transparent"
-                                }`}
+                                    }`}
                             >
                                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center shrink-0">
                                     <span className="text-white font-bold text-sm">
@@ -143,13 +132,12 @@ export default function ChatPage() {
                                 </div>
                                 <div className="flex-1 overflow-hidden flex justify-between items-center">
                                     <div>
-                                        <p className={`text-sm truncate ${
-                                            selectedContact?.user_id === contact.user_id 
-                                                ? "text-teal-500 font-bold" 
-                                                : contact.has_unread 
-                                                    ? "text-primary font-black" 
+                                        <p className={`text-sm truncate ${selectedContact?.user_id === contact.user_id
+                                                ? "text-teal-500 font-bold"
+                                                : contact.has_unread
+                                                    ? "text-primary font-black"
                                                     : "text-primary font-medium"
-                                        }`}>
+                                            }`}>
                                             {contact.first_name} {contact.last_name}
                                         </p>
                                         <p className={`text-xs truncate ${contact.has_unread ? "text-primary font-bold" : "text-muted"}`}>
@@ -166,11 +154,9 @@ export default function ChatPage() {
                 </div>
             </div>
 
-            {/* Chat Area */}
             <div className="flex-1 flex flex-col">
                 {selectedContact ? (
                     <>
-                        {/* Chat Header */}
                         <div className="p-5 border-b border-outline flex items-center gap-3 bg-panel/50 backdrop-blur-sm">
                             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center">
                                 <span className="text-white font-bold text-sm">
@@ -185,7 +171,6 @@ export default function ChatPage() {
                             </div>
                         </div>
 
-                        {/* Messages List */}
                         <div className="flex-1 overflow-y-auto p-5 space-y-4">
                             {messages.length === 0 ? (
                                 <div className="h-full flex items-center justify-center flex-col gap-2 text-muted">
@@ -194,14 +179,51 @@ export default function ChatPage() {
                                 </div>
                             ) : (
                                 messages.map((msg, idx) => {
+                                    const isSystem = msg.content === "[SYSTEM:PLAN_UPDATE]";
+
+                                    if (isSystem) {
+                                        const isPatient = user?.role === "pacjent";
+                                        const dateStr = new Date(msg.timestamp).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' });
+
+                                        const contentBlock = (
+                                            <div className="flex flex-col items-center justify-center text-center p-4">
+                                                <span className="text-xs font-bold text-teal-400 uppercase tracking-wide">
+                                                    Plan Rehabilitacji Zaktualizowany
+                                                </span>
+                                                <span className="text-[10px] text-muted mt-1">{dateStr}</span>
+                                                {isPatient && (
+                                                    <span className="text-xs text-emerald-400 mt-2 bg-emerald-500/10 px-3 py-1.5 rounded-lg border border-emerald-500/20 font-semibold group-hover:bg-emerald-500/20 transition-colors">
+                                                        Kliknij aby przejść do planu
+                                                    </span>
+                                                )}
+                                            </div>
+                                        );
+
+                                        return (
+                                            <div key={idx} className="flex justify-center my-4 w-full">
+                                                {isPatient ? (
+                                                    <Link
+                                                        href="/dashboard/plan"
+                                                        className="w-full max-w-sm rounded-xl bg-panel border border-teal-500/30 hover:border-teal-500/60 shadow-lg shadow-teal-500/10 transition-all cursor-pointer no-underline group"
+                                                    >
+                                                        {contentBlock}
+                                                    </Link>
+                                                ) : (
+                                                    <div className="w-full max-w-sm rounded-xl bg-panel/50 border border-outline/50 shadow-sm cursor-default">
+                                                        {contentBlock}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    }
+
                                     const isMe = msg.sender_id === user?.user_id;
                                     return (
                                         <div key={idx} className={`flex ${isMe ? "justify-end" : "justify-start"}`}>
-                                            <div className={`max-w-[70%] rounded-2xl px-5 py-3 shadow-sm ${
-                                                isMe 
-                                                    ? "bg-gradient-to-br from-teal-500 to-cyan-500 text-white rounded-br-none" 
+                                            <div className={`max-w-[70%] rounded-2xl px-5 py-3 shadow-sm ${isMe
+                                                    ? "bg-gradient-to-br from-teal-500 to-cyan-500 text-white rounded-br-none"
                                                     : "bg-panel border border-outline text-primary rounded-bl-none"
-                                            }`}>
+                                                }`}>
                                                 <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>
                                                 <p className={`text-[10px] mt-1 text-right ${isMe ? "text-teal-100" : "text-muted"}`}>
                                                     {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -214,7 +236,6 @@ export default function ChatPage() {
                             <div ref={messagesEndRef} />
                         </div>
 
-                        {/* Input Area */}
                         <div className="p-4 bg-panel/50 backdrop-blur-sm border-t border-outline">
                             <form onSubmit={handleSend} className="flex gap-2">
                                 <input

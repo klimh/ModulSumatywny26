@@ -10,6 +10,7 @@ from typing import List
 from db_models.exercise import Exercise
 from db_models.rehab_plan import RehabPlan
 from db_models.rehab_plan_exercise import RehabPlanExercise
+from db_models.message import Message
 from schemas.exercise import ExerciseCreate, ExerciseResponse
 from schemas.rehab_plan import RehabPlanCreate, RehabPlanResponse
 
@@ -98,6 +99,14 @@ def create_rehabilitation_plan(
 
     db.commit()
     
+    system_msg = Message(
+        sender_id=current_user.user_id,
+        receiver_id=plan_data.patient_id,
+        content="[SYSTEM:PLAN_UPDATE]"
+    )
+    db.add(system_msg)
+    db.commit()
+    
     return {
         "rehab_id": new_plan.rehab_id,
         "patient_id": new_plan.patient_id,
@@ -181,16 +190,13 @@ def upload_exercise_video(
     if not exercise:
         raise HTTPException(status_code=404, detail="Ćwiczenie nie istnieje")
 
-    # Walidacja typu pliku
     allowed_types = ["video/mp4", "video/webm", "video/quicktime", "video/x-msvideo"]
     if file.content_type not in allowed_types:
         raise HTTPException(status_code=400, detail="Nieobsługiwany format wideo. Dozwolone: MP4, WebM, MOV, AVI")
 
-    # Usunięcie starego filmiku z Cloudinary jeśli istnieje
     if exercise.video_url:
         _delete_cloudinary_video(exercise.video_url)
 
-    # Upload do Cloudinary
     try:
         result = cloudinary.uploader.upload(
             file.file,
@@ -218,4 +224,4 @@ def _delete_cloudinary_video(video_url: str):
             public_id = match.group(1)
             cloudinary.uploader.destroy(public_id, resource_type="video")
     except Exception:
-        pass  # Nie blokujemy jeśli usuwanie z chmury się nie uda
+        pass
