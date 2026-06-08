@@ -86,13 +86,13 @@ function PatientDashboard() {
                         <span className="font-semibold text-lg">Loading…</span>
                     </div>
                 ) : physio ? (
-                    <div className="card-hover p-6 flex flex-col gap-3">
+                    <div className="card-hover p-6 flex flex-col gap-3 group">
                         <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500/20 to-purple-500/20 flex items-center justify-center">
                             <svg className="w-6 h-6 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                         </div>
-                        <span className="font-semibold text-lg text-violet-400">My Physiotherapist</span>
+                        <span className="font-semibold text-lg group-hover:text-violet-400 transition-colors">My Physiotherapist</span>
                         <span className="text-sm font-medium">{physio.first_name} {physio.last_name}</span>
                         <span className="text-xs text-muted">{physio.email}</span>
                         <span className={`text-xs font-mono px-2 py-1 rounded-full w-fit ${physio.status === "ZAAKCEPTOWANE"
