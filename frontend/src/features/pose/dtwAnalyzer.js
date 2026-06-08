@@ -150,49 +150,96 @@ function staticMatchScore(camBuffer, refBuffer, weights) {
     return distScore * (0.7 + 0.3 * cosFactor);
 }
 
+function detectLoopReset(buffer, threshold = 0.25) {
+    if (buffer.length < 2) return false;
+    const prev = buffer[buffer.length - 2];
+    const curr = buffer[buffer.length - 1];
+    const keys = Object.keys(curr);
+    let totalDelta = 0;
+    for (const k of keys) {
+        if (k in prev) {
+            totalDelta += Math.abs(normalizeAngle(curr[k]) - normalizeAngle(prev[k]));
+        }
+    }
+    const avgDelta = totalDelta / keys.length;
+    return avgDelta > threshold;
+}
+
 export class DTWAnalyzer {
     constructor(opts = {}) {
-        this.windowSize = opts.windowSize ?? 60;
-        this.computeEvery = opts.computeEvery ?? 10;
+        this.windowSize = opts.windowSize ?? 90;
+        this.computeEvery = opts.computeEvery ?? 15;
         this.smoothingFactor = opts.smoothingFactor ?? 0.5;
         this.bandRatio = opts.bandRatio ?? 0.3;
         this.idleThreshold = opts.idleThreshold ?? 0.003;
+        this.minConfidence = opts.minConfidence ?? 0.1;
+        this.spikeDampenThreshold = opts.spikeDampenThreshold ?? 25;
+        this.spikeSmoothingFactor = opts.spikeSmoothingFactor ?? 0.92;
 
         this.cameraBuffer = [];
         this.referenceBuffer = [];
 
         this._frameCounter = 0;
-        this._lastMatch = 0;
+        this._currentMatch = 0;
+        this._smoothedMatch = 0;
+        this._initialized = false;
+
+        this._scoreSum = 0;
+        this._scoreCount = 0;
+
+        this._refsSinceLastCam = 0;
 
         this.lastJointWeights = null;
     }
 
-    addCameraFrame(angles) {
+    addCameraFrame(angles, confidence = 1.0) {
+        if (confidence < this.minConfidence) return;
+
         this.cameraBuffer.push(angles);
         if (this.cameraBuffer.length > this.windowSize) {
             this.cameraBuffer.shift();
         }
         this._frameCounter++;
+        this._refsSinceLastCam = 0;
     }
 
-    addReferenceFrame(angles) {
+    addReferenceFrame(angles, confidence = 1.0) {
+        if (confidence < this.minConfidence) return;
+
         this.referenceBuffer.push(angles);
+        this._refsSinceLastCam++;
+
+        if (this.referenceBuffer.length > 2 && detectLoopReset(this.referenceBuffer)) {
+            const latest = this.referenceBuffer[this.referenceBuffer.length - 1];
+            this.referenceBuffer = [latest];
+            return;
+        }
+
         if (this.referenceBuffer.length > this.windowSize) {
             this.referenceBuffer.shift();
         }
     }
 
     getMatch() {
-        const MIN_FRAMES = 10;
+        const MIN_FRAMES = 15;
         if (
             this.cameraBuffer.length < MIN_FRAMES ||
             this.referenceBuffer.length < MIN_FRAMES
         ) {
-            return null;
+            return this._initialized ? this._currentMatch : null;
+        }
+
+        if (this._refsSinceLastCam > 5 && this._initialized) {
+            const decayRate = 0.97;
+            this._currentMatch *= Math.pow(decayRate, this._refsSinceLastCam - 5);
+            this._smoothedMatch *= Math.pow(decayRate, this._refsSinceLastCam - 5);
+            this._scoreSum += this._smoothedMatch;
+            this._scoreCount++;
+            return this._currentMatch;
         }
 
         if (this._frameCounter % this.computeEvery !== 0) {
-            return this._lastMatch;
+            return this._currentMatch;
         }
 
         const jointWeights = computeJointWeights(this.referenceBuffer);
@@ -245,10 +292,13 @@ export class DTWAnalyzer {
             const wCos = 0.30 - 0.05 * motionLevel;
 
             let score = rawScore * wRaw + derivScore * wDeriv + cosScore * wCos;
-            if (refEnergy > this.idleThreshold && camEnergy < this.idleThreshold * 0.5) {
-                const ratio = camEnergy / Math.max(refEnergy, 1e-6);
-                const penalty = Math.min(1.0, ratio / 0.2);
-                score *= penalty;
+
+            if (refEnergy > this.idleThreshold) {
+                const energyRatio = camEnergy / Math.max(refEnergy, 1e-6);
+                if (energyRatio < 0.5) {
+                    const penalty = Math.max(0.05, Math.pow(energyRatio / 0.5, 1.5));
+                    score *= penalty;
+                }
             }
 
             blended = score;
@@ -256,11 +306,29 @@ export class DTWAnalyzer {
 
         blended = Math.max(0, Math.min(100, blended));
 
-        this._lastMatch =
-            this._lastMatch * this.smoothingFactor +
-            blended * (1 - this.smoothingFactor);
+        const delta = Math.abs(blended - this._smoothedMatch);
+        let alpha;
+        if (delta > this.spikeDampenThreshold) {
+            alpha = this.spikeSmoothingFactor;
+        } else {
+            alpha = this.smoothingFactor;
+        }
 
-        return this._lastMatch;
+        if (!this._initialized) {
+            this._currentMatch = blended;
+            this._smoothedMatch = blended;
+            this._initialized = true;
+        } else {
+            // Smooth match: heavy, adaptive EMA for stable mean accumulation
+            this._smoothedMatch = this._smoothedMatch * alpha + blended * (1 - alpha);
+            // Current match: very light EMA (0.2) to be snappy and reflect current state
+            this._currentMatch = this._currentMatch * 0.2 + blended * 0.8;
+        }
+
+        this._scoreSum += this._smoothedMatch;
+        this._scoreCount++;
+
+        return this._currentMatch;
     }
 
     get cameraFrameCount() {
@@ -271,11 +339,20 @@ export class DTWAnalyzer {
         return this.referenceBuffer.length;
     }
 
+    getMeanAccuracy() {
+        return this._scoreCount > 0 ? this._scoreSum / this._scoreCount : 0;
+    }
+
     reset() {
         this.cameraBuffer = [];
         this.referenceBuffer = [];
         this._frameCounter = 0;
-        this._lastMatch = 0;
+        this._currentMatch = 0;
+        this._smoothedMatch = 0;
+        this._initialized = false;
+        this._scoreSum = 0;
+        this._scoreCount = 0;
+        this._refsSinceLastCam = 0;
         this.lastJointWeights = null;
     }
 }

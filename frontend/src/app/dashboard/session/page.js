@@ -18,7 +18,7 @@ export default function SessionPage() {
     const [submitting, setSubmitting] = useState(false);
 
     const [isPaused, setIsPaused] = useState(false);
-    const [currentMetrics, setCurrentMetrics] = useState({ accuracy: 0, maxRom: 0 });
+    const [currentMetrics, setCurrentMetrics] = useState({ accuracy: 0, meanAccuracy: 0, maxRom: 0 });
     const [showEndModal, setShowEndModal] = useState(false);
 
     const [painLevel, setPainLevel] = useState(0);
@@ -44,13 +44,14 @@ export default function SessionPage() {
         setExerciseResults([]);
         setSessionFinished(false);
         setIsPaused(false);
-        setCurrentMetrics({ accuracy: 0, maxRom: 0 });
+        setCurrentMetrics({ accuracy: 0, meanAccuracy: 0, maxRom: 0 });
     };
 
     const handleMetricsUpdate = useCallback((metrics) => {
         setCurrentMetrics(prev => ({
             ...prev,
             accuracy: metrics.accuracy !== undefined ? metrics.accuracy : prev.accuracy,
+            meanAccuracy: metrics.meanAccuracy !== undefined ? metrics.meanAccuracy : prev.meanAccuracy,
             maxRom: metrics.maxRom !== undefined ? Math.max(prev.maxRom, metrics.maxRom) : prev.maxRom
         }));
     }, []);
@@ -66,7 +67,7 @@ export default function SessionPage() {
             {
                 exercise_id: currentExercise.exercise_id,
                 reps: currentExercise.reps_nr,
-                accuracy: currentMetrics.accuracy,
+                accuracy: currentMetrics.meanAccuracy,
                 feedback: "Exercise completed",
                 pain_level: parseInt(painLevel, 10),
                 patient_note: patientNote
@@ -76,7 +77,7 @@ export default function SessionPage() {
         setPainLevel(0);
         setPatientNote("");
         setShowEndModal(false);
-        setCurrentMetrics({ accuracy: 0, maxRom: 0 });
+        setCurrentMetrics({ accuracy: 0, meanAccuracy: 0, maxRom: 0 });
 
         if (currentIndex + 1 < totalExercises) {
             setCurrentIndex((prev) => prev + 1);
@@ -354,6 +355,15 @@ export default function SessionPage() {
                             <div className="flex items-center gap-2">
                                 <span className={`text-2xl font-black ${currentMetrics.accuracy > 80 ? 'text-emerald-400' : currentMetrics.accuracy > 50 ? 'text-amber-400' : 'text-rose-500'}`}>
                                     {currentMetrics.accuracy}%
+                                </span>
+                            </div>
+                        </div>
+                        <div className="w-px h-10 bg-outline"></div>
+                        <div className="flex flex-col">
+                            <span className="text-xs text-muted uppercase font-bold tracking-wider">Mean Accuracy</span>
+                            <div className="flex items-center gap-2">
+                                <span className={`text-2xl font-black ${currentMetrics.meanAccuracy > 80 ? 'text-emerald-400' : currentMetrics.meanAccuracy > 50 ? 'text-amber-400' : 'text-rose-500'}`}>
+                                    {currentMetrics.meanAccuracy}%
                                 </span>
                             </div>
                         </div>

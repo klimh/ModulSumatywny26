@@ -105,6 +105,21 @@ const getPoseAngles = (landmarks) => {
     };
 };
 
+const KEY_LANDMARK_INDICES = [11, 12, 13, 14, 15, 16, 23, 24, 25, 26, 27, 28];
+
+const getKeyLandmarkConfidence = (landmarks) => {
+    let sum = 0;
+    let count = 0;
+    for (const idx of KEY_LANDMARK_INDICES) {
+        const lm = landmarks[idx];
+        if (lm && typeof lm.visibility === 'number') {
+            sum += lm.visibility;
+            count++;
+        }
+    }
+    return count > 0 ? sum / count : 1.0;
+};
+
 export default function PoseDetector({ referenceVideoUrl = null, isPaused = false, onMetricsUpdate = null }) {
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
@@ -548,6 +563,7 @@ export default function PoseDetector({ referenceVideoUrl = null, isPaused = fals
 
         let lastTime = -1;
         let lastRefTime = -1;
+        let prevRefVideoTime = -1;
 
         const loop = () => {
             if (!videoRef.current?.srcObject) return;
@@ -602,7 +618,8 @@ export default function PoseDetector({ referenceVideoUrl = null, isPaused = fals
                             if (!dtwAnalyzerRef.current) {
                                 dtwAnalyzerRef.current = new DTWAnalyzer();
                             }
-                            dtwAnalyzerRef.current.addCameraFrame(getPoseAngles(currentPose));
+                            const camConfidence = getKeyLandmarkConfidence(currentPose);
+                            dtwAnalyzerRef.current.addCameraFrame(getPoseAngles(smoothed), camConfidence);
                         }
                     }
                 } catch (e) { }
@@ -645,6 +662,12 @@ export default function PoseDetector({ referenceVideoUrl = null, isPaused = fals
             if (modeRef.current === "comparison" && videoUrlRef.current && refVideo && refCanvas && refVideo.readyState >= 2) {
                 if (refVideo.currentTime !== lastRefTime) {
                     lastRefTime = refVideo.currentTime;
+
+                    if (prevRefVideoTime > 0 && refVideo.currentTime < prevRefVideoTime - 0.5) {
+                        refSmootherRef.current.reset();
+                    }
+                    prevRefVideoTime = refVideo.currentTime;
+
                     try {
                         const rCtx = refCanvas.getContext("2d");
                         const rUtils = new DrawingUtils(rCtx);
@@ -672,14 +695,16 @@ export default function PoseDetector({ referenceVideoUrl = null, isPaused = fals
                             rUtils.drawLandmarks(refBodyLandmarks, { color: "rgba(255, 255, 255, 0.9)", fillColor: "rgba(160, 0, 200, 0.85)", lineWidth: 2, radius: 4 });
 
                             if (dtwAnalyzerRef.current) {
-                                dtwAnalyzerRef.current.addReferenceFrame(getPoseAngles(refPose));
+                                const refConfidence = getKeyLandmarkConfidence(refPose);
+                                dtwAnalyzerRef.current.addReferenceFrame(getPoseAngles(smoothedRef), refConfidence);
                                 const dtwMatch = dtwAnalyzerRef.current.getMatch();
                                 if (dtwMatch !== null) {
                                     matchPercentageRef.current = dtwMatch;
                                     const matchVal = Math.round(dtwMatch);
+                                    const meanVal = Math.round(dtwAnalyzerRef.current.getMeanAccuracy());
                                     setMatchPercentage(matchVal);
                                     if (onMetricsUpdate) {
-                                        onMetricsUpdate({ accuracy: matchVal });
+                                        onMetricsUpdate({ accuracy: matchVal, meanAccuracy: meanVal });
                                     }
                                 }
                             }
@@ -830,75 +855,75 @@ export default function PoseDetector({ referenceVideoUrl = null, isPaused = fals
             )}
 
             {
-        error && (
-            <div className="px-6 py-3 rounded-xl text-sm bg-danger-panel border border-danger-outline text-danger animate-fade-in">
-                ⚠️ {error}
-            </div>
-        )
-    }
+                error && (
+                    <div className="px-6 py-3 rounded-xl text-sm bg-danger-panel border border-danger-outline text-danger animate-fade-in">
+                        ⚠️ {error}
+                    </div>
+                )
+            }
 
-    <div className={`grid gap-6 w-full transition-all duration-500 ${mode === 'comparison' ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1'}`}>
+            <div className={`grid gap-6 w-full transition-all duration-500 ${mode === 'comparison' ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1'}`}>
 
-        <div className={`relative w-full aspect-video rounded-2xl overflow-hidden bg-panel border border-outline shadow-panel flex-1 transition-all duration-300 ${mode === 'comparison' && cameraActive ? 'ring-2 ring-emerald-500/50 shadow-[0_0_30px_rgba(16,185,129,0.1)]' : ''}`}>
-            {mode === 'comparison' && (
-                <div className="absolute top-4 left-4 z-10 px-3 py-1 bg-black/50 backdrop-blur-md text-emerald-400 rounded-lg text-xs font-semibold border border-emerald-500/30 uppercase tracking-widest">
-                    You (Camera)
+                <div className={`relative w-full aspect-video rounded-2xl overflow-hidden bg-panel border border-outline shadow-panel flex-1 transition-all duration-300 ${mode === 'comparison' && cameraActive ? 'ring-2 ring-emerald-500/50 shadow-[0_0_30px_rgba(16,185,129,0.1)]' : ''}`}>
+                    {mode === 'comparison' && (
+                        <div className="absolute top-4 left-4 z-10 px-3 py-1 bg-black/50 backdrop-blur-md text-emerald-400 rounded-lg text-xs font-semibold border border-emerald-500/30 uppercase tracking-widest">
+                            You (Camera)
+                        </div>
+                    )}
+                    <video
+                        ref={videoRef}
+                        playsInline
+                        muted
+                        className="absolute inset-0 w-full h-full object-cover opacity-0 pointer-events-none"
+                    />
+                    <canvas
+                        ref={canvasRef}
+                        className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${cameraActive ? "opacity-100" : "opacity-0"}`}
+                    />
+                    {!cameraActive && !loading && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-muted">
+                            <span className="text-sm font-medium">Waiting for camera to start…</span>
+                        </div>
+                    )}
+                    {loading && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-panel/80 backdrop-blur-sm">
+                            <Spinner size="lg" />
+                        </div>
+                    )}
                 </div>
-            )}
-            <video
-                ref={videoRef}
-                playsInline
-                muted
-                className="absolute inset-0 w-full h-full object-cover opacity-0 pointer-events-none"
-            />
-            <canvas
-                ref={canvasRef}
-                className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${cameraActive ? "opacity-100" : "opacity-0"}`}
-            />
-            {!cameraActive && !loading && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-muted">
-                    <span className="text-sm font-medium">Waiting for camera to start…</span>
-                </div>
-            )}
-            {loading && (
-                <div className="absolute inset-0 flex items-center justify-center bg-panel/80 backdrop-blur-sm">
-                    <Spinner size="lg" />
-                </div>
-            )}
-        </div>
 
-        {mode === "comparison" && (
-            <div className="relative w-full aspect-video rounded-2xl overflow-hidden bg-panel border-2 border-dashed border-purple-500/20 shadow-panel flex-1 transition-all duration-300 hover:border-purple-500/40 flex items-center justify-center">
-                {videoUrl && (
-                    <div className="absolute top-4 right-4 z-10 px-3 py-1 bg-purple-500/20 text-purple-300 backdrop-blur-md rounded-lg text-xs font-semibold border border-purple-500/30 uppercase tracking-widest">
-                        Reference Video
+                {mode === "comparison" && (
+                    <div className="relative w-full aspect-video rounded-2xl overflow-hidden bg-panel border-2 border-dashed border-purple-500/20 shadow-panel flex-1 transition-all duration-300 hover:border-purple-500/40 flex items-center justify-center">
+                        {videoUrl && (
+                            <div className="absolute top-4 right-4 z-10 px-3 py-1 bg-purple-500/20 text-purple-300 backdrop-blur-md rounded-lg text-xs font-semibold border border-purple-500/30 uppercase tracking-widest">
+                                Reference Video
+                            </div>
+                        )}
+                        <video
+                            ref={refVideoRef}
+                            src={videoUrl || undefined}
+                            crossOrigin="anonymous"
+                            playsInline
+                            muted
+                            autoPlay
+                            loop
+                            className="absolute inset-0 w-full h-full object-cover opacity-0 pointer-events-none"
+                        />
+                        <canvas
+                            ref={refCanvasRef}
+                            className={`absolute z-0 inset-0 w-full h-full object-cover transition-opacity duration-500 ${videoUrl ? "opacity-100" : "opacity-0"}`}
+                        />
+                        {!videoUrl && (
+                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-purple-400/50">
+                                <svg className="w-16 h-16 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <span className="text-sm font-medium">No reference video selected</span>
+                            </div>
+                        )}
                     </div>
                 )}
-                <video
-                    ref={refVideoRef}
-                    src={videoUrl || undefined}
-                    crossOrigin="anonymous"
-                    playsInline
-                    muted
-                    autoPlay
-                    loop
-                    className="absolute inset-0 w-full h-full object-cover opacity-0 pointer-events-none"
-                />
-                <canvas
-                    ref={refCanvasRef}
-                    className={`absolute z-0 inset-0 w-full h-full object-cover transition-opacity duration-500 ${videoUrl ? "opacity-100" : "opacity-0"}`}
-                />
-                {!videoUrl && (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-purple-400/50">
-                        <svg className="w-16 h-16 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <span className="text-sm font-medium">No reference video selected</span>
-                    </div>
-                )}
             </div>
-        )}
-    </div>
         </div >
     );
 }
