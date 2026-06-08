@@ -27,18 +27,12 @@ export default function PhysioPatientProgressPage({ params }) {
     const { user, loading: authLoading } = useAuth();
     const router = useRouter();
 
-    const [notes, setNotes] = useState([]);
     const [sessions, setSessions] = useState([]);
     const [history, setHistory] = useState([]);
     const [summary, setSummary] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [exerciseFilter, setExerciseFilter] = useState("");
-
-    const [noteContent, setNoteContent] = useState("");
-    const [painLevel, setPainLevel] = useState("");
-    const [mobilityLevel, setMobilityLevel] = useState("");
-    const [submitting, setSubmitting] = useState(false);
 
     useEffect(() => {
         if (!authLoading && (!user || user.role !== "fizjoterapeuta")) {
@@ -50,13 +44,11 @@ export default function PhysioPatientProgressPage({ params }) {
         if (!user) return;
         try {
             setLoading(true);
-            const [notesData, sessionsData, historyData, summaryData] = await Promise.all([
-                api.progress.getNotesByPatient(patientId),
+            const [sessionsData, historyData, summaryData] = await Promise.all([
                 api.progress.getSessionsByPatient(patientId),
                 api.progress.getHistory(patientId),
                 api.progress.getSummary(patientId)
             ]);
-            setNotes(notesData);
             setSessions(sessionsData);
             setHistory(historyData);
             setSummary(summaryData);
@@ -73,27 +65,7 @@ export default function PhysioPatientProgressPage({ params }) {
         }
     }, [user, patientId]);
 
-    const handleAddNote = async (e) => {
-        e.preventDefault();
-        setSubmitting(true);
-        setError("");
-        try {
-            await api.progress.createNote({
-                patient_id: patientId,
-                note_content: noteContent,
-                pain_level: painLevel ? parseInt(painLevel, 10) : null,
-                mobility_level: mobilityLevel ? parseInt(mobilityLevel, 10) : null,
-            });
-            setNoteContent("");
-            setPainLevel("");
-            setMobilityLevel("");
-            await fetchProgress();
-        } catch (err) {
-            setError(err.message || "Failed to add progress note");
-        } finally {
-            setSubmitting(false);
-        }
-    };
+
 
     const exercises = useMemo(() => {
         const map = new Map();
@@ -333,134 +305,56 @@ export default function PhysioPatientProgressPage({ params }) {
                     </section>
                 )}
 
-                {/* Add Progress Note Form */}
-                <section className="card p-6 border border-emerald-500/30">
-                    <h2 className="text-xl font-bold mb-4 text-emerald-400">Add Note</h2>
-                    <form onSubmit={handleAddNote} className="flex flex-col gap-4">
-                        <div className="flex flex-col gap-1">
-                            <label className="text-sm text-muted">Note content</label>
-                            <textarea
-                                required
-                                value={noteContent}
-                                onChange={(e) => setNoteContent(e.target.value)}
-                                className="input-field min-h-[100px] resize-y"
-                                placeholder="Describe patient progress, issues or next steps..."
-                            />
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div className="flex flex-col gap-1">
-                                <label className="text-sm text-muted">Pain level (1-10)</label>
-                                <input
-                                    type="number"
-                                    min="1"
-                                    max="10"
-                                    value={painLevel}
-                                    onChange={(e) => setPainLevel(e.target.value)}
-                                    className="input-field"
-                                    placeholder="Optional"
-                                />
-                            </div>
-                            <div className="flex flex-col gap-1">
-                                <label className="text-sm text-muted">Mobility level (1-10)</label>
-                                <input
-                                    type="number"
-                                    min="1"
-                                    max="10"
-                                    value={mobilityLevel}
-                                    onChange={(e) => setMobilityLevel(e.target.value)}
-                                    className="input-field"
-                                    placeholder="Optional"
-                                />
-                            </div>
-                        </div>
-                        <button type="submit" disabled={submitting} className="btn-primary w-fit self-end mt-2">
-                            {submitting ? "Saving..." : "Save Note"}
-                        </button>
-                    </form>
-                </section>
-
-                {/* Notes & Sessions in two columns */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <section>
-                        <h2 className="section-title text-2xl mb-4">Notes</h2>
-                        {notes.length > 0 ? (
-                            <div className="flex flex-col gap-4">
-                                {notes.map((note) => (
-                                    <div key={note.note_id} className="card p-5 border-l-4 border-l-teal-500">
-                                        <div className="flex justify-between items-start mb-2">
-                                            <span className="text-sm text-muted">
-                                                {new Date(note.created_at).toLocaleDateString()} {new Date(note.created_at).toLocaleTimeString()}
+                {/* Exercise Sessions */}
+                <section>
+                    <h2 className="section-title text-2xl mb-4">Exercise Sessions</h2>
+                    {sessions.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {sessions.map((session) => (
+                                <div key={session.session_id} className="card p-5 border border-outline/50 hover:border-outline transition-colors flex flex-col gap-4">
+                                    <div className="flex justify-between items-start">
+                                        <h3 className="font-semibold text-lg text-emerald-400 leading-tight">{session.title}</h3>
+                                        {session.created_at && (
+                                            <span className="text-[10px] uppercase font-bold text-muted bg-panel/50 px-2 py-1 rounded-md shrink-0">
+                                                {new Date(session.created_at).toLocaleDateString()}
                                             </span>
-                                        </div>
-                                        <p className="text-gray-200 mb-4 whitespace-pre-wrap">{note.note_content}</p>
-                                        <div className="flex gap-4">
-                                            {note.pain_level !== null && (
-                                                <div className="flex items-center gap-2 text-sm bg-red-500/10 text-red-400 px-3 py-1 rounded-full border border-red-500/20">
-                                                    <span>Pain:</span>
-                                                    <span className="font-bold">{note.pain_level}/10</span>
-                                                </div>
-                                            )}
-                                            {note.mobility_level !== null && (
-                                                <div className="flex items-center gap-2 text-sm bg-blue-500/10 text-blue-400 px-3 py-1 rounded-full border border-blue-500/20">
-                                                    <span>Mobility:</span>
-                                                    <span className="font-bold">{note.mobility_level}/10</span>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="card p-8 text-center text-muted">
-                                None notatek.
-                            </div>
-                        )}
-                    </section>
-
-                    <section>
-                        <h2 className="section-title text-2xl mb-4">Exercise Sessions</h2>
-                        {sessions.length > 0 ? (
-                            <div className="flex flex-col gap-4">
-                                {sessions.map((session) => (
-                                    <div key={session.session_id} className="card p-5 border border-outline">
-                                        <div className="flex justify-between items-center mb-3">
-                                            <h3 className="font-semibold text-lg text-emerald-400">{session.title}</h3>
-                                            {session.created_at && (
-                                                <span className="text-xs text-muted">
-                                                    {new Date(session.created_at).toLocaleDateString()}
-                                                </span>
-                                            )}
-                                        </div>
-                                        {session.results && session.results.length > 0 ? (
-                                            <div className="flex flex-col gap-3">
-                                                {session.results.map((res, idx) => (
-                                                    <div key={idx} className="bg-main border border-outline rounded-lg p-3 text-sm">
-                                                        <div className="font-medium text-white mb-1">{res.exercise_name}</div>
-                                                        <div className="grid grid-cols-2 gap-2 text-muted mb-2">
-                                                            <div>Reps: <span className="text-white">{res.reps_completed}</span></div>
-                                                            <div>Accuracy: <span className="text-white">{Math.round(res.avg_accuracy)}%</span></div>
-                                                        </div>
-                                                        {res.ai_feedback && (
-                                                            <div className="text-xs text-emerald-500/80 italic">
-                                                                &ldquo;{res.ai_feedback}&rdquo;
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        ) : (
-                                            <div className="text-sm text-muted">None ćwiczeń w tej sesji.</div>
                                         )}
                                     </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="card p-8 text-center text-muted">
-                                None ukończonych sesji.
-                            </div>
-                        )}
-                    </section>
-                </div>
+                                    {session.results && session.results.length > 0 ? (
+                                        <div className="flex flex-col gap-3">
+                                            {session.results.map((res, idx) => (
+                                                <div key={idx} className="bg-main border border-outline rounded-lg p-3 text-sm flex flex-col gap-2">
+                                                    <div className="font-medium text-white">{res.exercise_name}</div>
+                                                    <div className="flex items-center gap-4 text-muted text-xs">
+                                                        <div className="flex items-center gap-1.5">
+                                                            <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                                                            Reps: <span className="text-white font-bold">{res.reps_completed}</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-1.5">
+                                                            <div className="w-1.5 h-1.5 rounded-full bg-violet-500"></div>
+                                                            Accuracy: <span className="text-white font-bold">{Math.round(res.avg_accuracy)}%</span>
+                                                        </div>
+                                                    </div>
+                                                    {res.ai_feedback && (
+                                                        <div className="text-xs text-emerald-500/80 italic mt-1 border-t border-outline/50 pt-2">
+                                                            &ldquo;{res.ai_feedback}&rdquo;
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="text-sm text-muted mt-auto">None ćwiczeń w tej sesji.</div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="card p-8 text-center text-muted">
+                            None ukończonych sesji.
+                        </div>
+                    )}
+                </section>
             </div>
         </div>
     );
