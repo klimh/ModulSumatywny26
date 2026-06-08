@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -11,6 +11,9 @@ export default function LoginPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [localError, setLocalError] = useState(null);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => setMounted(true), []);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -73,10 +76,10 @@ export default function LoginPage() {
 
                     <button
                         type="submit"
-                        disabled={loading}
+                        disabled={mounted ? loading : false}
                         className="btn-primary w-full flex items-center justify-center gap-2"
                     >
-                        {loading ? (
+                        {mounted && loading ? (
                             <>
                                 <Spinner />
                                 Signing in…

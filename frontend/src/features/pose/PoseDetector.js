@@ -133,7 +133,7 @@ const getKeyLandmarkConfidence = (landmarks) => {
     return count > 0 ? sum / count : 1.0;
 };
 
-const PoseDetector = forwardRef(({ referenceVideoUrl = null, isPaused = false, onMetricsUpdate = null, hideControls = false, onCameraStateChange = null }, ref) => {
+const PoseDetector = forwardRef(({ referenceVideoUrl = null, isPaused = false, onMetricsUpdate = null, hideControls = false, onCameraStateChange = null, onRepDetected = null }, ref) => {
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
     const refVideoRef = useRef(null);
@@ -160,6 +160,17 @@ const PoseDetector = forwardRef(({ referenceVideoUrl = null, isPaused = false, o
     const [cameraActive, setCameraActive] = useState(false);
     const cameraActiveRef = useRef(false);
 
+    const onMetricsUpdateRef = useRef(onMetricsUpdate);
+    const onRepDetectedRef = useRef(onRepDetected);
+
+    useEffect(() => {
+        onMetricsUpdateRef.current = onMetricsUpdate;
+    }, [onMetricsUpdate]);
+
+    useEffect(() => {
+        onRepDetectedRef.current = onRepDetected;
+    }, [onRepDetected]);
+
     useImperativeHandle(ref, () => ({
         startCamera,
         stopCamera
@@ -180,6 +191,9 @@ const PoseDetector = forwardRef(({ referenceVideoUrl = null, isPaused = false, o
     const matchPercentageRef = useRef(0);
     const leftWristHistoryRef = useRef([]);
     const rightWristHistoryRef = useRef([]);
+
+    const loopMatchSumRef = useRef(0);
+    const loopMatchCountRef = useRef(0);
 
     const lastPoseTimestampRef = useRef(0);
     const lastHandTimestampRef = useRef(0);
@@ -355,6 +369,8 @@ const PoseDetector = forwardRef(({ referenceVideoUrl = null, isPaused = false, o
         matchPercentageRef.current = 0;
         leftWristHistoryRef.current = [];
         rightWristHistoryRef.current = [];
+        loopMatchSumRef.current = 0;
+        loopMatchCountRef.current = 0;
         if (dtwAnalyzerRef.current) dtwAnalyzerRef.current.reset();
         camSmootherRef.current.reset();
         refSmootherRef.current.reset();
@@ -372,6 +388,8 @@ const PoseDetector = forwardRef(({ referenceVideoUrl = null, isPaused = false, o
             leftWristHistoryRef.current = [];
             rightWristHistoryRef.current = [];
         }
+        loopMatchSumRef.current = 0;
+        loopMatchCountRef.current = 0;
         if (dtwAnalyzerRef.current) dtwAnalyzerRef.current.reset();
     };
 
@@ -487,6 +505,9 @@ const PoseDetector = forwardRef(({ referenceVideoUrl = null, isPaused = false, o
 
                     if (prevRefVideoTime > 0 && refVideo.currentTime < prevRefVideoTime - 0.5) {
                         refSmootherRef.current.reset();
+                        if (matchPercentageRef.current > 60) {
+                            if (onRepDetectedRef.current) onRepDetectedRef.current();
+                        }
                     }
                     prevRefVideoTime = refVideo.currentTime;
 
@@ -523,10 +544,11 @@ const PoseDetector = forwardRef(({ referenceVideoUrl = null, isPaused = false, o
                                 if (dtwMatch !== null) {
                                     matchPercentageRef.current = dtwMatch;
                                     const matchVal = Math.round(dtwMatch);
+                                    
                                     const meanVal = Math.round(dtwAnalyzerRef.current.getMeanAccuracy());
                                     setMatchPercentage(matchVal);
-                                    if (onMetricsUpdate) {
-                                        onMetricsUpdate({
+                                    if (onMetricsUpdateRef.current) {
+                                        onMetricsUpdateRef.current({
                                             accuracy: matchVal,
                                             meanAccuracy: meanVal,
                                             isCameraStale: dtwAnalyzerRef.current.isCameraStale
