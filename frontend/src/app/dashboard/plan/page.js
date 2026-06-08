@@ -105,9 +105,6 @@ export default function PlanPage() {
                                     Start Guided Session
                                 </Link>
                             )}
-                            <Link href="/pose" className="btn-outline text-center no-underline w-fit">
-                                Free Pose Analysis
-                            </Link>
                         </div>
                     </div>
                 ) : (
