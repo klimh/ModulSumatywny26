@@ -135,59 +135,28 @@ export default function PatientsPage() {
                         {sortedPatients.map((patient) => {
                             const summary = summaries[patient.user_id];
                             return (
-                                <div
+                                <Link
                                     key={patient.user_id}
-                                    className="card p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+                                    href={`/dashboard/patients/${patient.user_id}`}
+                                    className="card p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-white/5 transition-colors group cursor-pointer"
                                 >
                                     <div className="flex items-center gap-4">
-                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center shadow-lg shadow-teal-500/20">
+                                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center shadow-lg shadow-teal-500/20 group-hover:scale-105 transition-transform">
                                             <span className="text-white font-bold text-sm">
                                                 {patient.first_name?.[0]?.toUpperCase()}{patient.last_name?.[0]?.toUpperCase()}
                                             </span>
                                         </div>
-                                        <div className="flex flex-col">
-                                            <span className="font-semibold">
-                                                {patient.first_name} {patient.last_name}
-                                            </span>
-                                            <span className="text-xs text-muted">{patient.email}</span>
-                                            {/* Quick stats */}
-                                            {summary && (
-                                                <div className="flex gap-3 mt-1">
-                                                    {summary.total_sessions > 0 && (
-                                                        <span className="text-xs text-muted">
-                                                            {summary.total_sessions} sessions
-                                                        </span>
-                                                    )}
-                                                    {summary.overall_avg_accuracy != null && (
-                                                        <span className="text-xs text-muted">
-                                                            Avg. accuracy: {summary.overall_avg_accuracy}%
-                                                        </span>
-                                                    )}
-                                                    {summary.recent_sessions_count > 0 && (
-                                                        <span className="text-xs text-emerald-400/70">
-                                                            {summary.recent_sessions_count} this week
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            )}
-                                        </div>
+                                        <span className="font-semibold text-lg">
+                                            {patient.first_name} {patient.last_name}
+                                        </span>
                                     </div>
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                        <Link
-                                            href={`/dashboard/patients/${patient.user_id}/progress`}
-                                            className="btn-ghost text-orange-400 hover:bg-orange-500/10 text-xs py-2 px-3"
-                                        >
-                                            View Progress
-                                        </Link>
-                                        <Link
-                                            href={`/dashboard/create-plan?patient_id=${patient.user_id}`}
-                                            className="btn-ghost text-teal-400 hover:bg-teal-500/10 text-xs py-2 px-3"
-                                        >
-                                            Assign Plan
-                                        </Link>
+                                    <div className="flex items-center gap-4">
                                         {getStatusBadge(patient.user_id)}
+                                        <svg className="w-5 h-5 text-muted group-hover:text-emerald-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                        </svg>
                                     </div>
-                                </div>
+                                </Link>
                             );
                         })}
                     </div>

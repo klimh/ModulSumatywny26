@@ -102,6 +102,7 @@ export const api = {
     addExercise: (exerciseData) => apiFetch('/physio/exercises', { method: 'POST', body: JSON.stringify(exerciseData) }),
     getAllExercises: () => apiFetch('/physio/exercises'),
     createPlan: (planData) => apiFetch('/physio/create-plan', { method: 'POST', body: JSON.stringify(planData) }),
+    getMyPlans: () => apiFetch('/physio/my-plans'),
     getPendingRequests: () => apiFetch('/physio/pending-requests'),
     respondRequest: (requestId, accept) => apiFetch(`/physio/respond-request/${requestId}?accept=${accept}`, { method: 'POST' }),
     uploadExerciseVideo: (exerciseId, file) => {

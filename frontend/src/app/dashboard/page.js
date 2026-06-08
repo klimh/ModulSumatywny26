@@ -201,9 +201,6 @@ function PhysioDashboard() {
                     <h2 className="text-2xl font-bold text-white">Physiotherapist Panel</h2>
                     <p className="text-sm text-muted mt-1">Manage your patients, requests, and exercises from here.</p>
                 </div>
-                <Link href="/dashboard/create-plan" className="btn-primary text-center no-underline whitespace-nowrap shadow-lg shadow-teal-500/20 hover:shadow-teal-500/40">
-                    + Create Rehabilitation Plan
-                </Link>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

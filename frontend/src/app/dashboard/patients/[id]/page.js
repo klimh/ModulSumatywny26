@@ -1,24 +1,29 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, use } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePhysio } from "@/hooks/usePhysio";
-import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { api } from "@/lib/api";
 
-function CreatePlanForm() {
+export default function PatientDetailsPage({ params }) {
+    const { id } = use(params);
+    const patientId = parseInt(id);
+
     const { user, loading: authLoading } = useAuth();
-    const { patients, exercises, loading, error, fetchMyPatients, fetchExercises, createPlan } = usePhysio();
+    const { patients, exercises, loading: physioLoading, error, fetchMyPatients, fetchExercises, createPlan } = usePhysio();
     const router = useRouter();
-    const searchParams = useSearchParams();
-    const preselectedPatient = searchParams.get("patient_id");
 
-    const [selectedPatient, setSelectedPatient] = useState("");
+    const [patient, setPatient] = useState(null);
     const [planTitle, setPlanTitle] = useState("");
     const [selectedExercises, setSelectedExercises] = useState([]);
+    const [summary, setSummary] = useState(null);
+    const [isEditingPlan, setIsEditingPlan] = useState(false);
     const [formError, setFormError] = useState(null);
     const [formLoading, setFormLoading] = useState(false);
     const [success, setSuccess] = useState(false);
+    const [initialLoading, setInitialLoading] = useState(true);
 
     useEffect(() => {
         if (!authLoading && (!user || user.role !== "fizjoterapeuta")) {
@@ -34,10 +39,48 @@ function CreatePlanForm() {
     }, [user, fetchMyPatients, fetchExercises]);
 
     useEffect(() => {
-        if (preselectedPatient && patients.length > 0) {
-            setSelectedPatient(preselectedPatient);
+        const loadData = async () => {
+            if (!patients || patients.length === 0) return;
+
+            const currentPatient = patients.find(p => p.user_id === patientId);
+            if (!currentPatient) {
+                setFormError("Patient not found or not assigned to you.");
+                setInitialLoading(false);
+                return;
+            }
+            setPatient(currentPatient);
+
+            try {
+                const [allPlans, patientSummary] = await Promise.all([
+                    api.physio.getMyPlans(),
+                    api.progress.getSummary(patientId).catch(() => null)
+                ]);
+
+                setSummary(patientSummary);
+                const activePlan = allPlans.find(p => p.patient_id === patientId && p.is_active);
+
+                if (activePlan) {
+                    setPlanTitle(activePlan.title);
+                    setSelectedExercises(activePlan.exercises.map(ex => ({
+                        exercise_id: ex.exercise_id.toString(),
+                        reps_nr: ex.reps_nr,
+                        sets_nr: ex.sets_nr
+                    })));
+                } else {
+                    setSelectedExercises([]);
+                    setPlanTitle("");
+                }
+            } catch (err) {
+                console.error("Error loading plans", err);
+            } finally {
+                setInitialLoading(false);
+            }
+        };
+
+        if (patients.length > 0) {
+            loadData();
         }
-    }, [preselectedPatient, patients]);
+    }, [patients, patientId]);
 
     const addExerciseRow = () => {
         setSelectedExercises(prev => [...prev, { exercise_id: "", reps_nr: 10, sets_nr: 3 }]);
@@ -57,11 +100,6 @@ function CreatePlanForm() {
         e.preventDefault();
         setFormError(null);
 
-        if (!selectedPatient) {
-            setFormError("Please select a patient");
-            return;
-        }
-
         if (selectedExercises.length === 0) {
             setFormError("Please add at least one exercise");
             return;
@@ -76,7 +114,7 @@ function CreatePlanForm() {
         setFormLoading(true);
         try {
             await createPlan({
-                patient_id: parseInt(selectedPatient),
+                patient_id: patientId,
                 title: planTitle || "Rehabilitation Plan",
                 exercise: selectedExercises.map(ex => ({
                     exercise_id: parseInt(ex.exercise_id),
@@ -85,7 +123,8 @@ function CreatePlanForm() {
                 })),
             });
             setSuccess(true);
-            setTimeout(() => router.push("/dashboard"), 2000);
+            setIsEditingPlan(false);
+            setTimeout(() => setSuccess(false), 3000);
         } catch (err) {
             setFormError(err.message);
         } finally {
@@ -93,7 +132,7 @@ function CreatePlanForm() {
         }
     };
 
-    if (authLoading || loading) {
+    if (authLoading || physioLoading || initialLoading) {
         return (
             <div className="page-container justify-center items-center">
                 <Spinner size="lg" />
@@ -101,29 +140,91 @@ function CreatePlanForm() {
         );
     }
 
+    if (!patient) {
+        return (
+            <div className="page-container justify-center items-center">
+                <div className="error-box">Patient not found or access denied.</div>
+                <Link href="/dashboard/patients" className="btn-ghost mt-4">Back to Patients</Link>
+            </div>
+        );
+    }
+
     return (
         <div className="page-container">
-            <div className="flex flex-col items-center gap-2 animate-scale-up">
-                <h1 className="page-title text-3xl md:text-4xl">Create Rehab Plan</h1>
-                <p className="text-sm text-muted">Build a personalized rehabilitation program</p>
+            <div className="w-full max-w-4xl flex justify-start">
+                <Link href="/dashboard/patients" className="text-sm text-muted hover:text-white transition-colors mb-4 inline-flex items-center gap-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                    Back to Patients
+                </Link>
             </div>
 
-            <div className="w-full max-w-3xl animate-fade-in">
-                {error && <div className="error-box mb-4">⚠️ {error}</div>}
-
-                {success ? (
-                    <div className="card p-8 flex flex-col items-center gap-4 animate-fade-in">
-                        <div className="w-16 h-16 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                            <svg className="w-8 h-8 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                            </svg>
-                        </div>
-                        <h2 className="text-xl font-bold">Plan Created!</h2>
-                        <p className="text-sm text-muted">Redirecting to dashboard…</p>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 animate-scale-up w-full max-w-4xl">
+                <div className="flex items-center gap-4">
+                    <div className="w-16 h-16 rounded-full bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center shadow-lg shadow-teal-500/20">
+                        <span className="text-white font-bold text-2xl">
+                            {patient.first_name?.[0]?.toUpperCase()}{patient.last_name?.[0]?.toUpperCase()}
+                        </span>
                     </div>
-                ) : (
-                    <form onSubmit={handleSubmit} className="card p-8 flex flex-col gap-6">
-                        {formError && <div className="error-box">⚠️ {formError}</div>}
+                    <div>
+                        <h1 className="page-title text-3xl md:text-4xl m-0">{patient.first_name} {patient.last_name}</h1>
+                        <p className="text-sm text-muted">{patient.email}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div className="w-full max-w-4xl animate-fade-in flex flex-col gap-6">
+                {error && <div className="error-box">{error}</div>}
+
+                {success && (
+                    <div className="p-4 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-sm flex items-center justify-center font-medium">
+                        Plan successfully updated!
+                    </div>
+                )}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="card p-6 flex flex-col justify-between gap-4 border border-outline/50">
+                        <div className="flex flex-col gap-2">
+                            <span className="text-xs font-semibold text-muted uppercase tracking-wider">Active Plan</span>
+                            <span className="text-xl font-bold text-teal-400">{planTitle || "No active plan"}</span>
+                            <span className="text-sm text-muted">{selectedExercises.length} exercises assigned</span>
+                        </div>
+                        <button
+                            onClick={() => setIsEditingPlan(!isEditingPlan)}
+                            className={`btn-primary mt-2 w-full ${isEditingPlan ? 'bg-panel text-white border-outline hover:bg-main' : ''}`}
+                        >
+                            {isEditingPlan ? "Cancel Editing" : planTitle ? "Edit Plan" : "Create Plan"}
+                        </button>
+                    </div>
+
+                    <div className="card p-6 flex flex-col justify-between gap-4 border border-outline/50">
+                        <div className="flex flex-col gap-2">
+                            <span className="text-xs font-semibold text-muted uppercase tracking-wider">Progress Overview</span>
+                            <span className="text-xl font-bold text-orange-400">
+                                {summary?.overall_avg_accuracy != null ? `${Math.round(summary.overall_avg_accuracy)}% Avg Accuracy` : "No data yet"}
+                            </span>
+                            <span className="text-sm text-muted">
+                                {summary?.total_sessions || 0} sessions completed
+                            </span>
+                        </div>
+                        <Link
+                            href={`/dashboard/patients/${patientId}/progress`}
+                            className="btn-primary bg-panel text-white border-outline hover:bg-main w-full mt-2"
+                        >
+                            View Progress
+                        </Link>
+                    </div>
+                </div>
+
+                {isEditingPlan && (
+                    <form onSubmit={handleSubmit} className="card p-8 flex flex-col gap-6 mt-4 animate-fade-in border border-teal-500/30">
+                        <div>
+                            <h2 className="text-xl font-bold">Rehabilitation Plan</h2>
+                            <p className="text-xs text-muted mt-1">Updates to the plan will automatically replace the patient's current active plan.</p>
+                        </div>
+
+                        {formError && <div className="error-box">{formError}</div>}
 
                         <div className="flex flex-col gap-2">
                             <label htmlFor="plan-title" className="text-xs font-semibold text-muted uppercase tracking-wider">
@@ -137,26 +238,6 @@ function CreatePlanForm() {
                                 placeholder="e.g. Post-Surgery Knee Rehab"
                                 className="input-field"
                             />
-                        </div>
-
-                        <div className="flex flex-col gap-2">
-                            <label htmlFor="patient-select" className="text-xs font-semibold text-muted uppercase tracking-wider">
-                                Patient
-                            </label>
-                            <select
-                                id="patient-select"
-                                value={selectedPatient}
-                                onChange={(e) => setSelectedPatient(e.target.value)}
-                                required
-                                className="input-field cursor-pointer"
-                            >
-                                <option value="">Select a patient…</option>
-                                {patients.map((p) => (
-                                    <option key={p.user_id} value={p.user_id}>
-                                        {p.first_name} {p.last_name} ({p.email})
-                                    </option>
-                                ))}
-                            </select>
                         </div>
 
                         <div className="flex flex-col gap-4">
@@ -176,7 +257,7 @@ function CreatePlanForm() {
                             {selectedExercises.length === 0 ? (
                                 <div className="p-6 rounded-xl border-2 border-dashed border-outline text-center">
                                     <p className="text-sm text-muted">
-                                        No exercises added yet. Click &quot;+ Add Row&quot; to begin.
+                                        No exercises in current plan. Click &quot;+ Add Row&quot; to begin.
                                     </p>
                                 </div>
                             ) : (
@@ -238,33 +319,21 @@ function CreatePlanForm() {
                         <button
                             type="submit"
                             disabled={formLoading}
-                            className="btn-primary w-full flex items-center justify-center gap-2"
+                            className="btn-primary w-full flex items-center justify-center gap-2 mt-2"
                         >
                             {formLoading ? (
                                 <>
                                     <Spinner />
-                                    Creating plan…
+                                    Saving plan…
                                 </>
                             ) : (
-                                "Create Plan"
+                                "Save Changes"
                             )}
                         </button>
                     </form>
                 )}
             </div>
         </div>
-    );
-}
-
-export default function CreatePlanPage() {
-    return (
-        <Suspense fallback={
-            <div className="page-container justify-center items-center">
-                <Spinner size="lg" />
-            </div>
-        }>
-            <CreatePlanForm />
-        </Suspense>
     );
 }
 
