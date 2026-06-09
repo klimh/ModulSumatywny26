@@ -4,10 +4,12 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function AdminDashboardPage() {
     const { user, loading: authLoading } = useAuth();
     const router = useRouter();
+    const { t } = useTranslation();
 
     const [physios, setPhysios] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -62,7 +64,7 @@ export default function AdminDashboardPage() {
         setSuccess("");
         try {
             await api.admin.createPhysio(form);
-            setSuccess(`Physiotherapist ${form.first_name} ${form.last_name} created successfully!`);
+            setSuccess(t('dashboard.admin.createdSuccess').replace('{name}', `${form.first_name} ${form.last_name}`));
             setForm({ first_name: "", last_name: "", email: "", password: "", specialization: "" });
             setShowForm(false);
             fetchPhysios();
@@ -74,12 +76,12 @@ export default function AdminDashboardPage() {
     };
 
     const handleDelete = async (userId, name) => {
-        if (!confirm(`Are you sure you want to delete ${name}?`)) return;
+        if (!confirm(t('dashboard.admin.deleteConfirm').replace('{name}', name))) return;
         setError(null);
         setSuccess("");
         try {
             await api.admin.deletePhysio(userId);
-            setSuccess(`${name} has been removed.`);
+            setSuccess(t('dashboard.admin.deleteSuccess').replace('{name}', name));
             fetchPhysios();
         } catch (err) {
             setError(err.message);
@@ -99,9 +101,9 @@ export default function AdminDashboardPage() {
     return (
         <div className="page-container">
             <div className="flex flex-col items-center gap-2 animate-scale-up">
-                <h1 className="page-title">Admin Panel</h1>
+                <h1 className="page-title">{t('dashboard.admin.title')}</h1>
                 <p className="text-sm text-muted font-mono">
-                    Manage physiotherapists and system settings
+                    {t('dashboard.admin.desc')}
                 </p>
             </div>
 
@@ -120,7 +122,7 @@ export default function AdminDashboardPage() {
                         </div>
                         <div>
                             <span className="text-2xl font-black text-violet-400">{physios.length}</span>
-                            <p className="text-xs text-muted">Physiotherapists</p>
+                            <p className="text-xs text-muted">{t('dashboard.admin.physios')}</p>
                         </div>
                     </div>
 
@@ -134,14 +136,14 @@ export default function AdminDashboardPage() {
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                                 </svg>
-                                Cancel
+                                {t('dashboard.admin.cancel')}
                             </>
                         ) : (
                             <>
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                                 </svg>
-                                Add Physiotherapist
+                                {t('dashboard.admin.add')}
                             </>
                         )}
                     </button>
@@ -150,33 +152,33 @@ export default function AdminDashboardPage() {
                 {/* Create form */}
                 {showForm && (
                     <form onSubmit={handleCreate} className="card p-8 flex flex-col gap-5 animate-fade-in">
-                        <h2 className="section-title text-left">New Physiotherapist</h2>
+                        <h2 className="section-title text-left">{t('dashboard.admin.newTitle')}</h2>
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="flex flex-col gap-2">
                                 <label htmlFor="physio-first-name" className="text-xs font-semibold text-muted uppercase tracking-wider text-left">
-                                    First Name
+                                    {t('dashboard.admin.firstName')}
                                 </label>
                                 <input
                                     id="physio-first-name"
                                     type="text"
                                     value={form.first_name}
                                     onChange={updateField("first_name")}
-                                    placeholder="Jan"
+                                    placeholder={t('dashboard.admin.firstNamePlaceholder')}
                                     required
                                     className="input-field"
                                 />
                             </div>
                             <div className="flex flex-col gap-2">
                                 <label htmlFor="physio-last-name" className="text-xs font-semibold text-muted uppercase tracking-wider text-left">
-                                    Last Name
+                                    {t('dashboard.admin.lastName')}
                                 </label>
                                 <input
                                     id="physio-last-name"
                                     type="text"
                                     value={form.last_name}
                                     onChange={updateField("last_name")}
-                                    placeholder="Kowalski"
+                                    placeholder={t('dashboard.admin.lastNamePlaceholder')}
                                     required
                                     className="input-field"
                                 />
@@ -185,14 +187,14 @@ export default function AdminDashboardPage() {
 
                         <div className="flex flex-col gap-2">
                             <label htmlFor="physio-email" className="text-xs font-semibold text-muted uppercase tracking-wider text-left">
-                                Email Address
+                                {t('dashboard.admin.email')}
                             </label>
                             <input
                                 id="physio-email"
                                 type="email"
                                 value={form.email}
                                 onChange={updateField("email")}
-                                placeholder="jan.kowalski@email.com"
+                                placeholder={t('dashboard.admin.emailPlaceholder')}
                                 required
                                 className="input-field"
                             />
@@ -200,14 +202,14 @@ export default function AdminDashboardPage() {
 
                         <div className="flex flex-col gap-2">
                             <label htmlFor="physio-password" className="text-xs font-semibold text-muted uppercase tracking-wider text-left">
-                                Password
+                                {t('dashboard.admin.password')}
                             </label>
                             <input
                                 id="physio-password"
                                 type="password"
                                 value={form.password}
                                 onChange={updateField("password")}
-                                placeholder="••••••••"
+                                placeholder={t('dashboard.admin.passwordPlaceholder')}
                                 required
                                 className="input-field"
                             />
@@ -215,14 +217,14 @@ export default function AdminDashboardPage() {
 
                         <div className="flex flex-col gap-2">
                             <label htmlFor="physio-specialization" className="text-xs font-semibold text-muted uppercase tracking-wider text-left">
-                                Specialization (optional)
+                                {t('dashboard.admin.specialization')}
                             </label>
                             <input
                                 id="physio-specialization"
                                 type="text"
                                 value={form.specialization}
                                 onChange={updateField("specialization")}
-                                placeholder="e.g. Ortopedia, Neurologia, Sport"
+                                placeholder={t('dashboard.admin.specializationPlaceholder')}
                                 className="input-field"
                             />
                         </div>
@@ -236,10 +238,10 @@ export default function AdminDashboardPage() {
                             {formLoading ? (
                                 <>
                                     <Spinner />
-                                    Creating…
+                                    {t('dashboard.admin.creating')}
                                 </>
                             ) : (
-                                "Create Physiotherapist Account"
+                                t('dashboard.admin.createBtn')
                             )}
                         </button>
                     </form>
@@ -247,7 +249,7 @@ export default function AdminDashboardPage() {
 
                 {/* Physio list */}
                 <div className="flex flex-col gap-3">
-                    <h2 className="section-title text-left">Registered Physiotherapists</h2>
+                    <h2 className="section-title text-left">{t('dashboard.admin.registeredTitle')}</h2>
 
                     {loading && (
                         <div className="flex justify-center py-8">
@@ -260,7 +262,7 @@ export default function AdminDashboardPage() {
                             <svg className="w-16 h-16 mx-auto mb-4 text-muted opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
                             </svg>
-                            <p className="text-muted">No physiotherapists registered yet. Add one using the button above.</p>
+                            <p className="text-muted">{t('dashboard.admin.noPhysios')}</p>
                         </div>
                     )}
 
@@ -293,7 +295,7 @@ export default function AdminDashboardPage() {
                                         <p className="text-xs text-muted mt-1">{physio.email}</p>
                                     </div>
 
-                                    <span className="badge-success w-fit text-xs">Physiotherapist</span>
+                                    <span className="badge-success w-fit text-xs">{t('dashboard.admin.badge')}</span>
                                 </div>
                             ))}
                         </div>
