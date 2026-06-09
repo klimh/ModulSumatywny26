@@ -188,12 +188,12 @@ export default function ChatPage() {
                                         const contentBlock = (
                                             <div className="flex flex-col items-center justify-center text-center p-4">
                                                 <span className="text-xs font-bold text-teal-400 uppercase tracking-wide">
-                                                    Plan Rehabilitacji Zaktualizowany
+                                                    Rehabilitation Plan Updated
                                                 </span>
                                                 <span className="text-[10px] text-muted mt-1">{dateStr}</span>
                                                 {isPatient && (
                                                     <span className="text-xs text-emerald-400 mt-2 bg-emerald-500/10 px-3 py-1.5 rounded-lg border border-emerald-500/20 font-semibold group-hover:bg-emerald-500/20 transition-colors">
-                                                        Kliknij aby przejść do planu
+                                                        Click to view plan
                                                     </span>
                                                 )}
                                             </div>
