@@ -151,7 +151,14 @@ export default function AdminDashboardPage() {
                     >
                         {t('dashboard.admin.certificates')}
                     </button>
+                    <button
+                        className={`pb-2 px-4 font-semibold ${activeTab === 'exercises' ? 'text-amber-400 border-b-2 border-amber-400' : 'text-muted'}`}
+                        onClick={() => router.push('/dashboard/exercises')}
+                    >
+                        {t('dashboard.admin.exercisesLibrary')}
+                    </button>
                 </div>
+
 
                 {loading && (
                     <div className="flex justify-center py-8">

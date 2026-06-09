@@ -6,6 +6,7 @@ class ExerciseBase(BaseModel):
     description: Optional[str] = None
     video_url: Optional[str] = None
     mediapipe_pattern_data: Optional[str] = None
+    author_id: Optional[int] = None
 
 class ExerciseCreate(ExerciseBase):
     pass

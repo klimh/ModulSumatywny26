@@ -37,9 +37,19 @@ def get_my_patients(current_user: User = Depends(RoleChecker(["fizjoterapeuta"])
 
 
 @router.post("/exercises", response_model=ExerciseResponse)
-def add_exercise(exercise: ExerciseCreate, db: Session = Depends(get_db)):
-    """Dodaje nowe ćwiczenie do ogólnej bazy danych"""
-    new_exercise = Exercise(**exercise.model_dump())
+def add_exercise(
+        exercise: ExerciseCreate,
+        current_user: User = Depends(RoleChecker(["fizjoterapeuta", "admin"])),
+        db: Session = Depends(get_db)
+):
+    """Dodaje nowe ćwiczenie. Dla admina globalne, dla fizjoterapeuty prywatne."""
+    exercise_data = exercise.model_dump()
+    if current_user.role == "fizjoterapeuta":
+        exercise_data["author_id"] = current_user.user_id
+    else:
+        exercise_data["author_id"] = None
+        
+    new_exercise = Exercise(**exercise_data)
     db.add(new_exercise)
     db.commit()
     db.refresh(new_exercise)
@@ -47,9 +57,17 @@ def add_exercise(exercise: ExerciseCreate, db: Session = Depends(get_db)):
 
 
 @router.get("/exercises", response_model=List[ExerciseResponse])
-def get_all_exercises(db: Session = Depends(get_db)):
-    """Pobiera listę wszystkich dostępnych ćwiczeń to samo co SELECT * FROM exercises"""
-    return db.query(Exercise).all()
+def get_all_exercises(
+        current_user: User = Depends(RoleChecker(["fizjoterapeuta", "admin"])),
+        db: Session = Depends(get_db)
+):
+    """Pobiera listę ćwiczeń (dla admina: globalne, dla physio: globalne + własne)"""
+    if current_user.role == "admin":
+        return db.query(Exercise).filter(Exercise.author_id == None).all()
+    
+    return db.query(Exercise).filter(
+        (Exercise.author_id == None) | (Exercise.author_id == current_user.user_id)
+    ).all()
 
 
 
@@ -184,13 +202,16 @@ def respond_to_request(
 def upload_exercise_video(
         exercise_id: int,
         file: UploadFile = File(...),
-        current_user: User = Depends(RoleChecker(["fizjoterapeuta"])),
+        current_user: User = Depends(RoleChecker(["fizjoterapeuta", "admin"])),
         db: Session = Depends(get_db)
 ):
     """Dodaje filmik instruktażowy do ćwiczenia (upload do Cloudinary)"""
     exercise = db.query(Exercise).filter(Exercise.exercise_id == exercise_id).first()
     if not exercise:
         raise HTTPException(status_code=404, detail="Ćwiczenie nie istnieje")
+        
+    if current_user.role == "fizjoterapeuta" and exercise.author_id != current_user.user_id:
+        raise HTTPException(status_code=403, detail="Brak uprawnień. Nie możesz edytować ćwiczeń globalnych.")
 
     allowed_types = ["video/mp4", "video/webm", "video/quicktime", "video/x-msvideo"]
     if file.content_type not in allowed_types:
@@ -216,6 +237,29 @@ def upload_exercise_video(
     db.refresh(exercise)
 
     return {"message": "Filmik został dodany", "video_url": exercise.video_url}
+
+
+@router.delete("/exercises/{exercise_id}/video")
+def delete_exercise_video(
+        exercise_id: int,
+        current_user: User = Depends(RoleChecker(["fizjoterapeuta", "admin"])),
+        db: Session = Depends(get_db)
+):
+    """Usuwa wideo z ćwiczenia"""
+    exercise = db.query(Exercise).filter(Exercise.exercise_id == exercise_id).first()
+    if not exercise:
+        raise HTTPException(status_code=404, detail="Ćwiczenie nie istnieje")
+        
+    if current_user.role == "fizjoterapeuta" and exercise.author_id != current_user.user_id:
+        raise HTTPException(status_code=403, detail="Brak uprawnień. Nie możesz usuwać wideo z ćwiczeń globalnych.")
+        
+    if exercise.video_url:
+        _delete_cloudinary_video(exercise.video_url)
+        exercise.video_url = None
+        db.commit()
+        db.refresh(exercise)
+        
+    return {"message": "Wideo usunięte"}
 
 
 @router.post("/certificates/upload", response_model=CertificateResponse)

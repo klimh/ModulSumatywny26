@@ -16,3 +16,4 @@ class User(Base):
     #relacje do profili:
     patient_profile = relationship("Patient", back_populates="user", uselist=False)
     physio_profile = relationship("Physiotherapist", back_populates="user", uselist=False)
+    exercises = relationship("Exercise", back_populates="author")

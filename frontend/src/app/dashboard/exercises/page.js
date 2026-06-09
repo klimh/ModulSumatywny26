@@ -20,13 +20,15 @@ export default function ExercisesPage() {
     const fileInputRefs = useRef({});
 
     useEffect(() => {
-        if (!authLoading && (!user || user.role !== "fizjoterapeuta")) {
+        if (!authLoading && (!user || (user.role !== "fizjoterapeuta" && user.role !== "admin"))) {
             router.push("/login");
         }
     }, [user, authLoading, router]);
 
     useEffect(() => {
-        if (user?.role === "fizjoterapeuta") fetchExercises();
+        if (user && (user.role === "fizjoterapeuta" || user.role === "admin")) {
+            fetchExercises();
+        }
     }, [user, fetchExercises]);
 
     const handleAddExercise = async (e) => {
@@ -165,7 +167,17 @@ export default function ExercisesPage() {
                                         {i + 1}
                                     </span>
                                     <div className="flex flex-col gap-1 flex-1">
-                                        <span className="font-semibold">{ex.name}</span>
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-semibold">{ex.name}</span>
+                                            {!ex.author_id && (
+                                                <span className="badge-info w-fit bg-blue-500/20 text-blue-400 border-blue-500/30">
+                                                    <svg className="w-3 h-3 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
+                                                    {t('dashboard.exercises.global')}
+                                                </span>
+                                            )}
+                                        </div>
                                         {ex.body_part && (
                                             <span className="badge-info w-fit">{ex.body_part}</span>
                                         )}
@@ -188,45 +200,49 @@ export default function ExercisesPage() {
                                                     </svg>
                                                     {previewVideo === ex.exercise_id ? t('dashboard.exercises.hide') : t('dashboard.exercises.video')}
                                                 </button>
+                                                {(user?.role === "admin" || ex.author_id === user?.user_id) && (
+                                                    <button
+                                                        onClick={() => {
+                                                            fileInputRefs.current[ex.exercise_id]?.click();
+                                                        }}
+                                                        disabled={uploadingId === ex.exercise_id}
+                                                        className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/30 hover:bg-amber-500/25 transition-all duration-300 cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+                                                        title="Change video"
+                                                    >
+                                                        {uploadingId === ex.exercise_id ? (
+                                                            <><Spinner /> {t('dashboard.exercises.uploading')}</>
+                                                        ) : (
+                                                            <>
+                                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                                                </svg>
+                                                                {t('dashboard.exercises.changeVideo')}
+                                                            </>
+                                                        )}
+                                                    </button>
+                                                )}
+                                            </>
+                                        ) : (
+                                            (user?.role === "admin" || ex.author_id === user?.user_id) && (
                                                 <button
                                                     onClick={() => {
                                                         fileInputRefs.current[ex.exercise_id]?.click();
                                                     }}
                                                     disabled={uploadingId === ex.exercise_id}
-                                                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/30 hover:bg-amber-500/25 transition-all duration-300 cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
-                                                    title="Change video"
+                                                    className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-purple-500/15 text-purple-400 border border-dashed border-purple-500/40 hover:bg-purple-500/25 hover:border-purple-500 transition-all duration-300 cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
                                                 >
                                                     {uploadingId === ex.exercise_id ? (
                                                         <><Spinner /> {t('dashboard.exercises.uploading')}</>
                                                     ) : (
                                                         <>
                                                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                                                             </svg>
-                                                            {t('dashboard.exercises.changeVideo')}
+                                                            {t('dashboard.exercises.addVideo')}
                                                         </>
                                                     )}
                                                 </button>
-                                            </>
-                                        ) : (
-                                            <button
-                                                onClick={() => {
-                                                    fileInputRefs.current[ex.exercise_id]?.click();
-                                                }}
-                                                disabled={uploadingId === ex.exercise_id}
-                                                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-purple-500/15 text-purple-400 border border-dashed border-purple-500/40 hover:bg-purple-500/25 hover:border-purple-500 transition-all duration-300 cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
-                                            >
-                                                {uploadingId === ex.exercise_id ? (
-                                                    <><Spinner /> {t('dashboard.exercises.uploading')}</>
-                                                ) : (
-                                                    <>
-                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                                                        </svg>
-                                                        {t('dashboard.exercises.addVideo')}
-                                                    </>
-                                                )}
-                                            </button>
+                                            )
                                         )}
                                         <input
                                             type="file"
