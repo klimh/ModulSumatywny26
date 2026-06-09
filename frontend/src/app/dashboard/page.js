@@ -10,8 +10,12 @@ import { api } from "@/lib/api";
 import { useTranslation } from "@/hooks/useTranslation";
 
 function PatientDashboard() {
-    const { plan, physio, physioLoading, loading, error, fetchMyPlan, fetchMyPhysio } = usePatient();
+    const { plan, physio, physioLoading, loading, error, fetchMyPlan, fetchMyPhysio, disconnectPhysio } = usePatient();
     const [unreadCount, setUnreadCount] = useState(0);
+    const [showPhysioModal, setShowPhysioModal] = useState(false);
+    const [showDisconnectConfirm, setShowDisconnectConfirm] = useState(false);
+    const [disconnectLoading, setDisconnectLoading] = useState(false);
+    const [selectedCertificate, setSelectedCertificate] = useState(null);
     const { t } = useTranslation();
     const { user } = useAuth();
     const router = useRouter();
@@ -125,7 +129,10 @@ function PatientDashboard() {
                         <span className="font-semibold text-lg">{t('dashboard.patient.loading')}</span>
                     </div>
                 ) : physio ? (
-                    <div className="card-hover p-6 flex flex-col gap-3 group">
+                    <div
+                        className="card-hover p-6 flex flex-col gap-3 group cursor-pointer"
+                        onClick={() => setShowPhysioModal(true)}
+                    >
                         <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500/20 to-purple-500/20 flex items-center justify-center">
                             <svg className="w-6 h-6 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -155,6 +162,160 @@ function PatientDashboard() {
                     </Link>
                 )}
             </div>
+
+            {showPhysioModal && physio && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in" onClick={() => setShowPhysioModal(false)}>
+                    <div className="bg-panel border border-outline/50 rounded-2xl p-6 max-w-sm w-full flex flex-col gap-4 shadow-2xl relative" onClick={e => e.stopPropagation()}>
+                        <button
+                            className="absolute top-4 right-4 text-muted hover:text-white transition-colors"
+                            onClick={() => setShowPhysioModal(false)}
+                        >
+                            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+
+                        <div className="flex flex-col items-center gap-3 mt-4">
+                            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-violet-500/20 to-purple-500/20 flex items-center justify-center">
+                                <span className="text-2xl font-bold text-violet-400">
+                                    {physio.first_name[0]}{physio.last_name[0]}
+                                </span>
+                            </div>
+                            <div className="text-center">
+                                <h3 className="font-bold text-xl text-white">{physio.first_name} {physio.last_name}</h3>
+                                <p className="text-sm text-muted">{physio.email}</p>
+                            </div>
+
+                            <span className={`text-xs font-mono px-3 py-1.5 rounded-full mt-2 ${physio.status === "ZAAKCEPTOWANE"
+                                ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                                : "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                                }`}>
+                                {physio.status === "ZAAKCEPTOWANE" ? t('dashboard.patient.connected') : t('dashboard.patient.pending')}
+                            </span>
+                        </div>
+
+                        <div className="w-full flex flex-col gap-2 mt-4 bg-background/50 rounded-xl p-4 border border-outline/30">
+                            {physio.specialization && (
+                                <div className="flex justify-between items-center text-sm">
+                                    <span className="text-muted">{t('dashboard.findPhysio.specialization') || 'Specialization'}</span>
+                                    <span className="text-white font-medium">{physio.specialization}</span>
+                                </div>
+                            )}
+                            <div className="flex justify-between items-center text-sm">
+                                <span className="text-muted">{t('dashboard.findPhysio.patientsCount') || 'Patients'}</span>
+                                <span className="text-white font-medium">{physio.patient_count ?? 0}</span>
+                            </div>
+                            {physio.certificates && physio.certificates.length > 0 && (
+                                <div className="mt-2 pt-2 border-t border-outline/30">
+                                    <span className="text-xs text-muted block mb-2">{t('dashboard.findPhysio.certificates') || 'Certificates'}</span>
+                                    <div className="flex flex-wrap gap-2">
+                                        {physio.certificates.map(cert => (
+                                            <button 
+                                                key={cert.certificate_id} 
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setSelectedCertificate(cert.file_url);
+                                                }}
+                                                className="text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-1 rounded-md hover:bg-emerald-500/20 transition-colors flex items-center gap-1 cursor-pointer"
+                                            >
+                                                {cert.is_verified && (
+                                                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
+                                                )}
+                                                {cert.name}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="mt-6 pt-6 border-t border-outline/30 flex justify-center">
+                            <button
+                                onClick={() => {
+                                    setShowPhysioModal(false);
+                                    setShowDisconnectConfirm(true);
+                                }}
+                                className="btn flex items-center gap-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors w-full justify-center"
+                            >
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7a4 4 0 11-8 0 4 4 0 018 0zM9 14a6 6 0 00-6 6v1h12v-1a6 6 0 00-6-6zM21 12h-6" />
+                                </svg>
+                                {t('dashboard.patient.disconnect')}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Disconnect Confirm Modal */}
+            {showDisconnectConfirm && (
+                <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in" onClick={() => !disconnectLoading && setShowDisconnectConfirm(false)}>
+                    <div className="bg-panel border border-outline/50 rounded-2xl p-6 max-w-sm w-full flex flex-col gap-4 shadow-2xl" onClick={e => e.stopPropagation()}>
+                        <h3 className="font-bold text-xl text-white">{t('dashboard.patient.disconnectConfirmTitle')}</h3>
+                        <p className="text-sm text-muted">{t('dashboard.patient.disconnectConfirmDesc')}</p>
+                        <div className="flex flex-col gap-2 mt-2">
+                            <button
+                                onClick={async () => {
+                                    setDisconnectLoading(true);
+                                    try {
+                                        await disconnectPhysio();
+                                        setShowDisconnectConfirm(false);
+                                    } catch (e) {
+                                        console.error(e);
+                                    } finally {
+                                        setDisconnectLoading(false);
+                                    }
+                                }}
+                                disabled={disconnectLoading}
+                                className="btn-primary bg-gradient-to-r from-red-500 to-rose-500 hover:shadow-red-500/30 border-none"
+                            >
+                                {disconnectLoading ? (
+                                    <span className="flex items-center justify-center gap-2">
+                                        <svg className="w-4 h-4 spinner" viewBox="0 0 24 24" fill="none">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                        </svg>
+                                    </span>
+                                ) : (
+                                    t('dashboard.patient.disconnect')
+                                )}
+                            </button>
+                            <button
+                                onClick={() => setShowDisconnectConfirm(false)}
+                                disabled={disconnectLoading}
+                                className="btn"
+                            >
+                                {t('dashboard.findPhysio.confirmNo') || 'Cancel'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Certificate Viewer Modal */}
+            {selectedCertificate && (
+                <div className="fixed inset-0 z-[80] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in" onClick={() => setSelectedCertificate(null)}>
+                    <div className="relative bg-panel border border-outline/50 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-between p-4 border-b border-outline/50">
+                            <h3 className="font-semibold text-lg text-white">{t('dashboard.certificates.preview') || 'Certificate Preview'}</h3>
+                            <button onClick={() => setSelectedCertificate(null)} className="text-muted hover:text-white p-1 rounded-lg transition-colors">
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div className="p-4 flex-1 overflow-hidden flex items-center justify-center min-h-[50vh]">
+                            {selectedCertificate.toLowerCase().endsWith('.pdf') || selectedCertificate.includes('/raw/') ? (
+                                <iframe src={`https://docs.google.com/viewer?url=${encodeURIComponent(selectedCertificate)}&embedded=true`} className="w-full h-[70vh] rounded-lg bg-white" title="Certificate PDF preview" />
+                            ) : (
+                                <img src={selectedCertificate} alt="Certificate preview" className="max-w-full max-h-[70vh] object-contain rounded-lg" />
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

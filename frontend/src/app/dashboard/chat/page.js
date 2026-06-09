@@ -169,7 +169,11 @@ export default function ChatPage() {
                                 <h3 className="font-bold text-primary">
                                     {selectedContact.first_name} {selectedContact.last_name}
                                 </h3>
-                                <p className="text-xs text-emerald-500">{t('dashboard.chat.online')}</p>
+                                {selectedContact.connection_status === "ROZLACZONE" ? (
+                                    <p className="text-xs text-red-500 font-semibold uppercase">{t('dashboard.patient.disconnect') || 'Rozłączono'}</p>
+                                ) : (
+                                    <p className="text-xs text-emerald-500">{t('dashboard.chat.online')}</p>
+                                )}
                             </div>
                         </div>
 
@@ -181,29 +185,56 @@ export default function ChatPage() {
                                 </div>
                             ) : (
                                 messages.map((msg, idx) => {
-                                    const isSystem = msg.content === "[SYSTEM:PLAN_UPDATE]";
+                                    const isPlanUpdate = msg.content === "[SYSTEM:PLAN_UPDATE]";
+                                    const isDisconnect = msg.content === "[SYSTEM:DISCONNECT]" || msg.content.includes("rozłączył się");
+                                    const isConnect = msg.content === "[SYSTEM:CONNECT]";
 
-                                    if (isSystem) {
+                                    if (isPlanUpdate || isDisconnect || isConnect) {
                                         const isPatient = user?.role === "pacjent";
                                         const dateStr = new Date(msg.timestamp).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' });
 
-                                        const contentBlock = (
-                                            <div className="flex flex-col items-center justify-center text-center p-4">
-                                                <span className="text-xs font-bold text-teal-400 uppercase tracking-wide">
-                                                    {t('dashboard.chat.planUpdated')}
-                                                </span>
-                                                <span className="text-[10px] text-muted mt-1">{dateStr}</span>
-                                                {isPatient && (
-                                                    <span className="text-xs text-emerald-400 mt-2 bg-emerald-500/10 px-3 py-1.5 rounded-lg border border-emerald-500/20 font-semibold group-hover:bg-emerald-500/20 transition-colors">
-                                                        {t('dashboard.chat.clickToViewPlan')}
+                                        let contentBlock;
+                                        if (isDisconnect) {
+                                            contentBlock = (
+                                                <div className="flex flex-col items-center justify-center text-center p-4">
+                                                    <span className="text-xs font-bold text-red-400 uppercase tracking-wide">
+                                                        {t('dashboard.chat.disconnectedNotice')}
                                                     </span>
-                                                )}
-                                            </div>
-                                        );
+                                                    <span className="text-[10px] text-muted mt-1">{dateStr}</span>
+                                                </div>
+                                            );
+                                        } else if (isConnect) {
+                                            contentBlock = (
+                                                <div className="flex flex-col items-center justify-center text-center p-4">
+                                                    <span className="text-xs font-bold text-emerald-400 uppercase tracking-wide">
+                                                        {t('dashboard.chat.connectionEstablished')}
+                                                    </span>
+                                                    <span className="text-[10px] text-muted mt-1">{dateStr}</span>
+                                                </div>
+                                            );
+                                        } else {
+                                            contentBlock = (
+                                                <div className="flex flex-col items-center justify-center text-center p-4">
+                                                    <span className="text-xs font-bold text-teal-400 uppercase tracking-wide">
+                                                        {t('dashboard.chat.planUpdated')}
+                                                    </span>
+                                                    <span className="text-[10px] text-muted mt-1">{dateStr}</span>
+                                                    {isPatient && (
+                                                        <span className="text-xs text-emerald-400 mt-2 bg-emerald-500/10 px-3 py-1.5 rounded-lg border border-emerald-500/20 font-semibold group-hover:bg-emerald-500/20 transition-colors">
+                                                            {t('dashboard.chat.clickToViewPlan')}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            );
+                                        }
+
+                                        let bgClass = "bg-panel/50 border border-outline/50";
+                                        if (isDisconnect) bgClass = "bg-red-500/5 border border-red-500/30 shadow-red-500/5";
+                                        if (isConnect) bgClass = "bg-emerald-500/5 border border-emerald-500/30 shadow-emerald-500/5";
 
                                         return (
                                             <div key={idx} className="flex justify-center my-4 w-full">
-                                                {isPatient ? (
+                                                {isPlanUpdate && isPatient ? (
                                                     <Link
                                                         href="/dashboard/plan"
                                                         className="w-full max-w-sm rounded-xl bg-panel border border-teal-500/30 hover:border-teal-500/60 shadow-lg shadow-teal-500/10 transition-all cursor-pointer no-underline group"
@@ -211,7 +242,7 @@ export default function ChatPage() {
                                                         {contentBlock}
                                                     </Link>
                                                 ) : (
-                                                    <div className="w-full max-w-sm rounded-xl bg-panel/50 border border-outline/50 shadow-sm cursor-default">
+                                                    <div className={`w-full max-w-sm rounded-xl ${bgClass} shadow-sm cursor-default`}>
                                                         {contentBlock}
                                                     </div>
                                                 )}
@@ -239,22 +270,28 @@ export default function ChatPage() {
                         </div>
 
                         <div className="p-4 bg-panel/50 backdrop-blur-sm border-t border-outline">
-                            <form onSubmit={handleSend} className="flex gap-2">
-                                <input
-                                    type="text"
-                                    value={inputMsg}
-                                    onChange={(e) => setInputMsg(e.target.value)}
-                                    placeholder={t('dashboard.chat.typeMessage')}
-                                    className="flex-1 bg-main border border-outline rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/50 transition-all text-primary placeholder:text-muted"
-                                />
-                                <button
-                                    type="submit"
-                                    disabled={!inputMsg.trim()}
-                                    className="bg-gradient-to-r from-teal-500 to-cyan-500 text-white p-3 rounded-xl shadow-lg shadow-teal-500/20 hover:shadow-teal-500/40 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                                >
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
-                                </button>
-                            </form>
+                            {selectedContact.connection_status === "ROZLACZONE" ? (
+                                <div className="bg-main border border-outline rounded-xl px-4 py-3 text-sm text-center text-muted">
+                                    {t('dashboard.chat.disconnectedNotice')}
+                                </div>
+                            ) : (
+                                <form onSubmit={handleSend} className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={inputMsg}
+                                        onChange={(e) => setInputMsg(e.target.value)}
+                                        placeholder={t('dashboard.chat.typeMessage')}
+                                        className="flex-1 bg-main border border-outline rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/50 transition-all text-primary placeholder:text-muted"
+                                    />
+                                    <button
+                                        type="submit"
+                                        disabled={!inputMsg.trim()}
+                                        className="bg-gradient-to-r from-teal-500 to-cyan-500 text-white p-3 rounded-xl shadow-lg shadow-teal-500/20 hover:shadow-teal-500/40 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                                    >
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                                    </button>
+                                </form>
+                            )}
                         </div>
                     </>
                 ) : (

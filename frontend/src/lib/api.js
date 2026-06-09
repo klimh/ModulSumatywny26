@@ -96,6 +96,7 @@ export const api = {
     getMe: () => apiFetch('/users/me'),
     requestPhysio: (physioId) => apiFetch(`/users/request-physio/${physioId}`, { method: 'POST' }),
     getAllPhysiotherapists: () => apiFetch('/users/physiotherapists'),
+    disconnectPhysio: () => apiFetch('/users/disconnect-physio', { method: 'DELETE' }),
   },
   physio: {
     getMyPatients: () => apiFetch('/physio/my-patients'),

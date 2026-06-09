@@ -78,8 +78,21 @@ export function usePatient() {
         }
     };
 
+    const disconnectPhysio = async () => {
+        setLoading(true);
+        try {
+            await api.users.disconnectPhysio();
+            setPhysio(null);
+            setPlan(null);
+        } catch (err) {
+            throw err;
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return {
         plan, physio, physioLoading, allPhysios, loading, error,
-        fetchMyPlan, fetchMyPhysio, fetchAllPhysios, requestPhysio, submitSession
+        fetchMyPlan, fetchMyPhysio, fetchAllPhysios, requestPhysio, submitSession, disconnectPhysio
     };
 }

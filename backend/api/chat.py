@@ -22,20 +22,23 @@ def get_contacts(db: Session = Depends(get_db), current_user: User = Depends(get
     if current_user.role == "pacjent":
         relations = db.query(PatientPhysiotherapist).filter(
             PatientPhysiotherapist.patient_id == current_user.user_id,
-            PatientPhysiotherapist.status == "ZAAKCEPTOWANE"
+            PatientPhysiotherapist.status.in_(["ZAAKCEPTOWANE", "ROZLACZONE"])
         ).all()
         physio_ids = [r.physio_id for r in relations]
         contacts = db.query(User).filter(User.user_id.in_(physio_ids)).all()
+        status_map = {r.physio_id: r.status for r in relations}
         
     elif current_user.role == "fizjoterapeuta":
         relations = db.query(PatientPhysiotherapist).filter(
             PatientPhysiotherapist.physio_id == current_user.user_id,
-            PatientPhysiotherapist.status == "ZAAKCEPTOWANE"
+            PatientPhysiotherapist.status.in_(["ZAAKCEPTOWANE", "ROZLACZONE"])
         ).all()
         patient_ids = [r.patient_id for r in relations]
         contacts = db.query(User).filter(User.user_id.in_(patient_ids)).all()
+        status_map = {r.patient_id: r.status for r in relations}
     else:
         contacts = []
+        status_map = {}
 
     result = []
     for c in contacts:
@@ -61,7 +64,8 @@ def get_contacts(db: Session = Depends(get_db), current_user: User = Depends(get
             "last_name": c.last_name,
             "role": c.role,
             "last_activity": last_time,
-            "has_unread": unread_count > 0
+            "has_unread": unread_count > 0,
+            "connection_status": status_map.get(c.user_id)
         })
         
     result.sort(key=lambda x: x["last_activity"], reverse=True)
@@ -77,21 +81,20 @@ def get_messages(contact_id: int, db: Session = Depends(get_db), current_user: U
         rel = db.query(PatientPhysiotherapist).filter(
             PatientPhysiotherapist.patient_id == current_user.user_id,
             PatientPhysiotherapist.physio_id == contact_id,
-            PatientPhysiotherapist.status == "ZAAKCEPTOWANE"
+            PatientPhysiotherapist.status.in_(["ZAAKCEPTOWANE", "ROZLACZONE"])
         ).first()
         if rel: is_valid = True
     elif current_user.role == "fizjoterapeuta":
         rel = db.query(PatientPhysiotherapist).filter(
             PatientPhysiotherapist.physio_id == current_user.user_id,
             PatientPhysiotherapist.patient_id == contact_id,
-            PatientPhysiotherapist.status == "ZAAKCEPTOWANE"
+            PatientPhysiotherapist.status.in_(["ZAAKCEPTOWANE", "ROZLACZONE"])
         ).first()
         if rel: is_valid = True
 
     if not is_valid:
         raise HTTPException(status_code=403, detail="No active relationship with this user.")
 
-    # Mark all unread messages from this contact to current user as read
     db.query(Message).filter(
         Message.sender_id == contact_id,
         Message.receiver_id == current_user.user_id,

@@ -8,6 +8,7 @@ from db_models.rehab_plan import RehabPlan
 from db_models.session import Session
 from db_models.exercise_result import ExerciseResult
 from db_models.patient_physiotherapist import PatientPhysiotherapist
+from db_models.physiotherapist import Physiotherapist
 
 router = APIRouter(
     prefix="/patient",
@@ -31,12 +32,33 @@ def get_my_physiotherapist(
         raise HTTPException(status_code=404, detail="Brak przypisanego fizjoterapeuty")
 
     physio_user = db.query(User).filter(User.user_id == connection.physio_id).first()
+    physio_profile = db.query(Physiotherapist).filter(Physiotherapist.user_id == connection.physio_id).first()
+    
+    patient_count = db.query(PatientPhysiotherapist).filter(
+        PatientPhysiotherapist.physio_id == connection.physio_id,
+        PatientPhysiotherapist.status == "ZAAKCEPTOWANE"
+    ).count()
+
+    certificates = []
+    if physio_profile and physio_profile.certificates:
+        certificates = [
+            {
+                "certificate_id": cert.certificate_id,
+                "name": cert.name,
+                "file_url": cert.file_url,
+                "is_verified": cert.is_verified
+            } for cert in physio_profile.certificates
+        ]
+
     return {
         "physio_id": physio_user.user_id,
         "first_name": physio_user.first_name,
         "last_name": physio_user.last_name,
         "email": physio_user.email,
-        "status": connection.status
+        "status": connection.status,
+        "specialization": physio_profile.specialization if physio_profile else None,
+        "patient_count": patient_count,
+        "certificates": certificates
     }
 
 

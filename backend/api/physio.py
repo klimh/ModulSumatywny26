@@ -193,6 +193,15 @@ def respond_to_request(
         raise HTTPException(status_code=404, detail="Nie znaleziono prośby")
 
     request.status = "ZAAKCEPTOWANE" if accept else "ODRZUCONE"
+    
+    if accept:
+        system_msg = Message(
+            sender_id=current_user.user_id,
+            receiver_id=request.patient_id,
+            content="[SYSTEM:CONNECT]"
+        )
+        db.add(system_msg)
+        
     db.commit()
     return {"message": f"Status prośby zaktualizowany na: {request.status}"}
 

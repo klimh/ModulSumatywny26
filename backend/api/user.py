@@ -5,6 +5,8 @@ from db_models.patient_physiotherapist import PatientPhysiotherapist
 from db_models.user import User
 from db_models.patient import Patient
 from db_models.physiotherapist import Physiotherapist
+from db_models.message import Message
+from db_models.rehab_plan import RehabPlan
 from schemas.user import UserCreate, UserResponse, UserRegister
 from core.security import get_password_hash, get_current_user, RoleChecker
 
@@ -60,7 +62,8 @@ def request_physiotherapist(
         raise HTTPException(status_code=400, detail="Masz już przypisanego fizjoterapeutę")
 
     db.query(PatientPhysiotherapist).filter(
-        PatientPhysiotherapist.patient_id == current_user.user_id
+        PatientPhysiotherapist.patient_id == current_user.user_id,
+        PatientPhysiotherapist.status == "OCZEKUJACE"
     ).delete(synchronize_session=False)
 
     new_match = PatientPhysiotherapist(
@@ -105,4 +108,40 @@ def get_all_physiotherapists(
         }
         for user, physio in physios
     ]
+
+@router.delete("/disconnect-physio")
+def disconnect_physiotherapist(
+        current_user: User = Depends(RoleChecker(["pacjent"])),
+        db: Session = Depends(get_db)
+):
+    connection = db.query(PatientPhysiotherapist).filter(
+        PatientPhysiotherapist.patient_id == current_user.user_id,
+        PatientPhysiotherapist.status.in_(["ZAAKCEPTOWANE", "OCZEKUJACE"])
+    ).first()
+
+    if not connection:
+        raise HTTPException(status_code=400, detail="Nie masz przypisanego fizjoterapeuty")
+
+    physio_id = connection.physio_id
+
+    connection.status = "ROZLACZONE"
+
+    active_plan = db.query(RehabPlan).filter(
+        RehabPlan.patient_id == current_user.user_id,
+        RehabPlan.physio_id == physio_id,
+        RehabPlan.is_active == True
+    ).first()
+
+    if active_plan:
+        active_plan.is_active = False
+
+    system_msg = Message(
+        sender_id=current_user.user_id,
+        receiver_id=physio_id,
+        content="[SYSTEM:DISCONNECT]"
+    )
+    db.add(system_msg)
+
+    db.commit()
+    return {"message": "Pomyślnie rozłączono z fizjoterapeutą"}
 
