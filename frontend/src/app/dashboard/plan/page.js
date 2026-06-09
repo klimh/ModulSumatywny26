@@ -216,7 +216,7 @@ export default function PlanPage() {
                         </div>
                         
                         {selectedExercise.description && (
-                            <p className="text-sm text-gray-300">
+                            <p className="text-sm text-muted">
                                 {selectedExercise.description}
                             </p>
                         )}

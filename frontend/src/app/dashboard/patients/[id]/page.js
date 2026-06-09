@@ -194,7 +194,7 @@ export default function PatientDetailsPage({ params }) {
                         </div>
                         <button
                             onClick={() => setIsEditingPlan(!isEditingPlan)}
-                            className={`btn-primary mt-2 w-full ${isEditingPlan ? 'bg-panel text-white border-outline hover:bg-main' : ''}`}
+                            className={`btn-primary mt-2 w-full ${isEditingPlan ? 'bg-panel text-primary border-outline hover:bg-main' : ''}`}
                         >
                             {isEditingPlan ? t('dashboard.patientDetails.cancelEdit') : planTitle ? t('dashboard.patientDetails.editPlan') : t('dashboard.patientDetails.createPlan')}
                         </button>
@@ -212,7 +212,7 @@ export default function PatientDetailsPage({ params }) {
                         </div>
                         <Link
                             href={`/dashboard/patients/${patientId}/progress`}
-                            className="btn-primary bg-panel text-white border-outline hover:bg-main w-full mt-2"
+                            className="btn-primary bg-panel text-primary border-outline hover:bg-main w-full mt-2"
                         >
                             {t('dashboard.patientDetails.viewProgress')}
                         </Link>

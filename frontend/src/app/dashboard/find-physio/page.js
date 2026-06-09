@@ -125,9 +125,9 @@ export default function FindPhysioPage() {
                         <p className="text-muted text-sm">
                             {t('dashboard.findPhysio.waitingDesc')} <strong className="text-white">{pairingStatus.physio_name}</strong> {t('dashboard.findPhysio.waitingDescSuffix')}
                         </p>
-                        <div className="bg-panel w-full p-4 rounded-lg mt-2 text-left">
+                        <div className="bg-panel w-full p-4 rounded-lg mt-2 text-left border border-outline">
                             <span className="text-xs text-muted uppercase">{t('dashboard.findPhysio.yourProblem')}</span>
-                            <p className="text-sm text-gray-200 mt-1">{pairingStatus.problem_description}</p>
+                            <p className="text-sm text-primary mt-1">{pairingStatus.problem_description}</p>
                         </div>
                     </div>
                 </div>
@@ -190,7 +190,7 @@ export default function FindPhysioPage() {
 
                 <form onSubmit={handleRequestPairing} className="card p-6 flex flex-col gap-5">
                     <div className="flex flex-col gap-2">
-                        <label className="text-sm font-medium text-gray-200">
+                        <label className="text-sm font-medium text-primary">
                             {t('dashboard.findPhysio.problemLabel')} <span className="text-red-400">*</span>
                         </label>
                         <textarea
@@ -205,11 +205,11 @@ export default function FindPhysioPage() {
                     </div>
 
                     <div className="flex flex-col gap-2 relative">
-                        <label className="text-sm font-medium text-gray-200">
+                        <label className="text-sm font-medium text-primary">
                             {t('dashboard.findPhysio.specLabel')}
                         </label>
                         <div 
-                            className="input-field py-3 text-gray-200 cursor-pointer flex justify-between items-center"
+                            className="input-field py-3 text-primary cursor-pointer flex justify-between items-center"
                             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                         >
                             <span>{currentSpecializationLabel}</span>
@@ -223,7 +223,7 @@ export default function FindPhysioPage() {
                                 {specializationOptions.map((opt) => (
                                     <div 
                                         key={opt.value}
-                                        className={`px-4 py-3 cursor-pointer hover:bg-main transition-colors ${specialization === opt.value ? 'bg-main text-emerald-400 font-medium' : 'text-gray-200'}`}
+                                        className={`px-4 py-3 cursor-pointer hover:bg-main transition-colors ${specialization === opt.value ? 'bg-main text-emerald-400 font-medium' : 'text-primary'}`}
                                         onClick={() => {
                                             setSpecialization(opt.value);
                                             setIsDropdownOpen(false);

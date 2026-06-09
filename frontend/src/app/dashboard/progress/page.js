@@ -376,7 +376,7 @@ export default function PatientProgressPage() {
                                             {new Date(note.created_at).toLocaleDateString()} {new Date(note.created_at).toLocaleTimeString()}
                                         </span>
                                     </div>
-                                    <p className="text-gray-200 mb-4 whitespace-pre-wrap">{note.note_content}</p>
+                                    <p className="text-primary mb-4 whitespace-pre-wrap">{note.note_content}</p>
                                     <div className="flex gap-4">
                                         {note.pain_level !== null && (
                                             <div className="flex items-center gap-2 text-sm bg-red-500/10 text-red-400 px-3 py-1 rounded-full border border-red-500/20">

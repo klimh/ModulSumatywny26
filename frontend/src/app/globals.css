@@ -32,20 +32,20 @@
 
 @layer base {
     :root {
-        --color-main: oklch(0.98 0.01 175);
+        --color-main: oklch(0.96 0.01 175);
         --color-panel: oklch(1 0 0);
-        --color-outline: oklch(0.92 0.02 175);
+        --color-outline: oklch(0.85 0.02 175);
 
-        --color-danger: oklch(0.62 0.18 25);
-        --color-danger-panel: oklch(0.97 0.03 25);
-        --color-danger-outline: oklch(0.90 0.06 25);
+        --color-danger: oklch(0.60 0.18 25);
+        --color-danger-panel: oklch(0.95 0.03 25);
+        --color-danger-outline: oklch(0.85 0.06 25);
 
-        --color-primary: oklch(0.35 0.06 175);
-        --color-muted: oklch(0.60 0.04 175);
+        --color-primary: oklch(0.15 0.05 175);
+        --color-muted: oklch(0.40 0.03 175);
 
-        --color-shadow: oklch(0.35 0.06 175 / 0.05);
+        --color-shadow: oklch(0.15 0.05 175 / 0.1);
         --color-glow: oklch(0.88 0.08 160);
-        --color-glow-gradient: oklch(0.95 0.04 165);
+        --color-glow-gradient: oklch(0.90 0.04 165);
     }
 
     .dark {
