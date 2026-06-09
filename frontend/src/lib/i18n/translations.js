@@ -1,0 +1,30 @@
+export const translations = {
+    en: {
+        "header.logIn": "Log In",
+        "header.signUp": "Sign Up",
+        "header.dashboard": "Dashboard",
+        "header.rehabPlan": "Rehab Plan",
+        "header.myProgress": "My Progress",
+        "header.chat": "Chat",
+        "header.patients": "Patients",
+        "header.exercises": "Exercises",
+        "header.requests": "Requests",
+        "header.logOut": "Log Out",
+        "header.physio": "Physio",
+        "header.patient": "Patient",
+    },
+    pl: {
+        "header.logIn": "Zaloguj się",
+        "header.signUp": "Zarejestruj się",
+        "header.dashboard": "Panel Główny",
+        "header.rehabPlan": "Plan Rehabilitacji",
+        "header.myProgress": "Moje Postępy",
+        "header.chat": "Czat",
+        "header.patients": "Pacjenci",
+        "header.exercises": "Ćwiczenia",
+        "header.requests": "Prośby",
+        "header.logOut": "Wyloguj się",
+        "header.physio": "Fizjo",
+        "header.patient": "Pacjent",
+    }
+};
