@@ -91,6 +91,12 @@ export const api = {
       body: JSON.stringify(resultsList) 
     }),
   },
+  streaks: {
+    getMine: () => apiFetch('/streaks/me'),
+    getPatient: (patientId) => apiFetch(`/streaks/patient/${patientId}`),
+    getCalendar: (patientId, year, month) => apiFetch(`/streaks/patient/${patientId}/calendar?year=${year}&month=${month}`),
+    getNotifications: () => apiFetch('/streaks/notifications'),
+  },
   users: {
     register: (userData) => apiFetch('/users/register', { method: 'POST', body: JSON.stringify(userData) }),
     getMe: () => apiFetch('/users/me'),
