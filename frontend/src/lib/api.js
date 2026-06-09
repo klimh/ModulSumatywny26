@@ -81,7 +81,9 @@ export const api = {
         throw new Error(errorDetail);
       }
       return response.json();
-    }
+    },
+    generateApiKey: () => apiFetch('/api-key/generate', { method: 'POST' }),
+    getApiKey: () => apiFetch('/api-key'),
   },
   patient: {
     getMyPlan: () => apiFetch('/patient/my-plan'),

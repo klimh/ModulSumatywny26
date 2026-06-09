@@ -23,6 +23,8 @@ function PatientDashboard() {
     const [doneToday, setDoneToday] = useState(false);
     const [streak, setStreak] = useState(null);
     const [summary, setSummary] = useState(null);
+    const [apiKey, setApiKey] = useState(null);
+    const [copied, setCopied] = useState(false);
 
     useEffect(() => {
         fetchMyPlan();
@@ -34,10 +36,14 @@ function PatientDashboard() {
             Promise.all([
                 api.progress.getSessionsByPatient(user.user_id),
                 api.streaks.getMine().catch(() => null),
-                api.progress.getMeSummary().catch(() => null)
-            ]).then(([sessions, streakData, summaryData]) => {
+                api.progress.getMeSummary().catch(() => null),
+                api.auth.getApiKey().catch(() => null)
+            ]).then(([sessions, streakData, summaryData, keyData]) => {
                 setStreak(streakData);
                 setSummary(summaryData);
+                if (keyData && keyData.api_key) {
+                    setApiKey(keyData.api_key);
+                }
                 if (sessions && sessions.length > 0) {
                     const latest = sessions[0];
                     if (latest.created_at) {
@@ -244,6 +250,69 @@ function PatientDashboard() {
                         </span>
                     </Link>
                 )}
+            </div>
+
+            {/* INTEGRATION PANEL */}
+            <div className="card border border-indigo-500/30 bg-gradient-to-r from-indigo-500/10 via-panel to-blue-500/10 p-6 flex flex-col gap-4 mt-2 mb-8">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
+                    </div>
+                    <div>
+                        <h3 className="font-bold text-lg text-white">{t('dashboard.patient.integrationTitle') || 'Integracje (Zewnętrzne API)'}</h3>
+                        <p className="text-xs text-muted">{t('dashboard.patient.integrationDesc') || 'Wygeneruj klucz (X-API-Key) aby połączyć swój panel statystyk z widgetami w telefonie lub aplikacjami zewnętrznymi.'}</p>
+                    </div>
+                </div>
+                
+                <div className="flex flex-col sm:flex-row gap-3 items-end sm:items-center">
+                    {apiKey ? (
+                        <div className="flex-1 w-full flex flex-col gap-1">
+                            <label className="text-xs font-mono text-muted uppercase tracking-wider">{t('dashboard.patient.yourApiKey') || 'Twój klucz API:'}</label>
+                            <div className="flex bg-main/50 border border-outline rounded-xl overflow-hidden shadow-inner">
+                                <input 
+                                    type="text" 
+                                    readOnly 
+                                    value={apiKey} 
+                                    className="flex-1 bg-transparent px-4 py-2 font-mono text-sm text-indigo-200 outline-none w-full"
+                                />
+                                <button 
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(apiKey);
+                                        setCopied(true);
+                                        setTimeout(() => setCopied(false), 2000);
+                                    }}
+                                    className={`px-4 py-2 text-sm font-bold transition-colors border-l border-outline flex items-center gap-2 ${copied ? 'bg-emerald-500/20 text-emerald-400' : 'bg-panel hover:bg-white/5 text-white'}`}
+                                >
+                                    {copied ? (
+                                        <>{t('dashboard.patient.keyCopied') || 'Skopiowano!'}</>
+                                    ) : (
+                                        <>
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                                            {t('dashboard.patient.copyKey') || 'Skopiuj'}
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="flex-1 w-full text-sm text-amber-400/80 bg-amber-500/10 px-4 py-3 rounded-xl border border-amber-500/20">
+                            Nie masz jeszcze wygenerowanego klucza dostępu.
+                        </div>
+                    )}
+                    <button 
+                        onClick={async () => {
+                            try {
+                                const res = await api.auth.generateApiKey();
+                                setApiKey(res.api_key);
+                            } catch(e) {
+                                console.error(e);
+                            }
+                        }}
+                        className="btn whitespace-nowrap bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 border border-indigo-500/30"
+                    >
+                        {apiKey ? (t('dashboard.patient.reGenerateKey') || 'Wygeneruj Nowy') : (t('dashboard.patient.generateKey') || 'Wygeneruj Klucz')}
+                    </button>
+                </div>
             </div>
 
             {showPhysioModal && physio && (
