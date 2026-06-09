@@ -74,7 +74,6 @@ export default function PatientsPage() {
             case "yellow":
                 return (
                     <span className="badge-warning flex items-center gap-1.5">
-                        <span className="text-sm">⚠️</span>
                         {t('dashboard.patients.noPlan')}
                     </span>
                 );
@@ -111,7 +110,7 @@ export default function PatientsPage() {
             </div>
 
             <div className="w-full max-w-3xl animate-fade-in">
-                {error && <div className="error-box mb-4">⚠️ {error}</div>}
+                {error && <div className="error-box mb-4">{error}</div>}
 
                 {/* Status Legend */}
                 {patients.length > 0 && Object.keys(summaries).length > 0 && (
@@ -126,7 +125,6 @@ export default function PatientsPage() {
                             <span className="text-muted">{t('dashboard.patients.needsAttention')}</span>
                         </div>
                         <div className="flex items-center gap-1.5 text-xs">
-                            <span>⚠️</span>
                             <span className="text-muted">{t('dashboard.patients.noPlan')}</span>
                         </div>
                     </div>

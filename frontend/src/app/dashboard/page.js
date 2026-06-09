@@ -13,11 +13,31 @@ function PatientDashboard() {
     const { plan, physio, physioLoading, loading, error, fetchMyPlan, fetchMyPhysio } = usePatient();
     const [unreadCount, setUnreadCount] = useState(0);
     const { t } = useTranslation();
+    const { user } = useAuth();
+    const router = useRouter();
+    const [doneToday, setDoneToday] = useState(false);
 
     useEffect(() => {
         fetchMyPlan();
         fetchMyPhysio();
     }, [fetchMyPlan, fetchMyPhysio]);
+
+    useEffect(() => {
+        if (user) {
+            api.progress.getSessionsByPatient(user.user_id).then(sessions => {
+                if (sessions && sessions.length > 0) {
+                    const latest = sessions[0];
+                    if (latest.created_at) {
+                        const latestDate = new Date(latest.created_at).toDateString();
+                        const todayDate = new Date().toDateString();
+                        if (latestDate === todayDate) {
+                            setDoneToday(true);
+                        }
+                    }
+                }
+            }).catch(e => console.error(e));
+        }
+    }, [user]);
 
     useEffect(() => {
         let interval;
@@ -34,20 +54,37 @@ function PatientDashboard() {
 
     return (
         <div className="w-full max-w-4xl flex flex-col gap-6 animate-fade-in">
-            <h2 className="section-title">{t('dashboard.patient.title')}</h2>
             {error && <div className="error-box">⚠️ {error}</div>}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Link href="/dashboard/plan" className="card-hover p-6 flex flex-col gap-3 no-underline group">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 flex items-center justify-center">
-                        <svg className="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                        </svg>
+                <div
+                    onClick={() => router.push("/dashboard/plan")}
+                    className="card-hover p-6 flex flex-col gap-3 cursor-pointer group relative"
+                    role="button"
+                    tabIndex={0}
+                >
+                    <div className="flex justify-between items-start">
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 flex items-center justify-center">
+                            <svg className="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                            </svg>
+                        </div>
+                        {plan && plan.exercises && plan.exercises.length > 0 && !doneToday && (
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    router.push("/dashboard/session");
+                                }}
+                                className="px-3 py-1.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-xs font-bold rounded-xl shadow-md hover:shadow-emerald-500/30 hover:scale-105 transition-all z-10"
+                            >
+                                {t('dashboard.patient.notification')}
+                            </button>
+                        )}
                     </div>
                     <span className="font-semibold text-lg group-hover:text-emerald-400 transition-colors">{t('dashboard.patient.myPlan')}</span>
                     <span className="text-xs text-muted">
                         {plan ? `${t('dashboard.patient.activePlan')} ${plan.title}` : loading ? t('dashboard.patient.loading') : t('dashboard.patient.noPlan')}
                     </span>
-                </Link>
+                </div>
 
                 <Link href="/dashboard/chat" className="relative card-hover p-6 flex flex-col gap-3 no-underline group">
                     {unreadCount > 0 && (
