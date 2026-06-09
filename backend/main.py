@@ -1,10 +1,12 @@
+import asyncio
 import os
+from datetime import datetime, time, timedelta
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from db.database import engine, Base, SessionLocal
 import cloudinary
 
-from db_models import user, patient, physiotherapist, patient_physiotherapist, exercise, rehab_plan, rehab_plan_exercise, session, exercise_result, message, progress_note, certificate
+from db_models import user, patient, physiotherapist, patient_physiotherapist, exercise, rehab_plan, rehab_plan_exercise, session, exercise_result, message, progress_note, certificate, streak
 from api import user as user_api
 from api import auth as auth_api
 from api import physio as physio_api
@@ -13,6 +15,7 @@ from api import ai as ai_api
 from api import admin as admin_api
 from api import chat as chat_api
 from api import progress as progress_api
+from api import streak as streak_api
 
 Base.metadata.create_all(bind=engine)
 app = FastAPI(title = "RehabSense API", version = "1.0")
@@ -46,6 +49,7 @@ app.include_router(admin_api.router)
 
 app.include_router(chat_api.router)
 app.include_router(progress_api.router)
+app.include_router(streak_api.router)
 
 
 @app.on_event("startup")
@@ -72,4 +76,26 @@ def seed_admin():
             print("Admin user already exists")
     finally:
         db.close()
+
+
+@app.on_event("startup")
+async def start_streak_scheduler():
+    asyncio.create_task(_streak_scheduler_loop())
+
+
+async def _streak_scheduler_loop():
+    while True:
+        now = datetime.now()
+        next_midnight = datetime.combine(now.date() + timedelta(days=1), time.min)
+        await asyncio.sleep(max((next_midnight - now).total_seconds(), 1))
+
+        from core.streaks import create_evening_reminders, reset_expired_streaks
+
+        db = SessionLocal()
+        try:
+            reset_expired_streaks(db)
+            create_evening_reminders(db)
+            db.commit()
+        finally:
+            db.close()
 
