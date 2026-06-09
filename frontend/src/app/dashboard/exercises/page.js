@@ -262,9 +262,11 @@ export default function ExercisesPage() {
                                     <div className="animate-fade-in rounded-xl overflow-hidden border border-outline bg-black/20">
                                         <video
                                             src={ex.video_url}
-                                            controls
-                                            className="w-full max-h-80 object-contain"
-                                            preload="metadata"
+                                            autoPlay
+                                            loop
+                                            muted
+                                            playsInline
+                                            className="w-full aspect-video object-contain"
                                         />
                                     </div>
                                 )}
