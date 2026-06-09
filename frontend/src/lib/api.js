@@ -162,6 +162,7 @@ export const api = {
       return apiFetch(`/progress/patient/${patientId}/history${qs ? `?${qs}` : ''}`);
     },
     getSummary: (patientId) => apiFetch(`/progress/patient/${patientId}/summary`),
+    getMeSummary: () => apiFetch('/progress/me/summary'),
   },
   pairing: {
     requestPairing: (data) => apiFetch('/pairing/request', { method: 'POST', body: JSON.stringify(data) }),
