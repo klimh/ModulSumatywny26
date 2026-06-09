@@ -168,5 +168,6 @@ export const api = {
     getPendingRequests: () => apiFetch('/pairing/physio/pending'),
     physioRespond: (requestId, action) => apiFetch(`/pairing/${requestId}/physio-respond`, { method: 'POST', body: JSON.stringify({ action }) }),
     patientConfirm: (requestId) => apiFetch(`/pairing/${requestId}/patient-confirm`, { method: 'POST' }),
+    getPatientStatus: () => apiFetch('/pairing/patient/status'),
   }
 };

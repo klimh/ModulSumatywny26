@@ -6,6 +6,7 @@ export function usePatient() {
     const [physio, setPhysio] = useState(null);
     const [physioLoading, setPhysioLoading] = useState(false);
     const [allPhysios, setAllPhysios] = useState([]);
+    const [pairingStatus, setPairingStatus] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
@@ -91,8 +92,56 @@ export function usePatient() {
         }
     };
 
+    const fetchPairingStatus = useCallback(async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const data = await api.pairing.getPatientStatus();
+            setPairingStatus(data);
+            return data;
+        } catch (err) {
+            if (!err.message.includes("Brak aktywnego")) {
+                setError(err.message);
+            }
+            setPairingStatus(null);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    const requestPairing = async (data) => {
+        setLoading(true);
+        setError(null);
+        try {
+            const res = await api.pairing.requestPairing(data);
+            await fetchPairingStatus();
+            return res;
+        } catch (err) {
+            setError(err.message);
+            throw err;
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const confirmPairing = async (requestId) => {
+        setLoading(true);
+        setError(null);
+        try {
+            await api.pairing.patientConfirm(requestId);
+            await fetchMyPhysio();
+            await fetchPairingStatus();
+        } catch (err) {
+            setError(err.message);
+            throw err;
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return {
-        plan, physio, physioLoading, allPhysios, loading, error,
-        fetchMyPlan, fetchMyPhysio, fetchAllPhysios, requestPhysio, submitSession, disconnectPhysio
+        plan, physio, physioLoading, allPhysios, loading, error, pairingStatus,
+        fetchMyPlan, fetchMyPhysio, fetchAllPhysios, requestPhysio, submitSession, disconnectPhysio,
+        fetchPairingStatus, requestPairing, confirmPairing
     };
 }

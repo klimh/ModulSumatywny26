@@ -40,7 +40,7 @@ export function usePhysio() {
         setLoading(true);
         setError(null);
         try {
-            const data = await api.physio.getPendingRequests();
+            const data = await api.pairing.getPendingRequests();
             setRequests(data);
             return data;
         } catch (err) {
@@ -75,7 +75,7 @@ export function usePhysio() {
     const respondToRequest = async (requestId, accept) => {
         setError(null);
         try {
-            await api.physio.respondRequest(requestId, accept);
+            await api.pairing.physioRespond(requestId, accept ? "accept" : "reject");
             await fetchRequests();
         } catch (err) {
             setError(err.message);

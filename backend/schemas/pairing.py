@@ -22,6 +22,8 @@ class PairingRequestResponse(BaseModel):
     status: PairingStatus
     created_at: datetime
     updated_at: datetime
+    patient_name: Optional[str] = None
+    physio_name: Optional[str] = None
 
     class Config:
         from_attributes = True

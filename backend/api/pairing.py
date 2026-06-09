@@ -54,7 +54,27 @@ def get_pending_requests(
     db: DBSession = Depends(get_db)
 ):
     requests = get_pending_requests_for_physio(db, current_user.user_id)
-    return requests
+    response = []
+    for req in requests:
+        patient = db.query(User).filter(User.user_id == req.patient_id).first()
+        res = PairingRequestResponse.from_orm(req)
+        res.patient_name = f"{patient.first_name} {patient.last_name}" if patient else "Nieznany"
+        response.append(res)
+    return response
+
+@router.get("/patient/status", response_model=PairingRequestResponse)
+def get_patient_request_status(
+    current_user: User = Depends(RoleChecker(["pacjent"])),
+    db: DBSession = Depends(get_db)
+):
+    req = get_active_request_for_patient(db, current_user.user_id)
+    if not req:
+        raise HTTPException(status_code=404, detail="Brak aktywnego zapytania")
+    
+    physio = db.query(User).filter(User.user_id == req.physio_id).first()
+    res = PairingRequestResponse.from_orm(req)
+    res.physio_name = f"{physio.first_name} {physio.last_name}" if physio else "Nieznany"
+    return res
 
 class PhysioResponseData(BaseModel):
     action: str # "accept" or "reject"

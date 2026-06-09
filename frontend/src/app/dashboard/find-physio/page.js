@@ -9,16 +9,24 @@ import { useTranslation } from "@/hooks/useTranslation";
 
 export default function FindPhysioPage() {
     const { user, loading: authLoading } = useAuth();
-    const { physio, allPhysios, loading, error, fetchAllPhysios, fetchMyPhysio, requestPhysio } = usePatient();
+    const { 
+        physio, 
+        pairingStatus, 
+        loading, 
+        error, 
+        fetchMyPhysio, 
+        fetchPairingStatus, 
+        requestPairing,
+        confirmPairing
+    } = usePatient();
+    
     const { t } = useTranslation();
     const router = useRouter();
 
-    const [searchQuery, setSearchQuery] = useState("");
-    const [requestingId, setRequestingId] = useState(null);
+    const [problemDescription, setProblemDescription] = useState("");
+    const [specialization, setSpecialization] = useState("");
     const [successMessage, setSuccessMessage] = useState("");
-    const [requestError, setRequestError] = useState("");
-    const [selectedPhysio, setSelectedPhysio] = useState(null);
-    const [selectedCertificate, setSelectedCertificate] = useState(null);
+    const [actionError, setActionError] = useState("");
 
     useEffect(() => {
         if (!authLoading && !user) {
@@ -28,77 +36,136 @@ export default function FindPhysioPage() {
 
     useEffect(() => {
         if (user?.role === "pacjent") {
-            fetchAllPhysios();
             fetchMyPhysio();
+            fetchPairingStatus();
         }
-    }, [user, fetchAllPhysios, fetchMyPhysio]);
+    }, [user, fetchMyPhysio, fetchPairingStatus]);
 
-    const [confirmPhysioId, setConfirmPhysioId] = useState(null);
-
-    const handleRequest = (physioId) => {
-        if (physio && physio.status === "ZAAKCEPTOWANE") {
-            setRequestError(t('dashboard.findPhysio.alreadyAssigned') || "Masz już przypisanego fizjoterapeutę. Nie możesz wysłać kolejnego zaproszenia.");
-            return;
-        }
-        if (physio) {
-            setConfirmPhysioId(physioId);
-        } else {
-            executeRequest(physioId);
-        }
-    };
-
-    const executeRequest = async (physioId) => {
-        setRequestingId(physioId);
+    const handleRequestPairing = async (e) => {
+        e.preventDefault();
+        setActionError("");
         setSuccessMessage("");
-        setRequestError("");
         try {
-            await requestPhysio(physioId);
-            setSuccessMessage(t('dashboard.findPhysio.success'));
-            fetchMyPhysio();
+            await requestPairing({
+                problem_description: problemDescription,
+                required_specialization: specialization || null
+            });
+            setSuccessMessage("Wysłano zapytanie do systemu. Szukamy specjalisty...");
         } catch (err) {
-            if (err.message && err.message.includes("Masz już przypisanego")) {
-                setRequestError(t('dashboard.findPhysio.alreadyAssigned'));
-            } else {
-                setRequestError(err.message);
-            }
-        } finally {
-            setRequestingId(null);
-            setConfirmPhysioId(null);
+            setActionError(err.message || "Wystąpił błąd");
         }
     };
 
-    const filteredPhysios = allPhysios.filter((p) => {
-        const query = searchQuery.toLowerCase();
-        return (
-            p.first_name.toLowerCase().includes(query) ||
-            p.last_name.toLowerCase().includes(query) ||
-            (p.specialization && p.specialization.toLowerCase().includes(query))
-        );
-    });
+    const handleConfirm = async (requestId) => {
+        setActionError("");
+        setSuccessMessage("");
+        try {
+            await confirmPairing(requestId);
+            setSuccessMessage("Współpraca zatwierdzona! Zobaczysz swojego fizjoterapeutę w panelu głównym.");
+        } catch (err) {
+            setActionError(err.message || "Wystąpił błąd podczas akceptacji");
+        }
+    };
 
     if (authLoading) {
         return (
             <div className="page-container justify-center items-center">
-                <svg className="w-8 h-8 spinner" viewBox="0 0 24 24" fill="none">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
+                <Spinner size="lg" />
             </div>
         );
     }
 
     if (!user || user.role !== "pacjent") return null;
 
+    if (physio && physio.status === "ZAAKCEPTOWANE") {
+        return (
+            <div className="page-container">
+                <div className="flex flex-col items-center gap-2 animate-scale-up">
+                    <h1 className="page-title">{t('dashboard.findPhysio.title')}</h1>
+                </div>
+                <div className="w-full max-w-4xl flex flex-col gap-6 animate-fade-in mt-8">
+                    <div className="card p-8 text-center flex flex-col items-center gap-4">
+                        <div className="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mb-2">
+                            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                        </div>
+                        <h3 className="text-xl font-bold">Masz już przypisanego fizjoterapeutę!</h3>
+                        <p className="text-muted">Twój fizjoterapeuta to: {physio.first_name} {physio.last_name}</p>
+                        <Link href="/dashboard" className="btn-primary mt-4">
+                            Wróć do panelu
+                        </Link>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (pairingStatus && pairingStatus.status === "PENDING") {
+        return (
+            <div className="page-container">
+                <div className="flex flex-col items-center gap-2 animate-scale-up">
+                    <h1 className="page-title">{t('dashboard.findPhysio.title')}</h1>
+                </div>
+                <div className="w-full max-w-2xl flex flex-col gap-6 animate-fade-in mt-8 mx-auto">
+                    <div className="card p-8 text-center flex flex-col items-center gap-4 border-amber-500/30 bg-amber-500/5">
+                        <Spinner size="lg" className="text-amber-400 mb-2" />
+                        <h3 className="text-xl font-bold text-amber-400">Oczekiwanie na fizjoterapeutę</h3>
+                        <p className="text-muted text-sm">
+                            System przydzielił Twoje zapytanie. Czekamy, aż fizjoterapeuta <strong className="text-white">{pairingStatus.physio_name}</strong> zaakceptuje prośbę.
+                        </p>
+                        <div className="bg-panel w-full p-4 rounded-lg mt-2 text-left">
+                            <span className="text-xs text-muted uppercase">Twój problem:</span>
+                            <p className="text-sm text-gray-200 mt-1">{pairingStatus.problem_description}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (pairingStatus && pairingStatus.status === "ACCEPTED_BY_PHYSIO") {
+        return (
+            <div className="page-container">
+                <div className="flex flex-col items-center gap-2 animate-scale-up">
+                    <h1 className="page-title">{t('dashboard.findPhysio.title')}</h1>
+                </div>
+                <div className="w-full max-w-2xl flex flex-col gap-6 animate-fade-in mt-8 mx-auto">
+                    {successMessage && <div className="success-box">✓ {successMessage}</div>}
+                    {actionError && <div className="error-box">⚠️ {actionError}</div>}
+                    <div className="card p-8 text-center flex flex-col items-center gap-4 border-emerald-500/30 bg-emerald-500/5">
+                        <div className="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mb-2 animate-pulse">
+                            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <h3 className="text-xl font-bold text-emerald-400">Mamy to!</h3>
+                        <p className="text-muted text-sm">
+                            Fizjoterapeuta <strong className="text-white">{pairingStatus.physio_name}</strong> zapoznał się z Twoim problemem i zgodził się podjąć współpracy.
+                        </p>
+                        <button 
+                            onClick={() => handleConfirm(pairingStatus.id)}
+                            disabled={loading}
+                            className="btn-primary mt-4 w-full"
+                        >
+                            {loading ? <Spinner /> : "Potwierdź współpracę"}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="page-container">
             <div className="flex flex-col items-center gap-2 animate-scale-up">
                 <h1 className="page-title">{t('dashboard.findPhysio.title')}</h1>
                 <p className="text-sm text-muted font-mono">
-                    {t('dashboard.findPhysio.subtitle')}
+                    Opisz swój problem, a nasz algorytm dopasuje do Ciebie najlepszego specjalistę.
                 </p>
             </div>
 
-            <div className="w-full max-w-4xl flex flex-col gap-6 animate-fade-in">
+            <div className="w-full max-w-2xl flex flex-col gap-6 animate-fade-in mt-4 mx-auto">
                 <Link href="/dashboard" className="btn-ghost no-underline w-fit flex items-center gap-2">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -106,241 +173,62 @@ export default function FindPhysioPage() {
                     {t('dashboard.findPhysio.backToDashboard')}
                 </Link>
 
-                <div className="relative">
-                    <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                    <input
-                        type="text"
-                        placeholder={t('dashboard.findPhysio.searchPlaceholder')}
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="input-field pl-12"
-                        id="search-physio-input"
-                    />
-                </div>
-
                 {successMessage && <div className="success-box">✓ {successMessage}</div>}
-                {requestError && <div className="error-box">⚠️ {requestError}</div>}
+                {actionError && <div className="error-box">⚠️ {actionError}</div>}
                 {error && <div className="error-box">⚠️ {error}</div>}
 
-                {loading && (
-                    <div className="flex justify-center py-12">
-                        <svg className="w-8 h-8 spinner text-muted" viewBox="0 0 24 24" fill="none">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                        </svg>
+                <form onSubmit={handleRequestPairing} className="card p-6 flex flex-col gap-5">
+                    <div className="flex flex-col gap-2">
+                        <label className="text-sm font-medium text-gray-200">
+                            Opisz z czym masz problem <span className="text-red-400">*</span>
+                        </label>
+                        <textarea
+                            required
+                            maxLength={500}
+                            placeholder="Napisz krótko co Ci dolega, np. ból dolnego odcinka kręgosłupa przy schylaniu..."
+                            value={problemDescription}
+                            onChange={(e) => setProblemDescription(e.target.value)}
+                            className="input-field min-h-[120px] py-3 resize-y"
+                        />
+                        <div className="text-xs text-right text-muted">{problemDescription.length}/500</div>
                     </div>
-                )}
 
-                {!loading && filteredPhysios.length === 0 && (
-                    <div className="card p-8 text-center">
-                        <svg className="w-16 h-16 mx-auto mb-4 text-muted opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                        <p className="text-muted">
-                            {searchQuery ? t('dashboard.findPhysio.noMatch') : t('dashboard.findPhysio.noAvailable')}
-                        </p>
-                    </div>
-                )}
-
-                {!loading && filteredPhysios.length > 0 && (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {filteredPhysios.map((physio) => (
-                            <div
-                                key={physio.user_id}
-                                className="card-hover p-6 flex flex-col gap-3 text-left cursor-pointer"
-                                onClick={() => setSelectedPhysio(physio)}
-                            >
-                                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-violet-500/30 to-purple-500/30 flex items-center justify-center text-xl font-bold text-violet-400">
-                                    {physio.first_name[0]}{physio.last_name[0]}
-                                </div>
-
-                                <div>
-                                    <h3 className="font-semibold text-lg leading-tight">
-                                        {physio.first_name} {physio.last_name}
-                                    </h3>
-                                    <p className="text-xs text-muted mt-1">{physio.email}</p>
-                                </div>
-
-                                {physio.specialization && (
-                                    <span className="badge-info w-fit">
-                                        {physio.specialization}
-                                    </span>
-                                )}
-
-
-
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleRequest(physio.user_id);
-                                    }}
-                                    disabled={requestingId === physio.user_id}
-                                    className="btn-primary mt-auto text-sm"
-                                    id={`request-physio-${physio.user_id}`}
-                                >
-                                    {requestingId === physio.user_id ? (
-                                        <span className="flex items-center justify-center gap-2">
-                                            <svg className="w-4 h-4 spinner" viewBox="0 0 24 24" fill="none">
-                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                                            </svg>
-                                            {t('dashboard.findPhysio.sending')}
-                                        </span>
-                                    ) : (
-                                        t('dashboard.findPhysio.sendRequest')
-                                    )}
-                                </button>
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </div>
-
-            {selectedPhysio && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in" onClick={() => setSelectedPhysio(null)}>
-                    <div className="bg-panel border border-outline/50 rounded-2xl p-6 max-w-md w-full flex flex-col gap-5 shadow-2xl" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-start justify-between">
-                            <div className="flex items-center gap-4">
-                                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-violet-500/30 to-purple-500/30 flex items-center justify-center text-2xl font-bold text-violet-400">
-                                    {selectedPhysio.first_name[0]}{selectedPhysio.last_name[0]}
-                                </div>
-                                <div>
-                                    <h3 className="font-bold text-xl leading-tight">
-                                        {selectedPhysio.first_name} {selectedPhysio.last_name}
-                                    </h3>
-                                    <p className="text-sm text-muted mt-0.5">{selectedPhysio.email}</p>
-                                </div>
-                            </div>
-                            <button onClick={() => setSelectedPhysio(null)} className="text-muted hover:text-white p-1">
-                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                        </div>
-
-                        {selectedPhysio.specialization && (
-                            <div>
-                                <span className="badge-info text-sm">
-                                    Specjalizacja: {selectedPhysio.specialization}
-                                </span>
-                            </div>
-                        )}
-
-                        <div className="flex items-center gap-2 text-sm text-emerald-400 bg-emerald-500/10 px-3 py-2 rounded-lg w-fit">
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-                            </svg>
-                            <span>Ilość pacjentów: <strong className="font-bold">{selectedPhysio.patient_count || 0}</strong></span>
-                        </div>
-
-                        <div className="flex flex-col gap-2">
-                            <h4 className="font-semibold text-white/90 border-b border-outline/50 pb-1">{t('dashboard.admin.certificates')}</h4>
-                            {selectedPhysio.certificates && selectedPhysio.certificates.length > 0 ? (
-                                <div className="flex flex-col gap-2 mt-1 max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar">
-                                    {selectedPhysio.certificates.map(cert => (
-                                        <div key={cert.certificate_id} className="flex flex-col gap-2 text-sm bg-panel/80 border border-outline/50 rounded-lg p-3">
-                                            <div className="flex items-start justify-between gap-2">
-                                                <div className="flex items-center gap-2 text-gray-200 font-medium">
-                                                    <svg className="w-4 h-4 text-blue-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                                    </svg>
-                                                    <span>{cert.name}</span>
-                                                </div>
-                                                {cert.is_verified && (
-                                                    <span title={t('dashboard.certificates.verified')} className="flex items-center justify-center bg-emerald-500/20 text-emerald-400 rounded-full px-2 py-0.5 text-xs font-semibold shrink-0 gap-1">
-                                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                                        </svg>
-                                                        Zweryfikowany
-                                                    </span>
-                                                )}
-                                            </div>
-                                            <button onClick={() => setSelectedCertificate(cert.file_url)} className="text-blue-400 hover:text-blue-300 hover:underline text-xs flex items-center gap-1 w-fit ml-6">
-                                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                                </svg>
-                                                {t('dashboard.certificates.viewCertificate')}
-                                            </button>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <p className="text-sm text-muted italic mt-1">Brak certyfikatów.</p>
-                            )}
-                        </div>
-
-                        <button
-                            onClick={() => {
-                                handleRequest(selectedPhysio.user_id);
-                                setSelectedPhysio(null);
-                            }}
-                            disabled={requestingId === selectedPhysio.user_id}
-                            className="btn-primary mt-2"
+                    <div className="flex flex-col gap-2">
+                        <label className="text-sm font-medium text-gray-200">
+                            Preferowana specjalizacja (Opcjonalnie)
+                        </label>
+                        <select 
+                            className="input-field py-3 text-gray-200"
+                            value={specialization}
+                            onChange={(e) => setSpecialization(e.target.value)}
                         >
-                            {t('dashboard.findPhysio.sendRequest')}
-                        </button>
+                            <option value="">Wybierze system (Zalecane)</option>
+                            <option value="Ortopedia">Ortopedia</option>
+                            <option value="Neurologia">Neurologia</option>
+                            <option value="Sport">Sportowa</option>
+                            <option value="Pediatria">Pediatria</option>
+                        </select>
                     </div>
-                </div>
-            )}
 
-            {confirmPhysioId && (
-                <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
-                    <div className="bg-panel border border-outline/50 rounded-2xl p-6 max-w-sm w-full flex flex-col gap-4 shadow-2xl">
-                        <h3 className="font-bold text-xl text-white">{t('dashboard.findPhysio.confirmTitle')}</h3>
-                        <p className="text-sm text-muted">{t('dashboard.findPhysio.confirmDesc')}</p>
-                        <div className="flex flex-col gap-2 mt-2">
-                            <button
-                                onClick={() => executeRequest(confirmPhysioId)}
-                                disabled={requestingId === confirmPhysioId}
-                                className="btn-primary bg-gradient-to-r from-red-500 to-rose-500 hover:shadow-red-500/30 border-none"
-                            >
-                                {requestingId === confirmPhysioId ? (
-                                    <span className="flex items-center justify-center gap-2">
-                                        <svg className="w-4 h-4 spinner" viewBox="0 0 24 24" fill="none">
-                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                                        </svg>
-                                        {t('dashboard.findPhysio.sending')}
-                                    </span>
-                                ) : (
-                                    t('dashboard.findPhysio.confirmYes')
-                                )}
-                            </button>
-                            <button
-                                onClick={() => setConfirmPhysioId(null)}
-                                disabled={requestingId === confirmPhysioId}
-                                className="btn-ghost"
-                            >
-                                {t('dashboard.findPhysio.confirmNo')}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {selectedCertificate && (
-                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in" onClick={() => setSelectedCertificate(null)}>
-                    <div className="relative bg-panel border border-outline/50 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-center justify-between p-4 border-b border-outline/50">
-                            <h3 className="font-semibold text-lg text-white">{t('dashboard.certificates.preview')}</h3>
-                            <button onClick={() => setSelectedCertificate(null)} className="text-muted hover:text-white p-1 rounded-lg transition-colors">
-                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                        </div>
-                        <div className="p-4 flex-1 overflow-hidden flex items-center justify-center min-h-[50vh]">
-                            {selectedCertificate.toLowerCase().endsWith('.pdf') || selectedCertificate.includes('/raw/') ? (
-                                <iframe src={`https://docs.google.com/viewer?url=${encodeURIComponent(selectedCertificate)}&embedded=true`} className="w-full h-[70vh] rounded-lg bg-white" title="Certificate PDF preview" />
-                            ) : (
-                                <img src={selectedCertificate} alt="Certificate preview" className="max-w-full max-h-[70vh] object-contain rounded-lg" />
-                            )}
-                        </div>
-                    </div>
-                </div>
-            )}
+                    <button 
+                        type="submit" 
+                        disabled={loading || !problemDescription.trim()}
+                        className="btn-primary mt-2 py-3"
+                    >
+                        {loading ? <Spinner /> : "Znajdź mi fizjoterapeutę"}
+                    </button>
+                </form>
+            </div>
         </div>
+    );
+}
+
+function Spinner({ size = "sm", className = "" }) {
+    const dim = size === "lg" ? "w-8 h-8" : "w-4 h-4";
+    return (
+        <svg className={`${dim} spinner ${className}`} viewBox="0 0 24 24" fill="none">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+        </svg>
     );
 }

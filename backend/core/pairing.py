@@ -47,7 +47,7 @@ def get_pending_requests_for_physio(db: Session, physio_id: int):
 def get_active_request_for_patient(db: Session, patient_id: int):
     return db.query(PairingRequest).filter(
         PairingRequest.patient_id == patient_id,
-        PairingRequest.status == PairingStatus.PENDING
+        PairingRequest.status.in_([PairingStatus.PENDING, PairingStatus.ACCEPTED_BY_PHYSIO])
     ).first()
 
 def update_request_status(db: Session, request_id: int, new_status: PairingStatus):

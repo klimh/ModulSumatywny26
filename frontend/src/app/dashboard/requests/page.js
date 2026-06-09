@@ -53,34 +53,44 @@ export default function RequestsPage() {
                         {requests.map((req) => (
                             <div
                                 key={req.id}
-                                className="card p-5 flex items-center justify-between gap-4 flex-wrap"
+                                className="card p-5 flex flex-col gap-4"
                             >
                                 <div className="flex items-center gap-4">
-                                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/20">
-                                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/20">
+                                        <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                         </svg>
                                     </div>
                                     <div className="flex flex-col">
-                                        <span className="font-semibold">
-                                            {req.patient_name}
+                                        <span className="font-semibold text-lg">
+                                            {req.patient_name || "Nieznany pacjent"}
                                         </span>
-                                        <span className="badge-warning w-fit mt-1">{t('dashboard.requests.pending')}</span>
+                                        <span className="text-xs text-amber-400 font-semibold mt-1 flex items-center gap-1">
+                                            <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                                            {t('dashboard.requests.pending')}
+                                        </span>
                                     </div>
                                 </div>
 
-                                <div className="flex items-center gap-2">
-                                    <button
-                                        onClick={() => handleRespond(req.id, true)}
-                                        className="px-5 py-2 rounded-xl text-sm font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30 transition-all duration-300 cursor-pointer"
-                                    >
-                                        {t('dashboard.requests.accept')}
-                                    </button>
+                                <div className="bg-panel/50 p-4 rounded-xl border border-outline/30 mt-2">
+                                    <h4 className="text-xs font-bold text-muted uppercase tracking-wider mb-2">Opis problemu pacjenta:</h4>
+                                    <p className="text-sm text-gray-200 leading-relaxed italic border-l-2 border-amber-500/50 pl-3">
+                                        "{req.problem_description}"
+                                    </p>
+                                </div>
+
+                                <div className="flex items-center gap-3 justify-end mt-2 pt-4 border-t border-outline/30">
                                     <button
                                         onClick={() => handleRespond(req.id, false)}
-                                        className="px-5 py-2 rounded-xl text-sm font-semibold bg-rose-500/20 text-rose-400 border border-rose-500/30 hover:bg-rose-500/30 transition-all duration-300 cursor-pointer"
+                                        className="px-5 py-2 rounded-xl text-sm font-semibold bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 transition-all duration-300 cursor-pointer"
                                     >
                                         {t('dashboard.requests.decline')}
+                                    </button>
+                                    <button
+                                        onClick={() => handleRespond(req.id, true)}
+                                        className="px-6 py-2 rounded-xl text-sm font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30 hover:shadow-lg hover:shadow-emerald-500/10 transition-all duration-300 cursor-pointer"
+                                    >
+                                        {t('dashboard.requests.accept')}
                                     </button>
                                 </div>
                             </div>
