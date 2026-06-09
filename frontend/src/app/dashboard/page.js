@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { useTranslation } from "@/hooks/useTranslation";
+import { FlameIcon } from "@/components/StreakCalendar";
 
 function PatientDashboard() {
     const { plan, physio, physioLoading, loading, error, fetchMyPlan, fetchMyPhysio, disconnectPhysio } = usePatient();
@@ -20,6 +21,7 @@ function PatientDashboard() {
     const { user } = useAuth();
     const router = useRouter();
     const [doneToday, setDoneToday] = useState(false);
+    const [streak, setStreak] = useState(null);
 
     useEffect(() => {
         fetchMyPlan();
@@ -28,7 +30,11 @@ function PatientDashboard() {
 
     useEffect(() => {
         if (user) {
-            api.progress.getSessionsByPatient(user.user_id).then(sessions => {
+            Promise.all([
+                api.progress.getSessionsByPatient(user.user_id),
+                api.streaks.getMine().catch(() => null)
+            ]).then(([sessions, streakData]) => {
+                setStreak(streakData);
                 if (sessions && sessions.length > 0) {
                     const latest = sessions[0];
                     if (latest.created_at) {
@@ -59,6 +65,25 @@ function PatientDashboard() {
     return (
         <div className="w-full max-w-4xl flex flex-col gap-6 animate-fade-in">
             {error && <div className="error-box">⚠️ {error}</div>}
+            {streak && (
+                <div className="card p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-amber-500/30 bg-gradient-to-r from-amber-500/10 via-panel to-emerald-500/10 text-left">
+                    <div className="flex items-center gap-4">
+                        <div className="w-14 h-14 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center">
+                            <FlameIcon className="w-8 h-8" />
+                        </div>
+                        <div>
+                            <div className="text-xs uppercase tracking-wider text-muted font-bold">Aktualna passa</div>
+                            <div className="text-3xl font-black text-amber-300">{streak.current_streak} dni</div>
+                        </div>
+                    </div>
+                    <div className="flex flex-wrap gap-3 text-sm">
+                        <span className="badge-success">Rekord: {streak.longest_streak} dni</span>
+                        <span className={streak.completed_today ? "badge-success" : "badge-warning"}>
+                            {streak.completed_today ? "Dzisiaj wykonane" : "Do zrobienia dzisiaj"}
+                        </span>
+                    </div>
+                </div>
+            )}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div
                     onClick={() => router.push("/dashboard/plan")}
