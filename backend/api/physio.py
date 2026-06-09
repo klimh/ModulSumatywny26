@@ -15,6 +15,7 @@ from db_models.certificate import Certificate
 from schemas.exercise import ExerciseCreate, ExerciseResponse
 from schemas.rehab_plan import RehabPlanCreate, RehabPlanResponse
 from schemas.certificate import CertificateResponse
+from core.streaks import build_summary
 
 router = APIRouter(
     prefix="/physio",
@@ -32,7 +33,17 @@ def get_my_patients(current_user: User = Depends(RoleChecker(["fizjoterapeuta"])
 
     patient_ids = [c.patient_id for c in connections]
     patients = db.query(User).filter(User.user_id.in_(patient_ids)).all()
-    return patients
+    return [
+        {
+            "user_id": patient.user_id,
+            "first_name": patient.first_name,
+            "last_name": patient.last_name,
+            "email": patient.email,
+            "role": patient.role,
+            "streak": build_summary(db, patient.user_id),
+        }
+        for patient in patients
+    ]
 
 
 @router.post("/exercises", response_model=ExerciseResponse)

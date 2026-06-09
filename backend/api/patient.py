@@ -9,6 +9,7 @@ from db_models.session import Session
 from db_models.exercise_result import ExerciseResult
 from db_models.patient_physiotherapist import PatientPhysiotherapist
 from db_models.physiotherapist import Physiotherapist
+from core.streaks import record_activity
 
 router = APIRouter(
     prefix="/patient",
@@ -127,5 +128,11 @@ def submit_exercise_session(
         )
         db.add(db_result)
 
+    streak = record_activity(db, current_user.user_id)
     db.commit()
-    return {"message": "Sesja zapisana pomyślnie!", "session_id": new_session.session_id}
+    return {
+        "message": "Sesja zapisana pomyślnie!",
+        "session_id": new_session.session_id,
+        "current_streak": streak.current_streak,
+        "longest_streak": streak.longest_streak
+    }

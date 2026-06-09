@@ -14,6 +14,7 @@ from db_models.exercise import Exercise
 from db_models.patient_physiotherapist import PatientPhysiotherapist
 from db_models.rehab_plan import RehabPlan
 from schemas.progress_note import ProgressNoteCreate, ProgressNoteResponse
+from core.streaks import build_summary
 
 router = APIRouter(
     prefix="/progress",
@@ -260,5 +261,6 @@ def get_patient_summary(
         "total_sessions": total_sessions,
         "has_active_plan": has_active_plan,
         "accuracy_trend": accuracy_trend,
-        "overall_avg_accuracy": overall_avg_accuracy
+        "overall_avg_accuracy": overall_avg_accuracy,
+        "streak": build_summary(db, patient_id)
     }
