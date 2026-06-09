@@ -51,6 +51,9 @@ app.include_router(chat_api.router)
 app.include_router(progress_api.router)
 app.include_router(streak_api.router)
 
+from api import pairing as pairing_api
+app.include_router(pairing_api.router)
+
 
 @app.on_event("startup")
 def seed_admin():
