@@ -322,10 +322,19 @@ const PoseDetector = forwardRef(({ referenceVideoUrl = null, isPaused = false, o
                 await initPoseLandmarker();
             }
 
-            const stream = await navigator.mediaDevices.getUserMedia({
-                video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: "user" },
-                audio: false,
-            });
+            let stream;
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: "user" },
+                    audio: false,
+                });
+            } catch (initialErr) {
+                console.warn("Initial getUserMedia failed, trying fallback constraints...", initialErr);
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: true,
+                    audio: false,
+                });
+            }
 
             streamRef.current = stream;
             const video = videoRef.current;
@@ -340,7 +349,7 @@ const PoseDetector = forwardRef(({ referenceVideoUrl = null, isPaused = false, o
             setLoading(false);
         } catch (err) {
             console.error("Camera error:", err);
-            setError("Failed to access the camera. Please check permissions.");
+            setError(`Failed to access the camera: ${err.message || "Please check permissions."}`);
             setLoading(false);
         }
     }, [initPoseLandmarker]);
