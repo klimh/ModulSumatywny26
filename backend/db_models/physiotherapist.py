@@ -8,6 +8,7 @@ class Physiotherapist(Base):
     user_id = Column(Integer, ForeignKey("users.user_id"), primary_key=True)
     specialization = Column(String, nullable=True) #zgodnie z naszymi zalozeniami
     is_verified = Column(Boolean, default=False) #admin bedzie weryfikowal
+    is_available = Column(Boolean, default=True) #czy przyjmuje pacjentow
 
     user = relationship("User", back_populates="physio_profile")
     certificates = relationship("Certificate", back_populates="physiotherapist", cascade="all, delete-orphan")
