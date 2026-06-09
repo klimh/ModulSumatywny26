@@ -15,6 +15,7 @@ from api import ai as ai_api
 from api import admin as admin_api
 from api import chat as chat_api
 from api import progress as progress_api
+from api import external as external_api
 from api import streak as streak_api
 
 Base.metadata.create_all(bind=engine)
@@ -50,6 +51,7 @@ app.include_router(admin_api.router)
 app.include_router(chat_api.router)
 app.include_router(progress_api.router)
 app.include_router(streak_api.router)
+app.include_router(external_api.router)
 
 from api import pairing as pairing_api
 app.include_router(pairing_api.router)

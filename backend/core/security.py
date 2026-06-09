@@ -68,3 +68,17 @@ def RoleChecker(allowed_roles: list):
             )
         return current_user
     return role_checker
+
+from fastapi.security import APIKeyHeader
+
+api_key_header = APIKeyHeader(name="X-API-Key", auto_error=True)
+
+def get_user_from_api_key(api_key: str = Depends(api_key_header), db: Session = Depends(get_db)):
+    if not api_key:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing API Key")
+    
+    user = db.query(User).filter(User.api_key == api_key).first()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid API Key")
+    
+    return user

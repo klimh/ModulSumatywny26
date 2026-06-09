@@ -12,6 +12,7 @@ class User(Base):
     email = Column(String, unique=True, index=True, nullable=False)
     password = Column(String, nullable=False)
     role = Column(String, nullable=False)
+    api_key = Column(String, unique=True, index=True, nullable=True)
 
     #relacje do profili:
     patient_profile = relationship("Patient", back_populates="user", uselist=False)

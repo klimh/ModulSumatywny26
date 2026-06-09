@@ -28,3 +28,17 @@ def login_fo_access_token(form_data: OAuth2PasswordRequestForm = Depends(),
     )
 
     return {"access_token": access_token, "token_type": "bearer"}
+
+import secrets
+from core.security import get_current_user
+
+@router.post("/api-key/generate")
+def generate_api_key(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    new_key = secrets.token_urlsafe(32)
+    current_user.api_key = new_key
+    db.commit()
+    return {"api_key": new_key}
+
+@router.get("/api-key")
+def get_api_key(current_user: User = Depends(get_current_user)):
+    return {"api_key": current_user.api_key}
