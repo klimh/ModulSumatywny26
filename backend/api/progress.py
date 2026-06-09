@@ -169,9 +169,19 @@ def get_patient_progress_history(
 @router.get("/patient/{patient_id}/summary")
 def get_patient_summary(
     patient_id: int,
-    current_user: User = Depends(RoleChecker(["fizjoterapeuta"])),
+    current_user: User = Depends(RoleChecker(["pacjent", "fizjoterapeuta"])),
     db: DBSession = Depends(get_db)
 ):
+    return _build_patient_summary(patient_id, current_user, db)
+
+@router.get("/me/summary")
+def get_my_summary(
+    current_user: User = Depends(RoleChecker(["pacjent"])),
+    db: DBSession = Depends(get_db)
+):
+    return _build_patient_summary(current_user.user_id, current_user, db)
+
+def _build_patient_summary(patient_id: int, current_user: User, db: DBSession):
     _check_patient_access(current_user, patient_id, db)
     
     now = datetime.now(timezone.utc)
