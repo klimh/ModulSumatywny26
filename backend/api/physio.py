@@ -1,6 +1,6 @@
 import re
 import cloudinary.uploader
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
 from db.database import get_db
 from core.security import RoleChecker
@@ -11,8 +11,10 @@ from db_models.exercise import Exercise
 from db_models.rehab_plan import RehabPlan
 from db_models.rehab_plan_exercise import RehabPlanExercise
 from db_models.message import Message
+from db_models.certificate import Certificate
 from schemas.exercise import ExerciseCreate, ExerciseResponse
 from schemas.rehab_plan import RehabPlanCreate, RehabPlanResponse
+from schemas.certificate import CertificateResponse
 
 router = APIRouter(
     prefix="/physio",
@@ -215,6 +217,72 @@ def upload_exercise_video(
 
     return {"message": "Filmik został dodany", "video_url": exercise.video_url}
 
+
+@router.post("/certificates/upload", response_model=CertificateResponse)
+def upload_certificate(
+        name: str = Form(...),
+        file: UploadFile = File(...),
+        current_user: User = Depends(RoleChecker(["fizjoterapeuta"])),
+        db: Session = Depends(get_db)
+):
+    """Dodaje nowy certyfikat dla zalogowanego fizjoterapeuty"""
+    allowed_types = ["image/jpeg", "image/png", "application/pdf"]
+    if file.content_type not in allowed_types:
+        raise HTTPException(status_code=400, detail="Nieobsługiwany format pliku. Dozwolone: JPG, PNG, PDF")
+
+    try:
+        resource_type = "image" if file.content_type in ["image/jpeg", "image/png"] else "raw"
+        result = cloudinary.uploader.upload(
+            file.file,
+            resource_type=resource_type,
+            folder="rehabsense/certificates",
+        )
+        file_url = result["secure_url"]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Błąd uploadu do Cloudinary: {str(e)}")
+
+    new_cert = Certificate(
+        physio_id=current_user.user_id,
+        name=name,
+        file_url=file_url,
+        is_verified=False
+    )
+    db.add(new_cert)
+    db.commit()
+    db.refresh(new_cert)
+
+    return new_cert
+
+
+@router.get("/certificates", response_model=List[CertificateResponse])
+def get_my_certificates(
+        current_user: User = Depends(RoleChecker(["fizjoterapeuta"])),
+        db: Session = Depends(get_db)
+):
+    """Pobiera listę certyfikatów fizjoterapeuty"""
+    return db.query(Certificate).filter(Certificate.physio_id == current_user.user_id).all()
+
+
+@router.delete("/certificates/{certificate_id}")
+def delete_certificate(
+        certificate_id: int,
+        current_user: User = Depends(RoleChecker(["fizjoterapeuta"])),
+        db: Session = Depends(get_db)
+):
+    cert = db.query(Certificate).filter(
+        Certificate.certificate_id == certificate_id,
+        Certificate.physio_id == current_user.user_id
+    ).first()
+    if not cert:
+        raise HTTPException(status_code=404, detail="Certyfikat nie znaleziony")
+
+    # Optionally delete from cloudinary
+    # if "image" in cert.file_url:
+    #     _delete_cloudinary_video(cert.file_url) # _delete_cloudinary_video uses resource_type="video", so maybe not this exact method
+
+    db.delete(cert)
+    db.commit()
+    return {"message": "Certyfikat usunięty"}
 
 
 def _delete_cloudinary_video(video_url: str):

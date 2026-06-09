@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from db.database import engine, Base, SessionLocal
 import cloudinary
 
-from db_models import user, patient, physiotherapist, patient_physiotherapist, exercise, rehab_plan, rehab_plan_exercise, session, exercise_result, message, progress_note
+from db_models import user, patient, physiotherapist, patient_physiotherapist, exercise, rehab_plan, rehab_plan_exercise, session, exercise_result, message, progress_note, certificate
 from api import user as user_api
 from api import auth as auth_api
 from api import physio as physio_api

@@ -79,7 +79,7 @@ def get_all_physiotherapists(
         current_user: User = Depends(get_current_user),
         db: Session = Depends(get_db)
 ):
-    """Zwraca listę wszystkich fizjoterapeutów z ich specjalizacjami"""
+    """Zwraca listę wszystkich fizjoterapeutów z ich specjalizacjami i certyfikatami"""
     physios = db.query(User, Physiotherapist).join(
         Physiotherapist, User.user_id == Physiotherapist.user_id
     ).all()
@@ -90,7 +90,19 @@ def get_all_physiotherapists(
             "first_name": user.first_name,
             "last_name": user.last_name,
             "email": user.email,
-            "specialization": physio.specialization
+            "specialization": physio.specialization,
+            "patient_count": db.query(PatientPhysiotherapist).filter(
+                PatientPhysiotherapist.physio_id == physio.user_id,
+                PatientPhysiotherapist.status == "ZAAKCEPTOWANE"
+            ).count(),
+            "certificates": [
+                {
+                    "certificate_id": cert.certificate_id,
+                    "name": cert.name,
+                    "file_url": cert.file_url,
+                    "is_verified": cert.is_verified
+                } for cert in physio.certificates
+            ]
         }
         for user, physio in physios
     ]

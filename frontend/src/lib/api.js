@@ -114,6 +114,17 @@ export const api = {
       });
     },
     deleteExerciseVideo: (exerciseId) => apiFetch(`/physio/exercises/${exerciseId}/video`, { method: 'DELETE' }),
+    uploadCertificate: (name, file) => {
+      const formData = new FormData();
+      formData.append('name', name);
+      formData.append('file', file);
+      return apiFetchRaw(`/physio/certificates/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+    },
+    getCertificates: () => apiFetch('/physio/certificates'),
+    deleteCertificate: (id) => apiFetch(`/physio/certificates/${id}`, { method: 'DELETE' }),
   },
   ai: {
     getPattern: (exerciseId) => apiFetch(`/ai/pattern/${exerciseId}`),
@@ -122,6 +133,8 @@ export const api = {
     createPhysio: (data) => apiFetch('/admin/create-physio', { method: 'POST', body: JSON.stringify(data) }),
     getPhysiotherapists: () => apiFetch('/admin/physiotherapists'),
     deletePhysio: (userId) => apiFetch(`/admin/physiotherapist/${userId}`, { method: 'DELETE' }),
+    getCertificates: () => apiFetch('/admin/certificates'),
+    verifyCertificate: (id, verify) => apiFetch(`/admin/certificates/${id}/verify?verify=${verify}`, { method: 'POST' }),
   },
   chat: {
     getContacts: () => apiFetch('/chat/contacts'),

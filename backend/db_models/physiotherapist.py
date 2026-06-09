@@ -10,3 +10,4 @@ class Physiotherapist(Base):
     is_verified = Column(Boolean, default=False) #admin bedzie weryfikowal
 
     user = relationship("User", back_populates="physio_profile")
+    certificates = relationship("Certificate", back_populates="physiotherapist", cascade="all, delete-orphan")

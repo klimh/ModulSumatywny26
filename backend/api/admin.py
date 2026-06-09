@@ -7,6 +7,8 @@ from db_models.physiotherapist import Physiotherapist
 from schemas.user import UserResponse
 from pydantic import BaseModel
 from typing import List, Optional
+from db_models.certificate import Certificate
+from schemas.certificate import CertificateResponse
 
 router = APIRouter(
     prefix="/admin",
@@ -86,3 +88,28 @@ def delete_physiotherapist(
     db.delete(user)
     db.commit()
     return {"message": "Fizjoterapeuta został usunięty"}
+
+@router.get("/certificates", response_model=List[CertificateResponse])
+def list_certificates(
+        current_user: User = Depends(RoleChecker(["admin"])),
+        db: Session = Depends(get_db)
+):
+    """Pobiera wszystkie certyfikaty w systemie"""
+    return db.query(Certificate).all()
+
+@router.post("/certificates/{certificate_id}/verify", response_model=CertificateResponse)
+def verify_certificate(
+        certificate_id: int,
+        verify: bool = True,
+        current_user: User = Depends(RoleChecker(["admin"])),
+        db: Session = Depends(get_db)
+):
+    """Administrator zatwierdza (lub cofa zatwierdzenie) certyfikatu"""
+    cert = db.query(Certificate).filter(Certificate.certificate_id == certificate_id).first()
+    if not cert:
+        raise HTTPException(status_code=404, detail="Certyfikat nie znaleziony")
+    
+    cert.is_verified = verify
+    db.commit()
+    db.refresh(cert)
+    return cert
