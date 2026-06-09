@@ -4,11 +4,13 @@ import { useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { usePhysio } from "@/hooks/usePhysio";
 import { useRouter } from "next/navigation";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function RequestsPage() {
     const { user, loading: authLoading } = useAuth();
     const { requests, loading, error, fetchRequests, respondToRequest } = usePhysio();
     const router = useRouter();
+    const { t } = useTranslation();
 
     useEffect(() => {
         if (!authLoading && (!user || user.role !== "fizjoterapeuta")) {
@@ -39,8 +41,8 @@ export default function RequestsPage() {
     return (
         <div className="page-container">
             <div className="flex flex-col items-center gap-2 animate-scale-up">
-                <h1 className="page-title text-3xl md:text-4xl">Pending Requests</h1>
-                <p className="text-sm text-muted">Patient pairing requests awaiting your decision</p>
+                <h1 className="page-title text-3xl md:text-4xl">{t('dashboard.requests.title')}</h1>
+                <p className="text-sm text-muted">{t('dashboard.requests.desc')}</p>
             </div>
 
             <div className="w-full max-w-3xl animate-fade-in">
@@ -61,9 +63,9 @@ export default function RequestsPage() {
                                     </div>
                                     <div className="flex flex-col">
                                         <span className="font-semibold">
-                                            Patient #{req.patient_id}
+                                            {t('dashboard.requests.patient').replace('{id}', req.patient_id)}
                                         </span>
-                                        <span className="badge-warning w-fit mt-1">Pending</span>
+                                        <span className="badge-warning w-fit mt-1">{t('dashboard.requests.pending')}</span>
                                     </div>
                                 </div>
 
@@ -72,13 +74,13 @@ export default function RequestsPage() {
                                         onClick={() => handleRespond(req.id, true)}
                                         className="px-5 py-2 rounded-xl text-sm font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/30 transition-all duration-300 cursor-pointer"
                                     >
-                                        Accept
+                                        {t('dashboard.requests.accept')}
                                     </button>
                                     <button
                                         onClick={() => handleRespond(req.id, false)}
                                         className="px-5 py-2 rounded-xl text-sm font-semibold bg-rose-500/20 text-rose-400 border border-rose-500/30 hover:bg-rose-500/30 transition-all duration-300 cursor-pointer"
                                     >
-                                        Decline
+                                        {t('dashboard.requests.decline')}
                                     </button>
                                 </div>
                             </div>
@@ -91,9 +93,9 @@ export default function RequestsPage() {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
                             </svg>
                         </div>
-                        <h3 className="text-lg font-semibold">All Caught Up!</h3>
+                        <h3 className="text-lg font-semibold">{t('dashboard.requests.emptyTitle')}</h3>
                         <p className="text-sm text-muted text-center max-w-sm">
-                            There are no pending requests at this time. New patient requests will appear here.
+                            {t('dashboard.requests.emptyDesc')}
                         </p>
                     </div>
                 )}

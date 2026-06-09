@@ -6,10 +6,12 @@ import { usePhysio } from "@/hooks/usePhysio";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { api } from "@/lib/api";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function PatientDetailsPage({ params }) {
     const { id } = use(params);
     const patientId = parseInt(id);
+    const { t } = useTranslation();
 
     const { user, loading: authLoading } = useAuth();
     const { patients, exercises, loading: physioLoading, error, fetchMyPatients, fetchExercises, createPlan } = usePhysio();
@@ -44,7 +46,7 @@ export default function PatientDetailsPage({ params }) {
 
             const currentPatient = patients.find(p => p.user_id === patientId);
             if (!currentPatient) {
-                setFormError("Patient not found or not assigned to you.");
+                setFormError(t('dashboard.patientDetails.notFound'));
                 setInitialLoading(false);
                 return;
             }
@@ -101,13 +103,13 @@ export default function PatientDetailsPage({ params }) {
         setFormError(null);
 
         if (selectedExercises.length === 0) {
-            setFormError("Please add at least one exercise");
+            setFormError(t('dashboard.patientDetails.atLeastOne'));
             return;
         }
 
         const invalidExercise = selectedExercises.find(ex => !ex.exercise_id);
         if (invalidExercise) {
-            setFormError("Please select an exercise for each row");
+            setFormError(t('dashboard.patientDetails.selectEach'));
             return;
         }
 
@@ -115,7 +117,7 @@ export default function PatientDetailsPage({ params }) {
         try {
             await createPlan({
                 patient_id: patientId,
-                title: planTitle || "Rehabilitation Plan",
+                title: planTitle || t('dashboard.patientDetails.rehabPlan'),
                 exercise: selectedExercises.map(ex => ({
                     exercise_id: parseInt(ex.exercise_id),
                     reps_nr: parseInt(ex.reps_nr),
@@ -143,8 +145,8 @@ export default function PatientDetailsPage({ params }) {
     if (!patient) {
         return (
             <div className="page-container justify-center items-center">
-                <div className="error-box">Patient not found or access denied.</div>
-                <Link href="/dashboard/patients" className="btn-ghost mt-4">Back to Patients</Link>
+                <div className="error-box">{t('dashboard.patientDetails.accessDenied')}</div>
+                <Link href="/dashboard/patients" className="btn-ghost mt-4">{t('dashboard.patientDetails.back')}</Link>
             </div>
         );
     }
@@ -156,7 +158,7 @@ export default function PatientDetailsPage({ params }) {
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                     </svg>
-                    Back to Patients
+                    {t('dashboard.patientDetails.back')}
                 </Link>
             </div>
 
@@ -179,40 +181,40 @@ export default function PatientDetailsPage({ params }) {
 
                 {success && (
                     <div className="p-4 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-sm flex items-center justify-center font-medium">
-                        Plan successfully updated!
+                        {t('dashboard.patientDetails.success')}
                     </div>
                 )}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="card p-6 flex flex-col justify-between gap-4 border border-outline/50">
                         <div className="flex flex-col gap-2">
-                            <span className="text-xs font-semibold text-muted uppercase tracking-wider">Active Plan</span>
-                            <span className="text-xl font-bold text-teal-400">{planTitle || "No active plan"}</span>
-                            <span className="text-sm text-muted">{selectedExercises.length} exercises assigned</span>
+                            <span className="text-xs font-semibold text-muted uppercase tracking-wider">{t('dashboard.patientDetails.activePlan')}</span>
+                            <span className="text-xl font-bold text-teal-400">{planTitle || t('dashboard.patientDetails.noActivePlan')}</span>
+                            <span className="text-sm text-muted">{t('dashboard.patientDetails.exercisesAssigned').replace('{n}', selectedExercises.length)}</span>
                         </div>
                         <button
                             onClick={() => setIsEditingPlan(!isEditingPlan)}
                             className={`btn-primary mt-2 w-full ${isEditingPlan ? 'bg-panel text-white border-outline hover:bg-main' : ''}`}
                         >
-                            {isEditingPlan ? "Cancel Editing" : planTitle ? "Edit Plan" : "Create Plan"}
+                            {isEditingPlan ? t('dashboard.patientDetails.cancelEdit') : planTitle ? t('dashboard.patientDetails.editPlan') : t('dashboard.patientDetails.createPlan')}
                         </button>
                     </div>
 
                     <div className="card p-6 flex flex-col justify-between gap-4 border border-outline/50">
                         <div className="flex flex-col gap-2">
-                            <span className="text-xs font-semibold text-muted uppercase tracking-wider">Progress Overview</span>
+                            <span className="text-xs font-semibold text-muted uppercase tracking-wider">{t('dashboard.patientDetails.progress')}</span>
                             <span className="text-xl font-bold text-orange-400">
-                                {summary?.overall_avg_accuracy != null ? `${Math.round(summary.overall_avg_accuracy)}% Avg Accuracy` : "No data yet"}
+                                {summary?.overall_avg_accuracy != null ? t('dashboard.patientDetails.avgAccuracy').replace('{acc}', Math.round(summary.overall_avg_accuracy)) : t('dashboard.patientDetails.noData')}
                             </span>
                             <span className="text-sm text-muted">
-                                {summary?.total_sessions || 0} sessions completed
+                                {t('dashboard.patientDetails.sessionsCompleted').replace('{n}', summary?.total_sessions || 0)}
                             </span>
                         </div>
                         <Link
                             href={`/dashboard/patients/${patientId}/progress`}
                             className="btn-primary bg-panel text-white border-outline hover:bg-main w-full mt-2"
                         >
-                            View Progress
+                            {t('dashboard.patientDetails.viewProgress')}
                         </Link>
                     </div>
                 </div>
@@ -220,22 +222,22 @@ export default function PatientDetailsPage({ params }) {
                 {isEditingPlan && (
                     <form onSubmit={handleSubmit} className="card p-8 flex flex-col gap-6 mt-4 animate-fade-in border border-teal-500/30">
                         <div>
-                            <h2 className="text-xl font-bold">Rehabilitation Plan</h2>
-                            <p className="text-xs text-muted mt-1">Updates to the plan will automatically replace the patient's current active plan.</p>
+                            <h2 className="text-xl font-bold">{t('dashboard.patientDetails.rehabPlan')}</h2>
+                            <p className="text-xs text-muted mt-1">{t('dashboard.patientDetails.planUpdateInfo')}</p>
                         </div>
 
                         {formError && <div className="error-box">{formError}</div>}
 
                         <div className="flex flex-col gap-2">
                             <label htmlFor="plan-title" className="text-xs font-semibold text-muted uppercase tracking-wider">
-                                Plan Title
+                                {t('dashboard.patientDetails.planTitle')}
                             </label>
                             <input
                                 id="plan-title"
                                 type="text"
                                 value={planTitle}
                                 onChange={(e) => setPlanTitle(e.target.value)}
-                                placeholder="e.g. Post-Surgery Knee Rehab"
+                                placeholder={t('dashboard.patientDetails.planTitlePlaceholder')}
                                 className="input-field"
                             />
                         </div>
@@ -243,21 +245,21 @@ export default function PatientDetailsPage({ params }) {
                         <div className="flex flex-col gap-4">
                             <div className="flex items-center justify-between">
                                 <span className="text-xs font-semibold text-muted uppercase tracking-wider">
-                                    Exercises
+                                    {t('dashboard.patientDetails.exercises')}
                                 </span>
                                 <button
                                     type="button"
                                     onClick={addExerciseRow}
                                     className="btn-ghost text-teal-400 hover:text-teal-300"
                                 >
-                                    + Add Row
+                                    {t('dashboard.patientDetails.addRow')}
                                 </button>
                             </div>
 
                             {selectedExercises.length === 0 ? (
                                 <div className="p-6 rounded-xl border-2 border-dashed border-outline text-center">
                                     <p className="text-sm text-muted">
-                                        No exercises in current plan. Click &quot;+ Add Row&quot; to begin.
+                                        {t('dashboard.patientDetails.noExercisesRow')}
                                     </p>
                                 </div>
                             ) : (
@@ -265,14 +267,14 @@ export default function PatientDetailsPage({ params }) {
                                     {selectedExercises.map((ex, i) => (
                                         <div key={i} className="flex items-end gap-3 p-4 rounded-xl bg-main border border-outline">
                                             <div className="flex-1 flex flex-col gap-1">
-                                                <label className="text-[10px] font-semibold text-muted uppercase">Exercise</label>
+                                                <label className="text-[10px] font-semibold text-muted uppercase">{t('dashboard.patientDetails.exercise')}</label>
                                                 <select
                                                     value={ex.exercise_id}
                                                     onChange={(e) => updateExerciseRow(i, "exercise_id", e.target.value)}
                                                     className="input-field cursor-pointer"
                                                     required
                                                 >
-                                                    <option value="">Select…</option>
+                                                    <option value="">{t('dashboard.patientDetails.select')}</option>
                                                     {exercises.map((e) => (
                                                         <option key={e.exercise_id} value={e.exercise_id}>
                                                             {e.name}
@@ -281,7 +283,7 @@ export default function PatientDetailsPage({ params }) {
                                                 </select>
                                             </div>
                                             <div className="w-20 flex flex-col gap-1">
-                                                <label className="text-[10px] font-semibold text-muted uppercase">Reps</label>
+                                                <label className="text-[10px] font-semibold text-muted uppercase">{t('dashboard.patientDetails.reps')}</label>
                                                 <input
                                                     type="number"
                                                     min="1"
@@ -291,7 +293,7 @@ export default function PatientDetailsPage({ params }) {
                                                 />
                                             </div>
                                             <div className="w-20 flex flex-col gap-1">
-                                                <label className="text-[10px] font-semibold text-muted uppercase">Sets</label>
+                                                <label className="text-[10px] font-semibold text-muted uppercase">{t('dashboard.patientDetails.sets')}</label>
                                                 <input
                                                     type="number"
                                                     min="1"
@@ -324,10 +326,10 @@ export default function PatientDetailsPage({ params }) {
                             {formLoading ? (
                                 <>
                                     <Spinner />
-                                    Saving plan…
+                                    {t('dashboard.patientDetails.saving')}
                                 </>
                             ) : (
-                                "Save Changes"
+                                t('dashboard.patientDetails.save')
                             )}
                         </button>
                     </form>

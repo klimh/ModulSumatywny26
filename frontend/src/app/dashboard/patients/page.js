@@ -6,11 +6,13 @@ import { usePhysio } from "@/hooks/usePhysio";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { api } from "@/lib/api";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function PatientsPage() {
     const { user, loading: authLoading } = useAuth();
     const { patients, loading, error, fetchMyPatients } = usePhysio();
     const router = useRouter();
+    const { t } = useTranslation();
     const [summaries, setSummaries] = useState({});
     const [summariesLoading, setSummariesLoading] = useState(false);
 
@@ -57,7 +59,7 @@ export default function PatientsPage() {
                 return (
                     <span className="badge-success flex items-center gap-1.5">
                         <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.6)]"></span>
-                        Making progress
+                        {t('dashboard.patients.makingProgress')}
                     </span>
                 );
             case "red":
@@ -65,15 +67,15 @@ export default function PatientsPage() {
                     <span className="badge-danger flex items-center gap-1.5">
                         <span className="w-2 h-2 rounded-full bg-red-400 shadow-[0_0_6px_rgba(248,113,113,0.6)]"></span>
                         {summary.days_since_activity != null && summary.days_since_activity > 3
-                            ? `Inactive (${summary.days_since_activity}d)`
-                            : "Needs attention"}
+                            ? t('dashboard.patients.inactive').replace('{days}', summary.days_since_activity)
+                            : t('dashboard.patients.needsAttention')}
                     </span>
                 );
             case "yellow":
                 return (
                     <span className="badge-warning flex items-center gap-1.5">
                         <span className="text-sm">⚠️</span>
-                        No plan
+                        {t('dashboard.patients.noPlan')}
                     </span>
                 );
             default:
@@ -104,8 +106,8 @@ export default function PatientsPage() {
     return (
         <div className="page-container">
             <div className="flex flex-col items-center gap-2 animate-scale-up">
-                <h1 className="page-title text-3xl md:text-4xl">My Patients</h1>
-                <p className="text-sm text-muted">Patients currently assigned to you</p>
+                <h1 className="page-title text-3xl md:text-4xl">{t('dashboard.patients.title')}</h1>
+                <p className="text-sm text-muted">{t('dashboard.patients.desc')}</p>
             </div>
 
             <div className="w-full max-w-3xl animate-fade-in">
@@ -114,18 +116,18 @@ export default function PatientsPage() {
                 {/* Status Legend */}
                 {patients.length > 0 && Object.keys(summaries).length > 0 && (
                     <div className="flex flex-wrap gap-4 mb-6 p-4 card">
-                        <span className="text-xs text-muted font-semibold uppercase tracking-wider">LEGEND:</span>
+                        <span className="text-xs text-muted font-semibold uppercase tracking-wider">{t('dashboard.patients.legend')}:</span>
                         <div className="flex items-center gap-1.5 text-xs">
                             <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.6)]"></span>
-                            <span className="text-muted">Making progress</span>
+                            <span className="text-muted">{t('dashboard.patients.makingProgress')}</span>
                         </div>
                         <div className="flex items-center gap-1.5 text-xs">
                             <span className="w-2.5 h-2.5 rounded-full bg-red-400 shadow-[0_0_6px_rgba(248,113,113,0.6)]"></span>
-                            <span className="text-muted">Needs attention</span>
+                            <span className="text-muted">{t('dashboard.patients.needsAttention')}</span>
                         </div>
                         <div className="flex items-center gap-1.5 text-xs">
                             <span>⚠️</span>
-                            <span className="text-muted">No plan</span>
+                            <span className="text-muted">{t('dashboard.patients.noPlan')}</span>
                         </div>
                     </div>
                 )}
@@ -167,9 +169,9 @@ export default function PatientsPage() {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
                             </svg>
                         </div>
-                        <h3 className="text-lg font-semibold">No Patients Yet</h3>
+                        <h3 className="text-lg font-semibold">{t('dashboard.patients.noPatients')}</h3>
                         <p className="text-sm text-muted text-center max-w-sm">
-                            You don&apos;t have any accepted patients. Check the Requests page for pending requests.
+                            {t('dashboard.patients.noPatientsDesc')}
                         </p>
                     </div>
                 )}
