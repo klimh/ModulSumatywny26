@@ -63,6 +63,31 @@ function CloseIcon() {
     );
 }
 
+function PlFlag() {
+    return (
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 10" className="w-6 h-4 rounded-sm shadow-sm" aria-hidden="true">
+            <rect width="16" height="10" fill="#fff"/>
+            <rect width="16" height="5" y="5" fill="#dc143c"/>
+        </svg>
+    );
+}
+
+function UkFlag() {
+    return (
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 30" className="w-6 h-4 rounded-sm shadow-sm" aria-hidden="true">
+            <clipPath id="s"><path d="M0,0 v30 h60 v-30 z"/></clipPath>
+            <clipPath id="t"><path d="M30,15 h30 v15 z v15 h-30 z h-30 v-15 z v-15 h30 z"/></clipPath>
+            <g clipPath="url(#s)">
+                <path d="M0,0 v30 h60 v-30 z" fill="#012169"/>
+                <path d="M0,0 L60,30 M60,0 L0,30" stroke="#fff" strokeWidth="6"/>
+                <path d="M0,0 L60,30 M60,0 L0,30" clipPath="url(#t)" stroke="#C8102E" strokeWidth="4"/>
+                <path d="M30,0 v30 M0,15 h60" stroke="#fff" strokeWidth="10"/>
+                <path d="M30,0 v30 M0,15 h60" stroke="#C8102E" strokeWidth="6"/>
+            </g>
+        </svg>
+    );
+}
+
 export default function Header() {
     const { user, logout, loading } = useAuth();
     const { theme, setTheme } = useTheme();
@@ -154,10 +179,10 @@ export default function Header() {
                     <div className="hidden md:flex items-center gap-3">
                         <button
                             onClick={() => setLanguage(language === 'en' ? 'pl' : 'en')}
-                            className="px-2 py-1 rounded-xl text-lg hover:bg-panel border border-outline transition-all duration-300 cursor-pointer"
+                            className="p-2 rounded-xl hover:bg-panel border border-outline transition-all duration-300 cursor-pointer flex items-center justify-center"
                             aria-label="Toggle language"
                         >
-                            {language === 'en' ? '🇬🇧' : '🇵🇱'}
+                            {language === 'en' ? <UkFlag /> : <PlFlag />}
                         </button>
 
                         <button
@@ -244,10 +269,10 @@ export default function Header() {
                                 </button>
                                 <button
                                     onClick={() => setLanguage(language === 'en' ? 'pl' : 'en')}
-                                    className="btn-ghost text-lg"
+                                    className="btn-ghost p-2 flex items-center justify-center"
                                     aria-label="Toggle language"
                                 >
-                                    {language === 'en' ? '🇬🇧' : '🇵🇱'}
+                                    {language === 'en' ? <UkFlag /> : <PlFlag />}
                                 </button>
                             </div>
 
