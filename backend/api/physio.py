@@ -18,8 +18,7 @@ from schemas.certificate import CertificateResponse
 
 router = APIRouter(
     prefix="/physio",
-    tags=["Fizjoterapeuta"],
-    dependencies=[Depends(RoleChecker(["fizjoterapeuta"]))]
+    tags=["Fizjoterapeuta"]
 )
 
 @router.get("/my-patients")
