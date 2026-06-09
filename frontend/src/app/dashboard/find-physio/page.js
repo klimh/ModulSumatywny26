@@ -25,7 +25,18 @@ export default function FindPhysioPage() {
 
     const [problemDescription, setProblemDescription] = useState("");
     const [specialization, setSpecialization] = useState("");
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [successMessage, setSuccessMessage] = useState("");
+
+    const specializationOptions = [
+        { value: "", label: "Wybierze system (Zalecane)" },
+        { value: "Ortopedia", label: "Ortopedia" },
+        { value: "Neurologia", label: "Neurologia" },
+        { value: "Sport", label: "Sportowa" },
+        { value: "Pediatria", label: "Pediatria" },
+    ];
+
+    const currentSpecializationLabel = specializationOptions.find(opt => opt.value === specialization)?.label || "Wybierze system (Zalecane)";
     const [actionError, setActionError] = useState("");
 
     useEffect(() => {
@@ -193,21 +204,36 @@ export default function FindPhysioPage() {
                         <div className="text-xs text-right text-muted">{problemDescription.length}/500</div>
                     </div>
 
-                    <div className="flex flex-col gap-2">
+                    <div className="flex flex-col gap-2 relative">
                         <label className="text-sm font-medium text-gray-200">
                             Preferowana specjalizacja (Opcjonalnie)
                         </label>
-                        <select 
-                            className="input-field py-3 text-gray-200"
-                            value={specialization}
-                            onChange={(e) => setSpecialization(e.target.value)}
+                        <div 
+                            className="input-field py-3 text-gray-200 cursor-pointer flex justify-between items-center"
+                            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                         >
-                            <option value="">Wybierze system (Zalecane)</option>
-                            <option value="Ortopedia">Ortopedia</option>
-                            <option value="Neurologia">Neurologia</option>
-                            <option value="Sport">Sportowa</option>
-                            <option value="Pediatria">Pediatria</option>
-                        </select>
+                            <span>{currentSpecializationLabel}</span>
+                            <svg className={`w-4 h-4 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </div>
+                        
+                        {isDropdownOpen && (
+                            <div className="absolute top-[80px] left-0 w-full bg-[#1e1e24] border border-outline rounded-xl shadow-2xl z-10 overflow-hidden animate-fade-in">
+                                {specializationOptions.map((opt) => (
+                                    <div 
+                                        key={opt.value}
+                                        className={`px-4 py-3 cursor-pointer hover:bg-main transition-colors ${specialization === opt.value ? 'bg-main text-emerald-400 font-medium' : 'text-gray-200'}`}
+                                        onClick={() => {
+                                            setSpecialization(opt.value);
+                                            setIsDropdownOpen(false);
+                                        }}
+                                    >
+                                        {opt.label}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
 
                     <button 
