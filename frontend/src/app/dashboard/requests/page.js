@@ -63,7 +63,7 @@ export default function RequestsPage() {
                                     </div>
                                     <div className="flex flex-col">
                                         <span className="font-semibold">
-                                            {t('dashboard.requests.patient').replace('{id}', req.patient_id)}
+                                            {req.patient_name}
                                         </span>
                                         <span className="badge-warning w-fit mt-1">{t('dashboard.requests.pending')}</span>
                                     </div>

@@ -171,10 +171,23 @@ def get_pending_requests(
         db: Session = Depends(get_db)
 ):
     """Fizjoterapeuta przegląda oczekujące prośby od pacjentów"""
-    return db.query(PatientPhysiotherapist).filter(
+    requests = db.query(PatientPhysiotherapist, User).join(
+        User, PatientPhysiotherapist.patient_id == User.user_id
+    ).filter(
         PatientPhysiotherapist.physio_id == current_user.user_id,
         PatientPhysiotherapist.status == "OCZEKUJACE"
     ).all()
+    
+    return [
+        {
+            "id": req.id,
+            "patient_id": req.patient_id,
+            "physio_id": req.physio_id,
+            "status": req.status,
+            "patient_name": f"{user.first_name} {user.last_name}"
+        }
+        for req, user in requests
+    ]
 
 
 @router.post("/respond-request/{request_id}")
@@ -327,10 +340,6 @@ def delete_certificate(
     ).first()
     if not cert:
         raise HTTPException(status_code=404, detail="Certyfikat nie znaleziony")
-
-    # Optionally delete from cloudinary
-    # if "image" in cert.file_url:
-    #     _delete_cloudinary_video(cert.file_url) # _delete_cloudinary_video uses resource_type="video", so maybe not this exact method
 
     db.delete(cert)
     db.commit()
