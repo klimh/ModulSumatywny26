@@ -130,9 +130,14 @@ def submit_exercise_session(
 
     streak = record_activity(db, current_user.user_id)
     db.commit()
+
+    from core.badges import evaluate_and_award_badges
+    new_badges = evaluate_and_award_badges(db, current_user.user_id, results_list, streak.current_streak)
+
     return {
         "message": "Sesja zapisana pomyślnie!",
         "session_id": new_session.session_id,
         "current_streak": streak.current_streak,
-        "longest_streak": streak.longest_streak
+        "longest_streak": streak.longest_streak,
+        "new_badges": new_badges
     }

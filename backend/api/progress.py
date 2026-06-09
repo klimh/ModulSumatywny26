@@ -261,6 +261,10 @@ def _build_patient_summary(patient_id: int, current_user: User, db: DBSession):
             days_since_activity = (now - last_session.created_at).days
         except TypeError:
             days_since_activity = (now.replace(tzinfo=None) - last_session.created_at.replace(tzinfo=None)).days
+
+    from db_models.badge import PatientBadge
+    badges_records = db.query(PatientBadge).filter(PatientBadge.patient_id == patient_id).all()
+    badges = [b.badge_type for b in badges_records]
     
     return {
         "patient_id": patient_id,
@@ -272,5 +276,6 @@ def _build_patient_summary(patient_id: int, current_user: User, db: DBSession):
         "has_active_plan": has_active_plan,
         "accuracy_trend": accuracy_trend,
         "overall_avg_accuracy": overall_avg_accuracy,
-        "streak": build_summary(db, patient_id)
+        "streak": build_summary(db, patient_id),
+        "badges": badges
     }

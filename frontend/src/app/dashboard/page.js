@@ -148,6 +148,39 @@ function PatientDashboard() {
                     </div>
                 </div>
             )}
+
+            {/* BADGES PANEL */}
+            {summary && (
+                <div className="card p-6 flex flex-col gap-4 border border-outline/50 bg-panel/50 backdrop-blur-sm mb-2">
+                    <div>
+                        <h3 className="font-bold text-lg text-white">{t('dashboard.patient.badgesTitle') || 'Twoje Odznaki'}</h3>
+                        <p className="text-xs text-muted">{t('dashboard.patient.badgesDesc') || 'Zdobywaj osiągnięcia za regularność i precyzję'}</p>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                        {[
+                            { id: 'FIRST_SESSION', icon: '🎯', gradient: 'from-blue-500 to-cyan-500', bg: 'bg-blue-500/20' },
+                            { id: 'STREAK_3', icon: '🔥', gradient: 'from-orange-500 to-amber-500', bg: 'bg-orange-500/20' },
+                            { id: 'STREAK_7', icon: '⚡', gradient: 'from-amber-400 to-yellow-500', bg: 'bg-amber-500/20' },
+                            { id: 'SESSIONS_10', icon: '🏆', gradient: 'from-purple-500 to-pink-500', bg: 'bg-purple-500/20' },
+                            { id: 'ACCURACY_90', icon: '⭐', gradient: 'from-emerald-400 to-teal-500', bg: 'bg-emerald-500/20' }
+                        ].map(badge => {
+                            const earned = summary.badges?.includes(badge.id);
+                            return (
+                                <div key={badge.id} className={`flex flex-col items-center gap-2 p-3 rounded-xl border ${earned ? 'border-outline bg-main/50' : 'border-dashed border-outline/30 bg-transparent opacity-50 grayscale'}`}>
+                                    <div className={`w-12 h-12 rounded-full flex items-center justify-center text-2xl ${earned ? `bg-gradient-to-br ${badge.gradient} shadow-lg shadow-${badge.gradient.split('-')[1]}/20` : 'bg-surface'}`}>
+                                        {badge.icon}
+                                    </div>
+                                    <div className="text-center">
+                                        <div className="text-xs font-bold text-white leading-tight mb-0.5">{t(`badge.${badge.id}.title`) || badge.id}</div>
+                                        <div className="text-[10px] text-muted leading-tight">{t(`badge.${badge.id}.desc`) || 'Odznaka'}</div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div
                     onClick={() => router.push("/dashboard/plan")}
