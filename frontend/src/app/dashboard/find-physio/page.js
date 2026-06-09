@@ -5,10 +5,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { usePatient } from "@/hooks/usePatient";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function FindPhysioPage() {
     const { user, loading: authLoading } = useAuth();
     const { allPhysios, loading, error, fetchAllPhysios, requestPhysio } = usePatient();
+    const { t } = useTranslation();
     const router = useRouter();
 
     const [searchQuery, setSearchQuery] = useState("");
@@ -34,7 +36,7 @@ export default function FindPhysioPage() {
         setRequestError("");
         try {
             await requestPhysio(physioId);
-            setSuccessMessage("Request sent successfully! Your physiotherapist will review it shortly.");
+            setSuccessMessage(t('dashboard.findPhysio.success'));
         } catch (err) {
             setRequestError(err.message);
         } finally {
@@ -67,9 +69,9 @@ export default function FindPhysioPage() {
     return (
         <div className="page-container">
             <div className="flex flex-col items-center gap-2 animate-scale-up">
-                <h1 className="page-title">Find Physiotherapist</h1>
+                <h1 className="page-title">{t('dashboard.findPhysio.title')}</h1>
                 <p className="text-sm text-muted font-mono">
-                    Browse and connect with available physiotherapists
+                    {t('dashboard.findPhysio.subtitle')}
                 </p>
             </div>
 
@@ -79,7 +81,7 @@ export default function FindPhysioPage() {
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                     </svg>
-                    Back to Dashboard
+                    {t('dashboard.findPhysio.backToDashboard')}
                 </Link>
 
                 {/* Search bar */}
@@ -89,7 +91,7 @@ export default function FindPhysioPage() {
                     </svg>
                     <input
                         type="text"
-                        placeholder="Search by name or specialization…"
+                        placeholder={t('dashboard.findPhysio.searchPlaceholder')}
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="input-field pl-12"
@@ -119,7 +121,7 @@ export default function FindPhysioPage() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
                         <p className="text-muted">
-                            {searchQuery ? "No physiotherapists match your search" : "No physiotherapists available at the moment"}
+                            {searchQuery ? t('dashboard.findPhysio.noMatch') : t('dashboard.findPhysio.noAvailable')}
                         </p>
                     </div>
                 )}
@@ -161,10 +163,10 @@ export default function FindPhysioPage() {
                                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                                             </svg>
-                                            Sending…
+                                            {t('dashboard.findPhysio.sending')}
                                         </span>
                                     ) : (
-                                        "Send Request"
+                                        t('dashboard.findPhysio.sendRequest')
                                     )}
                                 </button>
                             </div>

@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/api";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function ChatPage() {
     const { user, loading: authLoading } = useAuth();
+    const { t } = useTranslation();
     const router = useRouter();
     const [contacts, setContacts] = useState([]);
     const [selectedContact, setSelectedContact] = useState(null);
@@ -109,12 +111,12 @@ export default function ChatPage() {
             <div className="w-1/3 border-r border-outline flex flex-col bg-main">
                 <div className="p-5 border-b border-outline">
                     <h2 className="text-xl font-bold bg-gradient-to-r from-teal-500 to-cyan-500 bg-clip-text text-transparent">
-                        Messages
+                        {t('dashboard.chat.title')}
                     </h2>
                 </div>
                 <div className="flex-1 overflow-y-auto p-3 space-y-2">
                     {contacts.length === 0 ? (
-                        <p className="text-muted text-sm text-center mt-5">No contacts available.</p>
+                        <p className="text-muted text-sm text-center mt-5">{t('dashboard.chat.noContacts')}</p>
                     ) : (
                         contacts.map(contact => (
                             <button
@@ -141,7 +143,7 @@ export default function ChatPage() {
                                             {contact.first_name} {contact.last_name}
                                         </p>
                                         <p className={`text-xs truncate ${contact.has_unread ? "text-primary font-bold" : "text-muted"}`}>
-                                            {contact.role === "fizjoterapeuta" ? "Physiotherapist" : "Patient"}
+                                            {contact.role === "fizjoterapeuta" ? t('dashboard.chat.physiotherapist') : t('dashboard.chat.patient')}
                                         </p>
                                     </div>
                                     {contact.has_unread && (
@@ -167,7 +169,7 @@ export default function ChatPage() {
                                 <h3 className="font-bold text-primary">
                                     {selectedContact.first_name} {selectedContact.last_name}
                                 </h3>
-                                <p className="text-xs text-emerald-500">Online</p>
+                                <p className="text-xs text-emerald-500">{t('dashboard.chat.online')}</p>
                             </div>
                         </div>
 
@@ -175,7 +177,7 @@ export default function ChatPage() {
                             {messages.length === 0 ? (
                                 <div className="h-full flex items-center justify-center flex-col gap-2 text-muted">
                                     <svg className="w-12 h-12 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
-                                    <p>No messages yet. Say hello!</p>
+                                    <p>{t('dashboard.chat.noMessages')}</p>
                                 </div>
                             ) : (
                                 messages.map((msg, idx) => {
@@ -188,12 +190,12 @@ export default function ChatPage() {
                                         const contentBlock = (
                                             <div className="flex flex-col items-center justify-center text-center p-4">
                                                 <span className="text-xs font-bold text-teal-400 uppercase tracking-wide">
-                                                    Rehabilitation Plan Updated
+                                                    {t('dashboard.chat.planUpdated')}
                                                 </span>
                                                 <span className="text-[10px] text-muted mt-1">{dateStr}</span>
                                                 {isPatient && (
                                                     <span className="text-xs text-emerald-400 mt-2 bg-emerald-500/10 px-3 py-1.5 rounded-lg border border-emerald-500/20 font-semibold group-hover:bg-emerald-500/20 transition-colors">
-                                                        Click to view plan
+                                                        {t('dashboard.chat.clickToViewPlan')}
                                                     </span>
                                                 )}
                                             </div>
@@ -242,7 +244,7 @@ export default function ChatPage() {
                                     type="text"
                                     value={inputMsg}
                                     onChange={(e) => setInputMsg(e.target.value)}
-                                    placeholder="Type a message..."
+                                    placeholder={t('dashboard.chat.typeMessage')}
                                     className="flex-1 bg-main border border-outline rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/50 transition-all text-primary placeholder:text-muted"
                                 />
                                 <button
@@ -258,7 +260,7 @@ export default function ChatPage() {
                 ) : (
                     <div className="flex-1 flex flex-col items-center justify-center text-muted">
                         <svg className="w-16 h-16 opacity-20 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path></svg>
-                        <p>Select a contact to start messaging</p>
+                        <p>{t('dashboard.chat.selectContact')}</p>
                     </div>
                 )}
             </div>

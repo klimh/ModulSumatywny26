@@ -7,10 +7,12 @@ import { usePatient } from "@/hooks/usePatient";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { api } from "@/lib/api";
+import { useTranslation } from "@/hooks/useTranslation";
 
 function PatientDashboard() {
     const { plan, physio, physioLoading, loading, error, fetchMyPlan, fetchMyPhysio } = usePatient();
     const [unreadCount, setUnreadCount] = useState(0);
+    const { t } = useTranslation();
 
     useEffect(() => {
         fetchMyPlan();
@@ -32,7 +34,7 @@ function PatientDashboard() {
 
     return (
         <div className="w-full max-w-4xl flex flex-col gap-6 animate-fade-in">
-            <h2 className="section-title">My Rehabilitation</h2>
+            <h2 className="section-title">{t('dashboard.patient.title')}</h2>
             {error && <div className="error-box">⚠️ {error}</div>}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Link href="/dashboard/plan" className="card-hover p-6 flex flex-col gap-3 no-underline group">
@@ -41,9 +43,9 @@ function PatientDashboard() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                         </svg>
                     </div>
-                    <span className="font-semibold text-lg group-hover:text-emerald-400 transition-colors">My Plan</span>
+                    <span className="font-semibold text-lg group-hover:text-emerald-400 transition-colors">{t('dashboard.patient.myPlan')}</span>
                     <span className="text-xs text-muted">
-                        {plan ? `Active: ${plan.title}` : loading ? "Loading…" : "No active plan"}
+                        {plan ? `${t('dashboard.patient.activePlan')} ${plan.title}` : loading ? t('dashboard.patient.loading') : t('dashboard.patient.noPlan')}
                     </span>
                 </Link>
 
@@ -56,9 +58,9 @@ function PatientDashboard() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                         </svg>
                     </div>
-                    <span className="font-semibold text-lg group-hover:text-pink-400 transition-colors">Chat</span>
+                    <span className="font-semibold text-lg group-hover:text-pink-400 transition-colors">{t('dashboard.patient.chat')}</span>
                     <span className="text-xs text-muted">
-                        Message your physiotherapist
+                        {t('dashboard.patient.chatDesc')}
                     </span>
                 </Link>
 
@@ -68,9 +70,9 @@ function PatientDashboard() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                         </svg>
                     </div>
-                    <span className="font-semibold text-lg group-hover:text-orange-400 transition-colors">My Progress</span>
+                    <span className="font-semibold text-lg group-hover:text-orange-400 transition-colors">{t('dashboard.patient.progress')}</span>
                     <span className="text-xs text-muted">
-                        Track notes and exercise sessions
+                        {t('dashboard.patient.progressDesc')}
                     </span>
                 </Link>
 
@@ -83,7 +85,7 @@ function PatientDashboard() {
                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                             </svg>
                         </div>
-                        <span className="font-semibold text-lg">Loading…</span>
+                        <span className="font-semibold text-lg">{t('dashboard.patient.loading')}</span>
                     </div>
                 ) : physio ? (
                     <div className="card-hover p-6 flex flex-col gap-3 group">
@@ -92,14 +94,14 @@ function PatientDashboard() {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                         </div>
-                        <span className="font-semibold text-lg group-hover:text-violet-400 transition-colors">My Physiotherapist</span>
+                        <span className="font-semibold text-lg group-hover:text-violet-400 transition-colors">{t('dashboard.patient.myPhysio')}</span>
                         <span className="text-sm font-medium">{physio.first_name} {physio.last_name}</span>
                         <span className="text-xs text-muted">{physio.email}</span>
                         <span className={`text-xs font-mono px-2 py-1 rounded-full w-fit ${physio.status === "ZAAKCEPTOWANE"
                             ? "bg-emerald-500/20 text-emerald-400"
                             : "bg-amber-500/20 text-amber-400"
                             }`}>
-                            {physio.status === "ZAAKCEPTOWANE" ? "✓ Connected" : "⏳ Pending"}
+                            {physio.status === "ZAAKCEPTOWANE" ? t('dashboard.patient.connected') : t('dashboard.patient.pending')}
                         </span>
                     </div>
                 ) : (
@@ -109,9 +111,9 @@ function PatientDashboard() {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                             </svg>
                         </div>
-                        <span className="font-semibold text-lg group-hover:text-violet-400 transition-colors">Find Physiotherapist</span>
+                        <span className="font-semibold text-lg group-hover:text-violet-400 transition-colors">{t('dashboard.patient.findPhysio')}</span>
                         <span className="text-xs text-muted">
-                            Search and connect with a physiotherapist
+                            {t('dashboard.patient.findPhysioDesc')}
                         </span>
                     </Link>
                 )}
@@ -123,6 +125,7 @@ function PatientDashboard() {
 function PhysioDashboard() {
     const { patients, requests, exercises, loading, error, fetchMyPatients, fetchRequests, fetchExercises } = usePhysio();
     const [unreadCount, setUnreadCount] = useState(0);
+    const { t } = useTranslation();
 
     useEffect(() => {
         fetchMyPatients();
@@ -145,7 +148,7 @@ function PhysioDashboard() {
 
     const statCards = [
         {
-            label: "Patients",
+            label: t('dashboard.physio.patients'),
             value: patients.length,
             href: "/dashboard/patients",
             gradient: "from-emerald-500/20 to-teal-500/20",
@@ -158,7 +161,7 @@ function PhysioDashboard() {
             ),
         },
         {
-            label: "Pending Requests",
+            label: t('dashboard.physio.requests'),
             value: requests.length,
             href: "/dashboard/requests",
             gradient: "from-amber-500/20 to-orange-500/20",
@@ -170,7 +173,7 @@ function PhysioDashboard() {
             ),
         },
         {
-            label: "Exercises",
+            label: t('dashboard.physio.exercises'),
             value: exercises.length,
             href: "/dashboard/exercises",
             gradient: "from-fuchsia-500/20 to-purple-500/20",
@@ -182,7 +185,8 @@ function PhysioDashboard() {
             ),
         },
         {
-            label: "Chat",
+            id: "chat",
+            label: t('dashboard.physio.chat'),
             value: "💬",
             href: "/dashboard/chat",
             gradient: "from-blue-500/20 to-indigo-500/20",
@@ -206,7 +210,7 @@ function PhysioDashboard() {
                             href={card.href}
                             className={`relative card-hover flex flex-col no-underline group border border-outline/50 hover:border-outline bg-panel/50 backdrop-blur-sm min-h-[110px] ${isFirst ? 'md:col-span-3 md:row-span-3 justify-between p-8' : 'md:col-span-1 md:row-span-1 justify-center p-5 gap-3'}`}
                         >
-                            {card.label === "Chat" && unreadCount > 0 && (
+                            {card.id === "chat" && unreadCount > 0 && (
                                 <div className="absolute top-4 right-4 w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)] animate-pulse"></div>
                             )}
 
@@ -219,7 +223,7 @@ function PhysioDashboard() {
                                             </div>
                                             <div className="flex flex-col">
                                                 <span className="text-3xl font-bold text-white tracking-wide">{card.label}</span>
-                                                <span className="text-sm font-medium text-emerald-400/80 mt-1">Manage and monitor progress</span>
+                                                <span className="text-sm font-medium text-emerald-400/80 mt-1">{t('dashboard.physio.manageProgress')}</span>
                                             </div>
                                         </div>
                                         <span className={`font-black ${card.textColor} drop-shadow-md text-7xl`}>
@@ -229,7 +233,7 @@ function PhysioDashboard() {
 
                                     {card.data && card.data.length > 0 && (
                                         <div className="flex flex-col gap-3 mt-auto">
-                                            <span className="text-xs uppercase tracking-widest font-bold text-muted/70">Active Patients</span>
+                                            <span className="text-xs uppercase tracking-widest font-bold text-muted/70">{t('dashboard.physio.activePatients')}</span>
                                             <div className="flex flex-wrap gap-3">
                                                 {card.data.slice(0, 5).map(p => (
                                                     <div key={p.user_id} className="bg-main border border-outline px-4 py-2 rounded-xl text-sm font-medium text-primary flex items-center gap-2.5 shadow-sm hover:border-emerald-500/30 transition-colors">
@@ -239,7 +243,7 @@ function PhysioDashboard() {
                                                 ))}
                                                 {card.data.length > 5 && (
                                                     <div className="bg-main/50 border border-outline/50 px-4 py-2 rounded-xl text-sm font-medium text-muted">
-                                                        +{card.data.length - 5} more
+                                                        +{card.data.length - 5} {t('dashboard.physio.more')}
                                                     </div>
                                                 )}
                                             </div>
@@ -253,7 +257,7 @@ function PhysioDashboard() {
                                             <div className="scale-75">{card.icon}</div>
                                         </div>
                                         <span className={`font-black ${card.textColor} drop-shadow-md text-3xl`}>
-                                            {card.label === "Chat" ? card.value : loading ? "…" : card.value}
+                                            {card.id === "chat" ? card.value : loading ? "…" : card.value}
                                         </span>
                                     </div>
                                     <span className="font-semibold text-muted group-hover:text-white transition-colors text-sm">{card.label}</span>
@@ -272,6 +276,7 @@ function PhysioDashboard() {
 export default function DashboardPage() {
     const { user, loading } = useAuth();
     const router = useRouter();
+    const { t } = useTranslation();
 
     useEffect(() => {
         if (!loading && !user) {
@@ -296,10 +301,10 @@ export default function DashboardPage() {
         <div className="page-container">
             <div className="flex flex-col items-center gap-2 animate-scale-up">
                 <h1 className="page-title">
-                    {user.role === "fizjoterapeuta" ? "Physio Dashboard" : "Patient Dashboard"}
+                    {user.role === "fizjoterapeuta" ? t('dashboard.main.physioTitle') : t('dashboard.main.patientTitle')}
                 </h1>
                 <p className="text-sm text-muted font-mono">
-                    Welcome back, {user.first_name} {user.last_name}
+                    {t('dashboard.main.welcome')} {user.first_name} {user.last_name}
                 </p>
             </div>
 

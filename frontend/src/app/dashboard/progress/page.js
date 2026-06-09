@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { api } from "@/lib/api";
 import { useRouter } from "next/navigation";
+import { useTranslation } from "@/hooks/useTranslation";
 import { Line } from "react-chartjs-2";
 import {
     Chart as ChartJS,
@@ -21,6 +22,7 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, C
 
 export default function PatientProgressPage() {
     const { user, loading: authLoading } = useAuth();
+    const { t } = useTranslation();
     const router = useRouter();
     const [notes, setNotes] = useState([]);
     const [sessions, setSessions] = useState([]);
@@ -141,7 +143,7 @@ export default function PatientProgressPage() {
         return {
             labels,
             datasets: [{
-                label: "Average Accuracy (%)",
+                label: `${t('dashboard.progress.accuracy')} (%)`,
                 data,
                 borderColor: "rgb(52, 211, 153)",
                 backgroundColor: "rgba(52, 211, 153, 0.1)",
@@ -207,11 +209,16 @@ export default function PatientProgressPage() {
                 current.setDate(current.getDate() + w * 7 + d);
                 const ds = current.toISOString().split('T')[0];
                 const isFuture = current > today;
+
+                const weekdayShort = current.toLocaleDateString('en-US', { weekday: 'short' }).toLowerCase();
+                const localizedWeekday = t(`dashboard.progress.daysOfWeek.${weekdayShort}`);
+                const dayMonth = current.toLocaleDateString('pl-PL', { day: 'numeric', month: 'short' });
+
                 week.push({
                     date: ds,
                     count: sessionDatesMap[ds] || 0,
                     isFuture,
-                    dayLabel: current.toLocaleDateString('pl-PL', { weekday: 'short', day: 'numeric', month: 'short' })
+                    dayLabel: `${localizedWeekday}, ${dayMonth}`
                 });
             }
             weeks.push(week);
@@ -238,59 +245,57 @@ export default function PatientProgressPage() {
     return (
         <div className="page-container">
             <div className="flex flex-col items-center gap-2 animate-scale-up">
-                <h1 className="page-title text-3xl md:text-4xl">My Progress</h1>
-                <p className="text-sm text-muted">Track your rehabilitation journey</p>
+                <h1 className="page-title text-3xl md:text-4xl">{t('dashboard.progress.title')}</h1>
+                <p className="text-sm text-muted">{t('dashboard.progress.subtitle')}</p>
             </div>
 
             <div className="w-full max-w-5xl animate-fade-in flex flex-col gap-8">
                 {error && <div className="error-box">⚠️ {error}</div>}
 
-                {/* KPI Cards */}
                 {kpis && (
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <div className="card p-5 flex flex-col gap-2 relative overflow-hidden">
                             <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-emerald-500/10 to-transparent rounded-bl-full"></div>
-                            <span className="text-xs text-muted uppercase tracking-wider font-semibold">Accuracy</span>
+                            <span className="text-xs text-muted uppercase tracking-wider font-semibold">{t('dashboard.progress.accuracy')}</span>
                             <span className="text-3xl font-black text-emerald-400">
                                 {kpis.latestAvg != null ? `${kpis.latestAvg}%` : "—"}
                             </span>
                             {kpis.accuracyDiff != null && (
                                 <span className={`text-xs font-semibold ${kpis.accuracyDiff >= 0 ? "text-emerald-400" : "text-red-400"}`}>
-                                    {kpis.accuracyDiff >= 0 ? "▲" : "▼"} {Math.abs(kpis.accuracyDiff)}% vs previous session
+                                    {kpis.accuracyDiff >= 0 ? "▲" : "▼"} {Math.abs(kpis.accuracyDiff)}% {t('dashboard.progress.vsPrevious')}
                                 </span>
                             )}
                         </div>
 
                         <div className="card p-5 flex flex-col gap-2 relative overflow-hidden">
                             <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-blue-500/10 to-transparent rounded-bl-full"></div>
-                            <span className="text-xs text-muted uppercase tracking-wider font-semibold">Sessions this week</span>
+                            <span className="text-xs text-muted uppercase tracking-wider font-semibold">{t('dashboard.progress.sessionsThisWeek')}</span>
                             <span className="text-3xl font-black text-blue-400">{kpis.sessionsThisWeek}</span>
-                            <span className="text-xs text-muted">out of {kpis.totalSessions} total</span>
+                            <span className="text-xs text-muted">{t('dashboard.progress.outOfTotal').replace('{total}', kpis.totalSessions)}</span>
                         </div>
 
                         <div className="card p-5 flex flex-col gap-2 relative overflow-hidden">
                             <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-amber-500/10 to-transparent rounded-bl-full"></div>
-                            <span className="text-xs text-muted uppercase tracking-wider font-semibold">Training streak</span>
-                            <span className="text-3xl font-black text-amber-400">{kpis.streak} {kpis.streak === 1 ? "day" : "days"}</span>
+                            <span className="text-xs text-muted uppercase tracking-wider font-semibold">{t('dashboard.progress.trainingStreak')}</span>
+                            <span className="text-3xl font-black text-amber-400">{kpis.streak} {kpis.streak === 1 ? t('dashboard.progress.day') : t('dashboard.progress.days')}</span>
                             <span className="text-xs text-muted">
-                                {kpis.streak >= 7 ? "🔥 Great streak!" : kpis.streak >= 3 ? "💪 Keep it up!" : "Start a streak!"}
+                                {kpis.streak >= 7 ? t('dashboard.progress.streakGreat') : kpis.streak >= 3 ? t('dashboard.progress.streakKeepItUp') : t('dashboard.progress.streakStart')}
                             </span>
                         </div>
 
                         <div className="card p-5 flex flex-col gap-2 relative overflow-hidden">
                             <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-bl from-violet-500/10 to-transparent rounded-bl-full"></div>
-                            <span className="text-xs text-muted uppercase tracking-wider font-semibold">Total sessions</span>
+                            <span className="text-xs text-muted uppercase tracking-wider font-semibold">{t('dashboard.progress.totalSessions')}</span>
                             <span className="text-3xl font-black text-violet-400">{kpis.totalSessions}</span>
-                            <span className="text-xs text-muted">All completed workouts</span>
+                            <span className="text-xs text-muted">{t('dashboard.progress.allCompletedWorkouts')}</span>
                         </div>
                     </div>
                 )}
 
-                {/* Progress Chart */}
                 {history.length > 0 && (
                     <section className="card p-6">
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                            <h2 className="text-xl font-bold">Progress Chart</h2>
+                            <h2 className="text-xl font-bold">{t('dashboard.progress.progressChart')}</h2>
                             <div className="flex gap-2 flex-wrap">
                                 {exercises.length > 0 && (
                                     <select
@@ -298,7 +303,7 @@ export default function PatientProgressPage() {
                                         onChange={e => setExerciseFilter(e.target.value)}
                                         className="input-field w-auto text-xs !py-1.5 !px-3 !rounded-lg"
                                     >
-                                        <option value="">All exercises</option>
+                                        <option value="">{t('dashboard.progress.allExercises')}</option>
                                         {exercises.map(ex => (
                                             <option key={ex.id} value={ex.id}>{ex.name}</option>
                                         ))}
@@ -311,25 +316,24 @@ export default function PatientProgressPage() {
                                 <Line data={chartData} options={chartOptions} />
                             ) : (
                                 <div className="flex items-center justify-center h-full text-muted text-sm">
-                                    No data to display
+                                    {t('dashboard.progress.noData')}
                                 </div>
                             )}
                         </div>
                     </section>
                 )}
 
-                {/* Activity Calendar */}
                 {calendarData.length > 0 && (
                     <section className="card p-6">
-                        <h2 className="text-xl font-bold mb-4">Activity Calendar</h2>
+                        <h2 className="text-xl font-bold mb-4">{t('dashboard.progress.activityCalendar')}</h2>
                         <div className="flex gap-3 mb-2">
-                            <span className="text-xs text-muted w-8">Mon</span>
-                            <span className="text-xs text-muted w-8">Tue</span>
-                            <span className="text-xs text-muted w-8">Wed</span>
-                            <span className="text-xs text-muted w-8">Thu</span>
-                            <span className="text-xs text-muted w-8">Fri</span>
-                            <span className="text-xs text-muted w-8">Sat</span>
-                            <span className="text-xs text-muted w-8">Sun</span>
+                            <span className="text-xs text-muted w-8">{t('dashboard.progress.daysOfWeek.mon')}</span>
+                            <span className="text-xs text-muted w-8">{t('dashboard.progress.daysOfWeek.tue')}</span>
+                            <span className="text-xs text-muted w-8">{t('dashboard.progress.daysOfWeek.wed')}</span>
+                            <span className="text-xs text-muted w-8">{t('dashboard.progress.daysOfWeek.thu')}</span>
+                            <span className="text-xs text-muted w-8">{t('dashboard.progress.daysOfWeek.fri')}</span>
+                            <span className="text-xs text-muted w-8">{t('dashboard.progress.daysOfWeek.sat')}</span>
+                            <span className="text-xs text-muted w-8">{t('dashboard.progress.daysOfWeek.sun')}</span>
                         </div>
                         <div className="flex flex-col gap-1">
                             {calendarData.map((week, wi) => (
@@ -342,7 +346,7 @@ export default function PatientProgressPage() {
                                         >
                                             <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block z-10">
                                                 <div className="bg-black/90 text-white text-xs py-1 px-2 rounded-md whitespace-nowrap">
-                                                    {day.dayLabel}: {day.count} sessions
+                                                    {day.dayLabel}: {day.count} {t('dashboard.progress.sessions')}
                                                 </div>
                                             </div>
                                         </div>
@@ -351,19 +355,18 @@ export default function PatientProgressPage() {
                             ))}
                         </div>
                         <div className="flex items-center gap-2 mt-3">
-                            <span className="text-xs text-muted">Less</span>
+                            <span className="text-xs text-muted">{t('dashboard.progress.less')}</span>
                             <div className="w-4 h-4 rounded-sm bg-white/[0.06]"></div>
                             <div className="w-4 h-4 rounded-sm bg-emerald-500/30"></div>
                             <div className="w-4 h-4 rounded-sm bg-emerald-500/50"></div>
                             <div className="w-4 h-4 rounded-sm bg-emerald-500/80"></div>
-                            <span className="text-xs text-muted">More</span>
+                            <span className="text-xs text-muted">{t('dashboard.progress.more')}</span>
                         </div>
                     </section>
                 )}
 
-                {/* Notes Section */}
                 <section>
-                    <h2 className="section-title text-2xl mb-4">Physiotherapist Notes</h2>
+                    <h2 className="section-title text-2xl mb-4">{t('dashboard.progress.physioNotes')}</h2>
                     {notes.length > 0 ? (
                         <div className="flex flex-col gap-4">
                             {notes.map((note) => (
@@ -377,13 +380,13 @@ export default function PatientProgressPage() {
                                     <div className="flex gap-4">
                                         {note.pain_level !== null && (
                                             <div className="flex items-center gap-2 text-sm bg-red-500/10 text-red-400 px-3 py-1 rounded-full border border-red-500/20">
-                                                <span>Pain Level:</span>
+                                                <span>{t('dashboard.progress.painLevel')}:</span>
                                                 <span className="font-bold">{note.pain_level}/10</span>
                                             </div>
                                         )}
                                         {note.mobility_level !== null && (
                                             <div className="flex items-center gap-2 text-sm bg-blue-500/10 text-blue-400 px-3 py-1 rounded-full border border-blue-500/20">
-                                                <span>Mobility:</span>
+                                                <span>{t('dashboard.progress.mobility')}:</span>
                                                 <span className="font-bold">{note.mobility_level}/10</span>
                                             </div>
                                         )}
@@ -393,20 +396,21 @@ export default function PatientProgressPage() {
                         </div>
                     ) : (
                         <div className="card p-8 text-center text-muted">
-                            No notes from physiotherapist.
+                            {t('dashboard.progress.noNotes')}
                         </div>
                     )}
                 </section>
 
-                {/* Sessions Section */}
                 <section>
-                    <h2 className="section-title text-2xl mb-4">Session History</h2>
+                    <h2 className="section-title text-2xl mb-4">{t('dashboard.progress.sessionHistory')}</h2>
                     {sessions.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {sessions.map((session) => (
                                 <div key={session.session_id} className="card p-5">
                                     <div className="flex justify-between items-center mb-3">
-                                        <h3 className="font-semibold text-lg text-emerald-400">{session.title}</h3>
+                                        <h3 className="font-semibold text-lg text-emerald-400">
+                                            {session.title === "Training Session" ? t('dashboard.progress.trainingSession') : session.title}
+                                        </h3>
                                         {session.created_at && (
                                             <span className="text-xs text-muted">
                                                 {new Date(session.created_at).toLocaleDateString()}
@@ -419,24 +423,24 @@ export default function PatientProgressPage() {
                                                 <div key={idx} className="bg-main border border-outline rounded-lg p-3 text-sm">
                                                     <div className="font-medium text-white mb-1">{res.exercise_name}</div>
                                                     <div className="grid grid-cols-2 gap-2 text-muted mb-2">
-                                                        <div>Reps: <span className="text-white">{res.reps_completed}</span></div>
-                                                        <div>Accuracy: <span className="text-white">{Math.round(res.avg_accuracy)}%</span></div>
+                                                        <div>{t('dashboard.progress.reps')}: <span className="text-white">{res.reps_completed}</span></div>
+                                                        <div>{t('dashboard.progress.accuracy')}: <span className="text-white">{Math.round(res.avg_accuracy)}%</span></div>
                                                     </div>
                                                     <div className="text-xs text-emerald-500/80 italic">
-                                                        &ldquo;{res.ai_feedback}&rdquo;
+                                                        &ldquo;{res.ai_feedback === "Exercise completed" ? t('dashboard.progress.exerciseCompletedMsg') : res.ai_feedback}&rdquo;
                                                     </div>
                                                 </div>
                                             ))}
                                         </div>
                                     ) : (
-                                        <div className="text-sm text-muted">No exercises recorded in this session.</div>
+                                        <div className="text-sm text-muted">{t('dashboard.progress.noExercises')}</div>
                                     )}
                                 </div>
                             ))}
                         </div>
                     ) : (
                         <div className="card p-8 text-center text-muted">
-                            Brak ukończonych sessions ćwiczeń.
+                            {t('dashboard.progress.noSessions')}
                         </div>
                     )}
                 </section>

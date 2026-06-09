@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { useAuth } from "@/hooks/useAuth";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function Home() {
     const { user } = useAuth();
+    const { t } = useTranslation();
 
     return (
         <div className="flex flex-col items-center gap-12 py-20 px-4 w-full max-w-5xl">
-            {/* Hero Section */}
             <div className="flex flex-col items-center gap-4 animate-fade-in">
                 <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-emerald-500 via-teal-500 to-cyan-500 flex items-center justify-center shadow-2xl shadow-teal-500/30 mb-2">
                     <span className="text-white font-black text-3xl">R</span>
@@ -19,30 +20,27 @@ export default function Home() {
                     </span>
                 </h1>
                 <p className="font-mono font-light text-muted text-lg text-center max-w-xl">
-                    AI-powered rehabilitation platform with real-time pose analysis
-                    and personalized recovery plans.
+                    {t('home.subtitle')}
                 </p>
             </div>
 
-            {/* CTA Buttons */}
             <div className="flex flex-wrap items-center justify-center gap-4 animate-scale-up">
                 {user ? (
                     <Link href="/dashboard" className="btn-primary text-center no-underline">
-                        Go to Dashboard
+                        {t('home.goToDashboard')}
                     </Link>
                 ) : (
                     <>
                         <Link href="/register" className="btn-primary text-center no-underline">
-                            Get Started
+                            {t('home.getStarted')}
                         </Link>
                         <Link href="/login" className="btn-outline text-center no-underline">
-                            Sign In
+                            {t('home.signIn')}
                         </Link>
                     </>
                 )}
             </div>
 
-            {/* Feature Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full animate-scale-up" style={{ animationDelay: "0.15s" }}>
                 <div className="card-hover p-6 flex flex-col items-center gap-3 text-center">
                     <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 flex items-center justify-center">
@@ -50,9 +48,9 @@ export default function Home() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                         </svg>
                     </div>
-                    <span className="font-semibold text-lg">Pose Analysis</span>
+                    <span className="font-semibold text-lg">{t('home.features.pose.title')}</span>
                     <span className="text-xs text-muted">
-                        Real-time body pose detection using MediaPipe AI vision
+                        {t('home.features.pose.desc')}
                     </span>
                 </div>
 
@@ -62,9 +60,9 @@ export default function Home() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                         </svg>
                     </div>
-                    <span className="font-semibold text-lg">Custom Plans</span>
+                    <span className="font-semibold text-lg">{t('home.features.plans.title')}</span>
                     <span className="text-xs text-muted">
-                        Personalized rehab programs built by your physiotherapist
+                        {t('home.features.plans.desc')}
                     </span>
                 </div>
 
@@ -74,9 +72,9 @@ export default function Home() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                         </svg>
                     </div>
-                    <span className="font-semibold text-lg">Progress Tracking</span>
+                    <span className="font-semibold text-lg">{t('home.features.progress.title')}</span>
                     <span className="text-xs text-muted">
-                        Track your exercise sessions and recovery metrics over time
+                        {t('home.features.progress.desc')}
                     </span>
                 </div>
             </div>

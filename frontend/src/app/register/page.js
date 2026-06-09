@@ -4,9 +4,11 @@ import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function RegisterPage() {
     const { register, loading, error } = useAuth();
+    const { t } = useTranslation();
     const router = useRouter();
     const [form, setForm] = useState({
         first_name: "",
@@ -26,12 +28,12 @@ export default function RegisterPage() {
         setLocalError(null);
 
         if (form.password !== confirmPassword) {
-            setLocalError("Passwords do not match");
+            setLocalError(t('register.error.mismatch'));
             return;
         }
 
         if (form.password.length < 6) {
-            setLocalError("Password must be at least 6 characters");
+            setLocalError(t('register.error.length'));
             return;
         }
 
@@ -51,9 +53,9 @@ export default function RegisterPage() {
             <div className="w-full max-w-md flex flex-col gap-6 animate-scale-up">
 
                 <div className="flex flex-col items-center gap-2">
-                    <h1 className="page-title text-3xl md:text-4xl">Create Account</h1>
+                    <h1 className="page-title text-3xl md:text-4xl">{t('register.title')}</h1>
                     <p className="text-sm text-muted">
-                        Register as a patient to start your rehabilitation journey
+                        {t('register.subtitle')}
                     </p>
                 </div>
 
@@ -64,8 +66,8 @@ export default function RegisterPage() {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                             </svg>
                         </div>
-                        <h2 className="text-xl font-bold">Account Created!</h2>
-                        <p className="text-sm text-muted">Redirecting you to the login page…</p>
+                        <h2 className="text-xl font-bold">{t('register.success.title')}</h2>
+                        <p className="text-sm text-muted">{t('register.success.desc')}</p>
                     </div>
                 ) : (
                     <form onSubmit={handleSubmit} className="card p-8 flex flex-col gap-5">
@@ -76,28 +78,28 @@ export default function RegisterPage() {
                         <div className="grid grid-cols-2 gap-4">
                             <div className="flex flex-col gap-2">
                                 <label htmlFor="first-name" className="text-xs font-semibold text-muted uppercase tracking-wider">
-                                    First Name
+                                    {t('register.firstNameLabel')}
                                 </label>
                                 <input
                                     id="first-name"
                                     type="text"
                                     value={form.first_name}
                                     onChange={updateField("first_name")}
-                                    placeholder="John"
+                                    placeholder={t('register.firstNamePlaceholder')}
                                     required
                                     className="input-field"
                                 />
                             </div>
                             <div className="flex flex-col gap-2">
                                 <label htmlFor="last-name" className="text-xs font-semibold text-muted uppercase tracking-wider">
-                                    Last Name
+                                    {t('register.lastNameLabel')}
                                 </label>
                                 <input
                                     id="last-name"
                                     type="text"
                                     value={form.last_name}
                                     onChange={updateField("last_name")}
-                                    placeholder="Doe"
+                                    placeholder={t('register.lastNamePlaceholder')}
                                     required
                                     className="input-field"
                                 />
@@ -106,14 +108,14 @@ export default function RegisterPage() {
 
                         <div className="flex flex-col gap-2">
                             <label htmlFor="register-email" className="text-xs font-semibold text-muted uppercase tracking-wider">
-                                Email Address
+                                {t('register.emailLabel')}
                             </label>
                             <input
                                 id="register-email"
                                 type="email"
                                 value={form.email}
                                 onChange={updateField("email")}
-                                placeholder="your@email.com"
+                                placeholder={t('register.emailPlaceholder')}
                                 required
                                 className="input-field"
                             />
@@ -121,14 +123,14 @@ export default function RegisterPage() {
 
                         <div className="flex flex-col gap-2">
                             <label htmlFor="register-password" className="text-xs font-semibold text-muted uppercase tracking-wider">
-                                Password
+                                {t('register.passwordLabel')}
                             </label>
                             <input
                                 id="register-password"
                                 type="password"
                                 value={form.password}
                                 onChange={updateField("password")}
-                                placeholder="••••••••"
+                                placeholder={t('register.passwordPlaceholder')}
                                 required
                                 className="input-field"
                             />
@@ -136,14 +138,14 @@ export default function RegisterPage() {
 
                         <div className="flex flex-col gap-2">
                             <label htmlFor="confirm-password" className="text-xs font-semibold text-muted uppercase tracking-wider">
-                                Confirm Password
+                                {t('register.confirmPasswordLabel')}
                             </label>
                             <input
                                 id="confirm-password"
                                 type="password"
                                 value={confirmPassword}
                                 onChange={(e) => setConfirmPassword(e.target.value)}
-                                placeholder="••••••••"
+                                placeholder={t('register.confirmPasswordPlaceholder')}
                                 required
                                 className="input-field"
                             />
@@ -157,17 +159,17 @@ export default function RegisterPage() {
                             {loading ? (
                                 <>
                                     <Spinner />
-                                    Creating account…
+                                    {t('register.submitting')}
                                 </>
                             ) : (
-                                "Create Account"
+                                t('register.submit')
                             )}
                         </button>
 
                         <p className="text-center text-sm text-muted">
-                            Already have an account?{" "}
+                            {t('register.hasAccount')}{" "}
                             <Link href="/login" className="text-teal-400 hover:text-teal-300 transition-colors font-medium">
-                                Sign in
+                                {t('register.signIn')}
                             </Link>
                         </p>
                     </form>

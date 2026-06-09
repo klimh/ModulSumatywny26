@@ -4,9 +4,11 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function LoginPage() {
     const { login, loading, error } = useAuth();
+    const { t } = useTranslation();
     const router = useRouter();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -33,9 +35,9 @@ export default function LoginPage() {
             <div className="w-full max-w-md flex flex-col gap-6 animate-scale-up">
 
                 <div className="flex flex-col items-center gap-2">
-                    <h1 className="page-title text-3xl md:text-4xl">Welcome Back</h1>
+                    <h1 className="page-title text-3xl md:text-4xl">{t('login.title')}</h1>
                     <p className="text-sm text-muted">
-                        Sign in to access your rehabilitation dashboard
+                        {t('login.subtitle')}
                     </p>
                 </div>
 
@@ -46,14 +48,14 @@ export default function LoginPage() {
 
                     <div className="flex flex-col gap-2">
                         <label htmlFor="email" className="text-xs font-semibold text-muted uppercase tracking-wider">
-                            Email Address
+                            {t('login.emailLabel')}
                         </label>
                         <input
                             id="email"
                             type="text"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            placeholder="your@email.com or username"
+                            placeholder={t('login.emailPlaceholder')}
                             required
                             className="input-field"
                         />
@@ -61,14 +63,14 @@ export default function LoginPage() {
 
                     <div className="flex flex-col gap-2">
                         <label htmlFor="password" className="text-xs font-semibold text-muted uppercase tracking-wider">
-                            Password
+                            {t('login.passwordLabel')}
                         </label>
                         <input
                             id="password"
                             type="password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            placeholder="••••••••"
+                            placeholder={t('login.passwordPlaceholder')}
                             required
                             className="input-field"
                         />
@@ -82,17 +84,17 @@ export default function LoginPage() {
                         {mounted && loading ? (
                             <>
                                 <Spinner />
-                                Signing in…
+                                {t('login.submitting')}
                             </>
                         ) : (
-                            "Sign In"
+                            t('login.submit')
                         )}
                     </button>
 
                     <p className="text-center text-sm text-muted">
-                        Don&apos;t have an account?{" "}
+                        {t('login.noAccount')}{" "}
                         <Link href="/register" className="text-teal-400 hover:text-teal-300 transition-colors font-medium">
-                            Create one
+                            {t('login.createAccount')}
                         </Link>
                     </p>
                 </form>

@@ -6,6 +6,7 @@ import { usePatient } from "@/hooks/usePatient";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { api } from "@/lib/api";
+import { useTranslation } from "@/hooks/useTranslation";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -33,6 +34,7 @@ ChartJS.register(
 export default function PlanPage() {
     const { user, loading: authLoading } = useAuth();
     const { plan, loading, error, fetchMyPlan } = usePatient();
+    const { t } = useTranslation();
     const router = useRouter();
 
     const [selectedExercise, setSelectedExercise] = useState(null);
@@ -107,8 +109,8 @@ export default function PlanPage() {
     return (
         <div className="page-container">
             <div className="flex flex-col items-center gap-2 animate-scale-up">
-                <h1 className="page-title text-3xl md:text-4xl">My Rehabilitation Plan</h1>
-                <p className="text-sm text-muted">Your personalized exercise program</p>
+                <h1 className="page-title text-3xl md:text-4xl">{t('dashboard.plan.title')}</h1>
+                <p className="text-sm text-muted">{t('dashboard.plan.subtitle')}</p>
             </div>
 
             <div className="w-full max-w-3xl animate-fade-in">
@@ -120,16 +122,16 @@ export default function PlanPage() {
                             <div>
                                 <h2 className="section-title">{plan.title}</h2>
                                 <span className="text-xs text-muted font-mono">
-                                    Plan ID: {plan.rehab_id}
+                                    {t('dashboard.plan.planId')} {plan.rehab_id}
                                 </span>
                             </div>
-                            <span className="badge-success">Active</span>
+                            <span className="badge-success">{t('dashboard.plan.active')}</span>
                         </div>
 
                         {plan.exercises && plan.exercises.length > 0 ? (
                             <div className="flex flex-col gap-3">
                                 <h3 className="text-sm font-semibold text-muted uppercase tracking-wider">
-                                    Exercises
+                                    {t('dashboard.plan.exercises')}
                                 </h3>
                                 {plan.exercises.map((ex, i) => (
                                     <div
@@ -154,18 +156,18 @@ export default function PlanPage() {
                                                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                                                     </svg>
-                                                    Video
+                                                    {t('dashboard.plan.video')}
                                                 </span>
                                             )}
-                                            <span className="badge-info">{ex.reps_nr} reps</span>
-                                            <span className="badge-warning">{ex.sets_nr} sets</span>
+                                            <span className="badge-info">{ex.reps_nr} {t('dashboard.plan.reps')}</span>
+                                            <span className="badge-warning">{ex.sets_nr} {t('dashboard.plan.sets')}</span>
                                         </div>
                                     </div>
                                 ))}
                             </div>
                         ) : (
                             <p className="text-sm text-muted text-center py-4">
-                                No exercises assigned to this plan yet.
+                                {t('dashboard.plan.noExercises')}
                             </p>
                         )}
 
@@ -176,7 +178,7 @@ export default function PlanPage() {
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
-                                    Start Guided Session
+                                    {t('dashboard.plan.startSession')}
                                 </Link>
                             )}
                         </div>
@@ -188,9 +190,9 @@ export default function PlanPage() {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                             </svg>
                         </div>
-                        <h3 className="text-lg font-semibold">No Active Plan</h3>
+                        <h3 className="text-lg font-semibold">{t('dashboard.plan.noPlanTitle')}</h3>
                         <p className="text-sm text-muted text-center max-w-sm">
-                            Your physiotherapist has not assigned a rehabilitation plan yet. Please contact your physiotherapist or wait for a plan to be created.
+                            {t('dashboard.plan.noPlanDesc')}
                         </p>
                     </div>
                 )}
@@ -209,7 +211,7 @@ export default function PlanPage() {
                         <div>
                             <h2 className="text-2xl font-bold text-white mb-1">{selectedExercise.name || `Exercise ${selectedExercise.exercise_id}`}</h2>
                             <p className="text-sm text-muted">
-                                {selectedExercise.reps_nr} reps • {selectedExercise.sets_nr} sets
+                                {selectedExercise.reps_nr} {t('dashboard.plan.reps')} • {selectedExercise.sets_nr} {t('dashboard.plan.sets')}
                             </p>
                         </div>
                         
@@ -233,12 +235,12 @@ export default function PlanPage() {
                         ) : (
                             <div className="w-full aspect-video rounded-xl bg-panel border border-dashed border-outline flex items-center justify-center text-muted flex-col gap-2">
                                 <svg className="w-10 h-10 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-                                <span>No instructional video available</span>
+                                <span>{t('dashboard.plan.noVideo')}</span>
                             </div>
                         )}
                         
                         <div className="flex flex-col gap-3 mt-2">
-                            <h3 className="text-sm font-semibold text-muted uppercase tracking-wider">Your Progress</h3>
+                            <h3 className="text-sm font-semibold text-muted uppercase tracking-wider">{t('dashboard.plan.yourProgress')}</h3>
                             {historyLoading ? (
                                 <div className="h-48 flex items-center justify-center">
                                     <Spinner size="lg" />
@@ -249,8 +251,8 @@ export default function PlanPage() {
                                 </div>
                             ) : (
                                 <div className="h-48 flex flex-col items-center justify-center bg-main/50 rounded-xl border border-outline border-dashed text-muted">
-                                    <span className="text-sm text-center">Not enough data to display a chart yet.</span>
-                                    <span className="text-xs mt-1 text-center">Complete a session to start tracking!</span>
+                                    <span className="text-sm text-center">{t('dashboard.plan.notEnoughData')}</span>
+                                    <span className="text-xs mt-1 text-center">{t('dashboard.plan.completeSession')}</span>
                                 </div>
                             )}
                         </div>

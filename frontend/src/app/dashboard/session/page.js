@@ -5,10 +5,12 @@ import { useAuth } from "@/hooks/useAuth";
 import { usePatient } from "@/hooks/usePatient";
 import { useRouter } from "next/navigation";
 import PoseDetector from "@/features/pose/PoseDetector";
+import { useTranslation } from "@/hooks/useTranslation";
 
 export default function SessionPage() {
     const { user, loading: authLoading } = useAuth();
     const { plan, loading, error, fetchMyPlan, submitSession } = usePatient();
+    const { t } = useTranslation();
     const router = useRouter();
 
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -95,7 +97,7 @@ export default function SessionPage() {
             if (nextReps >= currentExercise.reps_nr) {
                 setIsPaused(true);
                 setShowNextMessage(true);
-                
+
                 if (currentSet < currentExercise.sets_nr) {
                     setNextMessageType("set");
                     if (autoNextTimeoutRef.current) clearTimeout(autoNextTimeoutRef.current);
@@ -165,7 +167,7 @@ export default function SessionPage() {
         return (
             <div className="page-container">
                 <div className="flex flex-col items-center gap-2 animate-scale-up">
-                    <h1 className="page-title text-3xl md:text-4xl">Exercise Session</h1>
+                    <h1 className="page-title text-3xl md:text-4xl">{t('dashboard.session.noVideoTitle')}</h1>
                 </div>
                 <div className="card p-12 flex flex-col items-center gap-4 max-w-lg animate-fade-in">
                     <div className="w-20 h-20 rounded-full bg-main border border-outline flex items-center justify-center">
@@ -173,12 +175,12 @@ export default function SessionPage() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                         </svg>
                     </div>
-                    <h3 className="text-lg font-semibold">No exercises with video</h3>
+                    <h3 className="text-lg font-semibold">{t('dashboard.session.noVideoTitle')}</h3>
                     <p className="text-sm text-muted text-center max-w-sm">
-                        Your physiotherapist hasn't assigned instructional videos to your exercises. The session requires a video for real-time comparison.
+                        {t('dashboard.session.noVideoDesc')}
                     </p>
                     <button onClick={() => router.push("/dashboard/plan")} className="btn-outline mt-2">
-                        Back to Plan
+                        {t('dashboard.session.backToPlan')}
                     </button>
                 </div>
             </div>
@@ -189,7 +191,7 @@ export default function SessionPage() {
         return (
             <div className="page-container">
                 <div className="flex flex-col items-center gap-2 animate-scale-up">
-                    <h1 className="page-title text-3xl md:text-4xl">Session Completed! 🎉</h1>
+                    <h1 className="page-title text-3xl md:text-4xl">{t('dashboard.session.completedTitle')}</h1>
                 </div>
                 <div className="card p-8 flex flex-col items-center gap-6 max-w-lg animate-fade-in">
                     <div className="w-20 h-20 rounded-full bg-emerald-500/20 flex items-center justify-center">
@@ -199,14 +201,14 @@ export default function SessionPage() {
                     </div>
 
                     <div className="text-center">
-                        <h2 className="text-xl font-bold mb-2">Congratulations!</h2>
+                        <h2 className="text-xl font-bold mb-2">{t('dashboard.session.congratulations')}</h2>
                         <p className="text-sm text-muted">
-                            You have completed {exerciseResults.length} exercises in this session.
+                            {t('dashboard.session.completedDesc').replace('{count}', exerciseResults.length)}
                         </p>
                     </div>
 
                     <div className="w-full flex flex-col gap-4">
-                        <h3 className="font-semibold text-center mt-2">Rate your exercises</h3>
+                        <h3 className="font-semibold text-center mt-2">{t('dashboard.session.rateExercises')}</h3>
                         {exerciseResults.map((res, i) => {
                             const ex = exercisesWithVideo.find((e) => e.exercise_id === res.exercise_id);
                             return (
@@ -219,14 +221,14 @@ export default function SessionPage() {
                                             <span className="text-base font-semibold">{ex?.name || `Exercise ${res.exercise_id}`}</span>
                                         </div>
                                         <div className="flex items-center gap-3">
-                                            <span className="text-xs text-muted">{res.reps} reps</span>
-                                            <span className="badge-success">{res.accuracy}% Acc</span>
+                                            <span className="text-xs text-muted">{res.reps} {t('dashboard.session.reps')}</span>
+                                            <span className="badge-success">{res.accuracy}% {t('dashboard.session.acc')}</span>
                                         </div>
                                     </div>
 
                                     <div className="flex flex-col gap-2">
                                         <label className="text-xs font-semibold text-muted uppercase tracking-wider flex justify-between">
-                                            <span>Pain Level: <span className={res.pain_level > 5 ? "text-red-400" : "text-emerald-400"}>{res.pain_level}</span>/10</span>
+                                            <span>{t('dashboard.session.painLevel')} <span className={res.pain_level > 5 ? "text-red-400" : "text-emerald-400"}>{res.pain_level}</span>/10</span>
                                         </label>
                                         <input
                                             type="range"
@@ -239,13 +241,13 @@ export default function SessionPage() {
 
                                     <div className="flex flex-col gap-2">
                                         <label className="text-xs font-semibold text-muted uppercase tracking-wider">
-                                            Note (Optional)
+                                            {t('dashboard.session.noteLabel')}
                                         </label>
                                         <input
                                             type="text"
                                             value={res.patient_note}
                                             onChange={(e) => updateExerciseResult(i, 'patient_note', e.target.value)}
-                                            placeholder="E.g., felt discomfort..."
+                                            placeholder={t('dashboard.session.notePlaceholder')}
                                             className="input-field text-sm p-2"
                                         />
                                     </div>
@@ -258,10 +260,10 @@ export default function SessionPage() {
                         <button onClick={handleFinishSession} disabled={submitting} className="btn-primary flex items-center gap-2 px-8">
                             {submitting ? (
                                 <>
-                                    <Spinner /> Saving...
+                                    <Spinner /> {t('dashboard.session.saving')}
                                 </>
                             ) : (
-                                "Save and Finish"
+                                t('dashboard.session.saveAndFinish')
                             )}
                         </button>
                     </div>
@@ -274,8 +276,8 @@ export default function SessionPage() {
         return (
             <div className="page-container">
                 <div className="flex flex-col items-center gap-2 animate-scale-up">
-                    <h1 className="page-title text-3xl md:text-4xl">Start Training</h1>
-                    <p className="text-sm text-muted">Perform exercises with the AI assistant</p>
+                    <h1 className="page-title text-3xl md:text-4xl">{t('dashboard.session.startTraining')}</h1>
+                    <p className="text-sm text-muted">{t('dashboard.session.startTrainingDesc')}</p>
                 </div>
 
                 <div className="card p-8 flex flex-col gap-6 max-w-2xl w-full animate-fade-in">
@@ -288,12 +290,12 @@ export default function SessionPage() {
                         </div>
                         <div>
                             <h2 className="section-title">{plan.title}</h2>
-                            <p className="text-xs text-muted">{totalExercises} exercises in the plan</p>
+                            <p className="text-xs text-muted">{t('dashboard.session.exercisesInPlan').replace('{count}', totalExercises)}</p>
                         </div>
                     </div>
 
                     <div className="flex flex-col gap-3">
-                        <h3 className="text-sm font-semibold text-muted uppercase tracking-wider">Session Plan</h3>
+                        <h3 className="text-sm font-semibold text-muted uppercase tracking-wider">{t('dashboard.session.sessionPlan')}</h3>
                         {exercisesWithVideo.map((ex, i) => (
                             <div key={i} className="flex items-center justify-between p-4 rounded-xl bg-main border border-outline">
                                 <div className="flex items-center gap-3">
@@ -305,7 +307,7 @@ export default function SessionPage() {
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <span className="badge-info">{ex.reps_nr} reps</span>
+                                    <span className="badge-info">{ex.reps_nr} {t('dashboard.session.reps')}</span>
                                 </div>
                             </div>
                         ))}
@@ -313,13 +315,13 @@ export default function SessionPage() {
 
                     <div className="flex flex-col items-center gap-3 pt-2">
                         <p className="text-xs text-muted text-center max-w-md">
-                            Ensure good lighting and full-body visibility in the frame.
+                            {t('dashboard.session.ensureLighting')}
                         </p>
                         <button onClick={handleStartSession} className="btn-primary text-lg px-10 py-4 flex items-center gap-3">
                             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
                             </svg>
-                            Start Session
+                            {t('dashboard.session.startSession')}
                         </button>
                     </div>
                 </div>
@@ -340,10 +342,10 @@ export default function SessionPage() {
                             </svg>
                         </div>
                         <h2 className="text-4xl font-black text-white drop-shadow-lg">
-                            {nextMessageType === "set" ? "Set Completed!" : "Completed!"}
+                            {nextMessageType === "set" ? t('dashboard.session.setCompleted') : t('dashboard.session.exerciseCompleted')}
                         </h2>
                         <p className="text-lg font-medium text-emerald-200">
-                            {nextMessageType === "set" ? "Get ready for the next set..." : "Moving to next exercise..."}
+                            {nextMessageType === "set" ? t('dashboard.session.readyNextSet') : t('dashboard.session.readyNextExercise')}
                         </p>
                     </div>
                 </div>
@@ -355,20 +357,20 @@ export default function SessionPage() {
                         <div className="flex items-center gap-4">
                             <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 flex flex-col items-center justify-center border border-emerald-500/20">
                                 <span className="text-emerald-400 font-bold text-lg leading-none">{currentIndex + 1}</span>
-                                <span className="text-xs text-muted leading-none mt-1">of {totalExercises}</span>
+                                <span className="text-xs text-muted leading-none mt-1">{t('dashboard.session.of').replace('{total}', totalExercises)}</span>
                             </div>
                             <div>
                                 <h2 className="text-2xl font-bold">{currentExercise.name}</h2>
-                                <p className="text-sm text-muted">Mimic the movements from the instructional video.</p>
+                                <p className="text-sm text-muted">{t('dashboard.session.mimicMovements')}</p>
                             </div>
                         </div>
                         <div className="flex flex-wrap gap-4 items-center justify-center">
                             <div className="flex flex-col items-center justify-center px-4 py-2 bg-main rounded-xl border border-outline">
-                                <span className="text-xs text-muted uppercase font-bold tracking-wider">Set</span>
+                                <span className="text-xs text-muted uppercase font-bold tracking-wider">{t('dashboard.session.set')}</span>
                                 <span className="text-xl font-bold text-white">{currentSet}/{currentExercise.sets_nr}</span>
                             </div>
                             <div className="flex flex-col items-center justify-center px-4 py-2 bg-main rounded-xl border border-outline">
-                                <span className="text-xs text-muted uppercase font-bold tracking-wider">Reps</span>
+                                <span className="text-xs text-muted uppercase font-bold tracking-wider">{t('dashboard.session.reps')}</span>
                                 <span className="text-xl font-bold text-emerald-400">{currentReps} / {currentExercise.reps_nr}</span>
                             </div>
                         </div>
@@ -379,7 +381,7 @@ export default function SessionPage() {
                     {currentMetrics.isCameraStale && !isPaused && (
                         <div className="absolute top-8 left-1/2 -translate-x-1/2 z-50 bg-rose-500/90 text-white px-6 py-3 rounded-full font-bold shadow-xl shadow-rose-500/30 flex items-center gap-3 animate-fade-in backdrop-blur-md border border-rose-400 pointer-events-none">
                             <svg className="w-6 h-6 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                            Adjust your camera! Key body parts are not visible.
+                            {t('dashboard.session.adjustCamera')}
                         </div>
                     )}
                     <div className="w-full h-full max-h-full overflow-hidden flex items-center justify-center">
@@ -401,7 +403,7 @@ export default function SessionPage() {
 
                     <div className="flex items-center gap-6">
                         <div className="flex flex-col">
-                            <span className="text-xs text-muted uppercase font-bold tracking-wider">Current Accuracy</span>
+                            <span className="text-xs text-muted uppercase font-bold tracking-wider">{t('dashboard.session.currentAccuracy')}</span>
                             <div className="flex items-center gap-2">
                                 <span className={`text-2xl font-black ${currentMetrics.accuracy > 80 ? 'text-emerald-400' : currentMetrics.accuracy > 50 ? 'text-amber-400' : 'text-rose-500'}`}>
                                     {currentMetrics.accuracy}%
@@ -410,7 +412,7 @@ export default function SessionPage() {
                         </div>
                         <div className="w-px h-10 bg-outline"></div>
                         <div className="flex flex-col">
-                            <span className="text-xs text-muted uppercase font-bold tracking-wider">Mean Accuracy</span>
+                            <span className="text-xs text-muted uppercase font-bold tracking-wider">{t('dashboard.session.meanAccuracy')}</span>
                             <div className="flex items-center gap-2">
                                 <span className={`text-2xl font-black ${currentMetrics.meanAccuracy > 80 ? 'text-emerald-400' : currentMetrics.meanAccuracy > 50 ? 'text-amber-400' : 'text-rose-500'}`}>
                                     {currentMetrics.meanAccuracy}%
@@ -426,7 +428,7 @@ export default function SessionPage() {
                                 className="px-8 py-3 rounded-2xl font-semibold text-sm bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-white shadow-lg shadow-teal-500/30 hover:shadow-xl hover:scale-105 active:scale-95 transition-all duration-300 ease-out flex items-center gap-2"
                             >
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-                                Start
+                                {t('dashboard.session.start')}
                             </button>
                         ) : (
                             <button
@@ -436,12 +438,12 @@ export default function SessionPage() {
                                 {isPaused ? (
                                     <>
                                         <svg className="w-5 h-5 text-emerald-400" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
-                                        Resume
+                                        {t('dashboard.session.resume')}
                                     </>
                                 ) : (
                                     <>
                                         <svg className="w-5 h-5 text-amber-400" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" /></svg>
-                                        Pause
+                                        {t('dashboard.session.pause')}
                                     </>
                                 )}
                             </button>
@@ -451,7 +453,7 @@ export default function SessionPage() {
                             onClick={handleManualNext}
                             className="px-6 py-3 rounded-2xl font-semibold text-sm bg-main border border-outline text-white hover:bg-white/5 transition-all flex items-center gap-2"
                         >
-                            Next
+                            {t('dashboard.session.next')}
                             <svg className="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                         </button>
 
@@ -459,14 +461,14 @@ export default function SessionPage() {
 
                         <button
                             onClick={() => {
-                                if (confirm("Are you sure you want to abort the session? Your current progress will be lost.")) {
+                                if (confirm(t('dashboard.session.abortConfirm'))) {
                                     setSessionStarted(false);
                                 }
                             }}
                             className="px-6 py-3 rounded-2xl font-semibold text-sm bg-rose-500/10 border border-rose-500/30 text-rose-400 hover:bg-rose-500/20 transition-all flex items-center gap-2"
                         >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                            Abort
+                            {t('dashboard.session.abort')}
                         </button>
                     </div>
 

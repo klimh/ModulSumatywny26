@@ -8,6 +8,7 @@ import {
     DrawingUtils,
 } from "@mediapipe/tasks-vision";
 import { DTWAnalyzer } from "./dtwAnalyzer";
+import { useTranslation } from "@/hooks/useTranslation";
 
 const POSE_CONNECTIONS = PoseLandmarker.POSE_CONNECTIONS;
 const HAND_CONNECTIONS = HandLandmarker.HAND_CONNECTIONS;
@@ -134,6 +135,7 @@ const getKeyLandmarkConfidence = (landmarks) => {
 };
 
 const PoseDetector = forwardRef(({ referenceVideoUrl = null, isPaused = false, onMetricsUpdate = null, hideControls = false, onCameraStateChange = null, onRepDetected = null }, ref) => {
+    const { t } = useTranslation();
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
     const refVideoRef = useRef(null);
@@ -717,7 +719,7 @@ const PoseDetector = forwardRef(({ referenceVideoUrl = null, isPaused = false, o
                 <div className={`relative w-full aspect-video rounded-2xl overflow-hidden bg-panel border border-outline shadow-panel flex-1 transition-all duration-300 ${mode === 'comparison' && cameraActive ? 'ring-2 ring-emerald-500/50 shadow-[0_0_30px_rgba(16,185,129,0.1)]' : ''}`}>
                     {mode === 'comparison' && (
                         <div className="absolute top-4 left-4 z-10 px-3 py-1 bg-black/50 backdrop-blur-md text-emerald-400 rounded-lg text-xs font-semibold border border-emerald-500/30 uppercase tracking-widest">
-                            You (Camera)
+                            {t('dashboard.pose.youCamera')}
                         </div>
                     )}
                     <video
@@ -732,7 +734,7 @@ const PoseDetector = forwardRef(({ referenceVideoUrl = null, isPaused = false, o
                     />
                     {!cameraActive && !loading && (
                         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-muted">
-                            <span className="text-sm font-medium">Waiting for camera to start…</span>
+                            <span className="text-sm font-medium">{t('dashboard.pose.waitingCamera')}</span>
                         </div>
                     )}
                     {loading && (
@@ -746,7 +748,7 @@ const PoseDetector = forwardRef(({ referenceVideoUrl = null, isPaused = false, o
                     <div className="relative w-full aspect-video rounded-2xl overflow-hidden bg-panel border-2 border-dashed border-purple-500/20 shadow-panel flex-1 transition-all duration-300 hover:border-purple-500/40 flex items-center justify-center">
                         {videoUrl && (
                             <div className="absolute top-4 right-4 z-10 px-3 py-1 bg-purple-500/20 text-purple-300 backdrop-blur-md rounded-lg text-xs font-semibold border border-purple-500/30 uppercase tracking-widest">
-                                Reference Video
+                                {t('dashboard.pose.referenceVideo')}
                             </div>
                         )}
                         <video
@@ -768,7 +770,7 @@ const PoseDetector = forwardRef(({ referenceVideoUrl = null, isPaused = false, o
                                 <svg className="w-16 h-16 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
-                                <span className="text-sm font-medium">No reference video selected</span>
+                                <span className="text-sm font-medium">{t('dashboard.pose.noReference')}</span>
                             </div>
                         )}
                     </div>
