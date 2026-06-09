@@ -9,7 +9,7 @@ import { useTranslation } from "@/hooks/useTranslation";
 
 export default function FindPhysioPage() {
     const { user, loading: authLoading } = useAuth();
-    const { allPhysios, loading, error, fetchAllPhysios, requestPhysio } = usePatient();
+    const { physio, allPhysios, loading, error, fetchAllPhysios, fetchMyPhysio, requestPhysio } = usePatient();
     const { t } = useTranslation();
     const router = useRouter();
 
@@ -29,20 +29,41 @@ export default function FindPhysioPage() {
     useEffect(() => {
         if (user?.role === "pacjent") {
             fetchAllPhysios();
+            fetchMyPhysio();
         }
-    }, [user, fetchAllPhysios]);
+    }, [user, fetchAllPhysios, fetchMyPhysio]);
 
-    const handleRequest = async (physioId) => {
+    const [confirmPhysioId, setConfirmPhysioId] = useState(null);
+
+    const handleRequest = (physioId) => {
+        if (physio && physio.status === "ZAAKCEPTOWANE") {
+            setRequestError(t('dashboard.findPhysio.alreadyAssigned') || "Masz już przypisanego fizjoterapeutę. Nie możesz wysłać kolejnego zaproszenia.");
+            return;
+        }
+        if (physio) {
+            setConfirmPhysioId(physioId);
+        } else {
+            executeRequest(physioId);
+        }
+    };
+
+    const executeRequest = async (physioId) => {
         setRequestingId(physioId);
         setSuccessMessage("");
         setRequestError("");
         try {
             await requestPhysio(physioId);
             setSuccessMessage(t('dashboard.findPhysio.success'));
+            fetchMyPhysio();
         } catch (err) {
-            setRequestError(err.message);
+            if (err.message && err.message.includes("Masz już przypisanego")) {
+                setRequestError(t('dashboard.findPhysio.alreadyAssigned'));
+            } else {
+                setRequestError(err.message);
+            }
         } finally {
             setRequestingId(null);
+            setConfirmPhysioId(null);
         }
     };
 
@@ -260,6 +281,41 @@ export default function FindPhysioPage() {
                         >
                             {t('dashboard.findPhysio.sendRequest')}
                         </button>
+                    </div>
+                </div>
+            )}
+
+            {confirmPhysioId && (
+                <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
+                    <div className="bg-panel border border-outline/50 rounded-2xl p-6 max-w-sm w-full flex flex-col gap-4 shadow-2xl">
+                        <h3 className="font-bold text-xl text-white">{t('dashboard.findPhysio.confirmTitle')}</h3>
+                        <p className="text-sm text-muted">{t('dashboard.findPhysio.confirmDesc')}</p>
+                        <div className="flex flex-col gap-2 mt-2">
+                            <button
+                                onClick={() => executeRequest(confirmPhysioId)}
+                                disabled={requestingId === confirmPhysioId}
+                                className="btn-primary bg-gradient-to-r from-red-500 to-rose-500 hover:shadow-red-500/30 border-none"
+                            >
+                                {requestingId === confirmPhysioId ? (
+                                    <span className="flex items-center justify-center gap-2">
+                                        <svg className="w-4 h-4 spinner" viewBox="0 0 24 24" fill="none">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                        </svg>
+                                        {t('dashboard.findPhysio.sending')}
+                                    </span>
+                                ) : (
+                                    t('dashboard.findPhysio.confirmYes')
+                                )}
+                            </button>
+                            <button
+                                onClick={() => setConfirmPhysioId(null)}
+                                disabled={requestingId === confirmPhysioId}
+                                className="btn-ghost"
+                            >
+                                {t('dashboard.findPhysio.confirmNo')}
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

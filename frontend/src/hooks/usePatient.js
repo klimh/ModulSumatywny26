@@ -56,11 +56,9 @@ export function usePatient() {
 
     const requestPhysio = async (physioId) => {
         setLoading(true);
-        setError(null);
         try {
             return await api.users.requestPhysio(physioId);
         } catch (err) {
-            setError(err.message);
             throw err;
         } finally {
             setLoading(false);

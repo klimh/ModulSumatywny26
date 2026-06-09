@@ -8,7 +8,6 @@ from db_models.physiotherapist import Physiotherapist
 from schemas.user import UserCreate, UserResponse, UserRegister
 from core.security import get_password_hash, get_current_user, RoleChecker
 
-#tworzymy router pod adresem /users
 router = APIRouter(prefix = "/users", tags = ["Użytkownicy"])
 
 @router.post("/register", response_model = UserResponse)
@@ -27,12 +26,10 @@ def register_user(user: UserRegister, db: Session = Depends(get_db)):
         role="pacjent"
     )
 
-    #tu zapisujemy w bazie
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
 
-    # Rejestracja z zewnątrz zawsze tworzy pacjenta
     new_profile = Patient(user_id = new_user.user_id)
     db.add(new_profile)
     db.commit()
@@ -55,14 +52,16 @@ def request_physiotherapist(
     if not physio:
         raise HTTPException(status_code=404, detail="Fizjoterapeuta nie istnieje")
 
-    # Sprawdz czy juz istnieje aktywne polaczenie
-    existing = db.query(PatientPhysiotherapist).filter(
+    existing_accepted = db.query(PatientPhysiotherapist).filter(
         PatientPhysiotherapist.patient_id == current_user.user_id,
-        PatientPhysiotherapist.physio_id == physio_id,
-        PatientPhysiotherapist.status.in_(["ZAAKCEPTOWANE", "OCZEKUJACE"])
+        PatientPhysiotherapist.status == "ZAAKCEPTOWANE"
     ).first()
-    if existing:
-        raise HTTPException(status_code=400, detail="Już masz aktywne połączenie lub oczekujące zapytanie do tego fizjoterapeuty")
+    if existing_accepted:
+        raise HTTPException(status_code=400, detail="Masz już przypisanego fizjoterapeutę")
+
+    db.query(PatientPhysiotherapist).filter(
+        PatientPhysiotherapist.patient_id == current_user.user_id
+    ).delete(synchronize_session=False)
 
     new_match = PatientPhysiotherapist(
         patient_id=current_user.user_id,
