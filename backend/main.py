@@ -102,3 +102,23 @@ async def _streak_scheduler_loop():
         finally:
             db.close()
 
+
+@app.on_event("startup")
+async def start_pairing_scheduler():
+    asyncio.create_task(_pairing_scheduler_loop())
+
+async def _pairing_scheduler_loop():
+    while True:
+        # Skrypt będzie się uruchamiał co godzinę (3600 sekund)
+        # Do testów deweloperskich można zmienić na 60 (1 min)
+        await asyncio.sleep(3600)
+        
+        from core.pairing_tasks import check_and_reassign_expired_requests
+        db = SessionLocal()
+        try:
+            check_and_reassign_expired_requests(db, expiration_hours=24)
+        except Exception as e:
+            print(f"Błąd w pairing_scheduler: {e}")
+        finally:
+            db.close()
+
