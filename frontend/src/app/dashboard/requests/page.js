@@ -63,7 +63,7 @@ export default function RequestsPage() {
                                     </div>
                                     <div className="flex flex-col">
                                         <span className="font-semibold text-lg">
-                                            {req.patient_name || "Nieznany pacjent"}
+                                            {req.patient_name || t('dashboard.requests.unknownPatient')}
                                         </span>
                                         <span className="text-xs text-amber-400 font-semibold mt-1 flex items-center gap-1">
                                             <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
@@ -73,7 +73,7 @@ export default function RequestsPage() {
                                 </div>
 
                                 <div className="bg-panel/50 p-4 rounded-xl border border-outline/30 mt-2">
-                                    <h4 className="text-xs font-bold text-muted uppercase tracking-wider mb-2">Opis problemu pacjenta:</h4>
+                                    <h4 className="text-xs font-bold text-muted uppercase tracking-wider mb-2">{t('dashboard.requests.patientProblemLabel')}</h4>
                                     <p className="text-sm text-gray-200 leading-relaxed italic border-l-2 border-amber-500/50 pl-3">
                                         "{req.problem_description}"
                                     </p>

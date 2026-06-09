@@ -29,14 +29,14 @@ export default function FindPhysioPage() {
     const [successMessage, setSuccessMessage] = useState("");
 
     const specializationOptions = [
-        { value: "", label: "Wybierze system (Zalecane)" },
-        { value: "Ortopedia", label: "Ortopedia" },
-        { value: "Neurologia", label: "Neurologia" },
-        { value: "Sport", label: "Sportowa" },
-        { value: "Pediatria", label: "Pediatria" },
+        { value: "", label: t('dashboard.findPhysio.specSystem') },
+        { value: "Ortopedia", label: t('dashboard.findPhysio.specOrto') },
+        { value: "Neurologia", label: t('dashboard.findPhysio.specNeuro') },
+        { value: "Sport", label: t('dashboard.findPhysio.specSport') },
+        { value: "Pediatria", label: t('dashboard.findPhysio.specPed') },
     ];
 
-    const currentSpecializationLabel = specializationOptions.find(opt => opt.value === specialization)?.label || "Wybierze system (Zalecane)";
+    const currentSpecializationLabel = specializationOptions.find(opt => opt.value === specialization)?.label || t('dashboard.findPhysio.specSystem');
     const [actionError, setActionError] = useState("");
 
     useEffect(() => {
@@ -61,9 +61,9 @@ export default function FindPhysioPage() {
                 problem_description: problemDescription,
                 required_specialization: specialization || null
             });
-            setSuccessMessage("Wysłano zapytanie do systemu. Szukamy specjalisty...");
+            setSuccessMessage(t('dashboard.findPhysio.requestSent'));
         } catch (err) {
-            setActionError(err.message || "Wystąpił błąd");
+            setActionError(err.message || t('dashboard.findPhysio.error'));
         }
     };
 
@@ -72,9 +72,9 @@ export default function FindPhysioPage() {
         setSuccessMessage("");
         try {
             await confirmPairing(requestId);
-            setSuccessMessage("Współpraca zatwierdzona! Zobaczysz swojego fizjoterapeutę w panelu głównym.");
+            setSuccessMessage(t('dashboard.findPhysio.pairingConfirmed'));
         } catch (err) {
-            setActionError(err.message || "Wystąpił błąd podczas akceptacji");
+            setActionError(err.message || t('dashboard.findPhysio.errorConfirm'));
         }
     };
 
@@ -101,10 +101,10 @@ export default function FindPhysioPage() {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                             </svg>
                         </div>
-                        <h3 className="text-xl font-bold">Masz już przypisanego fizjoterapeutę!</h3>
-                        <p className="text-muted">Twój fizjoterapeuta to: {physio.first_name} {physio.last_name}</p>
+                        <h3 className="text-xl font-bold">{t('dashboard.findPhysio.alreadyAssignedTitle')}</h3>
+                        <p className="text-muted">{t('dashboard.findPhysio.yourPhysioIs')} {physio.first_name} {physio.last_name}</p>
                         <Link href="/dashboard" className="btn-primary mt-4">
-                            Wróć do panelu
+                            {t('dashboard.findPhysio.backToDashboard')}
                         </Link>
                     </div>
                 </div>
@@ -121,12 +121,12 @@ export default function FindPhysioPage() {
                 <div className="w-full max-w-2xl flex flex-col gap-6 animate-fade-in mt-8 mx-auto">
                     <div className="card p-8 text-center flex flex-col items-center gap-4 border-amber-500/30 bg-amber-500/5">
                         <Spinner size="lg" className="text-amber-400 mb-2" />
-                        <h3 className="text-xl font-bold text-amber-400">Oczekiwanie na fizjoterapeutę</h3>
+                        <h3 className="text-xl font-bold text-amber-400">{t('dashboard.findPhysio.waitingTitle')}</h3>
                         <p className="text-muted text-sm">
-                            System przydzielił Twoje zapytanie. Czekamy, aż fizjoterapeuta <strong className="text-white">{pairingStatus.physio_name}</strong> zaakceptuje prośbę.
+                            {t('dashboard.findPhysio.waitingDesc')} <strong className="text-white">{pairingStatus.physio_name}</strong> {t('dashboard.findPhysio.waitingDescSuffix')}
                         </p>
                         <div className="bg-panel w-full p-4 rounded-lg mt-2 text-left">
-                            <span className="text-xs text-muted uppercase">Twój problem:</span>
+                            <span className="text-xs text-muted uppercase">{t('dashboard.findPhysio.yourProblem')}</span>
                             <p className="text-sm text-gray-200 mt-1">{pairingStatus.problem_description}</p>
                         </div>
                     </div>
@@ -150,16 +150,16 @@ export default function FindPhysioPage() {
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                         </div>
-                        <h3 className="text-xl font-bold text-emerald-400">Mamy to!</h3>
+                        <h3 className="text-xl font-bold text-emerald-400">{t('dashboard.findPhysio.matchFound')}</h3>
                         <p className="text-muted text-sm">
-                            Fizjoterapeuta <strong className="text-white">{pairingStatus.physio_name}</strong> zapoznał się z Twoim problemem i zgodził się podjąć współpracy.
+                            {t('dashboard.findPhysio.matchDesc')} <strong className="text-white">{pairingStatus.physio_name}</strong> {t('dashboard.findPhysio.matchDescSuffix')}
                         </p>
                         <button 
                             onClick={() => handleConfirm(pairingStatus.id)}
                             disabled={loading}
                             className="btn-primary mt-4 w-full"
                         >
-                            {loading ? <Spinner /> : "Potwierdź współpracę"}
+                            {loading ? <Spinner /> : t('dashboard.findPhysio.confirmBtn')}
                         </button>
                     </div>
                 </div>
@@ -172,7 +172,7 @@ export default function FindPhysioPage() {
             <div className="flex flex-col items-center gap-2 animate-scale-up">
                 <h1 className="page-title">{t('dashboard.findPhysio.title')}</h1>
                 <p className="text-sm text-muted font-mono">
-                    Opisz swój problem, a nasz algorytm dopasuje do Ciebie najlepszego specjalistę.
+                    {t('dashboard.findPhysio.formSubtitle')}
                 </p>
             </div>
 
@@ -191,12 +191,12 @@ export default function FindPhysioPage() {
                 <form onSubmit={handleRequestPairing} className="card p-6 flex flex-col gap-5">
                     <div className="flex flex-col gap-2">
                         <label className="text-sm font-medium text-gray-200">
-                            Opisz z czym masz problem <span className="text-red-400">*</span>
+                            {t('dashboard.findPhysio.problemLabel')} <span className="text-red-400">*</span>
                         </label>
                         <textarea
                             required
                             maxLength={500}
-                            placeholder="Napisz krótko co Ci dolega, np. ból dolnego odcinka kręgosłupa przy schylaniu..."
+                            placeholder={t('dashboard.findPhysio.problemPlaceholder')}
                             value={problemDescription}
                             onChange={(e) => setProblemDescription(e.target.value)}
                             className="input-field min-h-[120px] py-3 resize-y"
@@ -206,7 +206,7 @@ export default function FindPhysioPage() {
 
                     <div className="flex flex-col gap-2 relative">
                         <label className="text-sm font-medium text-gray-200">
-                            Preferowana specjalizacja (Opcjonalnie)
+                            {t('dashboard.findPhysio.specLabel')}
                         </label>
                         <div 
                             className="input-field py-3 text-gray-200 cursor-pointer flex justify-between items-center"
@@ -241,7 +241,7 @@ export default function FindPhysioPage() {
                         disabled={loading || !problemDescription.trim()}
                         className="btn-primary mt-2 py-3"
                     >
-                        {loading ? <Spinner /> : "Znajdź mi fizjoterapeutę"}
+                        {loading ? <Spinner /> : t('dashboard.findPhysio.findBtn')}
                     </button>
                 </form>
             </div>
