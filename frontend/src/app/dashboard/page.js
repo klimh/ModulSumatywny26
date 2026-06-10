@@ -341,7 +341,7 @@ function PatientDashboard() {
                                 console.error(e);
                             }
                         }}
-                        className="px-6 py-3 font-bold rounded-xl whitespace-nowrap bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 border border-indigo-500/30 transition-colors shrink-0"
+                        className="px-6 py-3 font-bold rounded-xl whitespace-nowrap bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 border border-indigo-500/30 transition-colors shrink-0 cursor-pointer"
                     >
                         {apiKey ? (t('dashboard.patient.reGenerateKey') || 'Wygeneruj Nowy') : (t('dashboard.patient.generateKey') || 'Wygeneruj Klucz')}
                     </button>
