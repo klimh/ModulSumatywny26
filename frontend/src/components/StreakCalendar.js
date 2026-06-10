@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { api } from "@/lib/api";
+import { useTranslation } from "@/hooks/useTranslation";
 
 function FlameIcon({ className = "w-5 h-5" }) {
     return (
@@ -11,8 +12,10 @@ function FlameIcon({ className = "w-5 h-5" }) {
     );
 }
 
-export default function StreakCalendar({ patientId, title = "Historia passy" }) {
+export default function StreakCalendar({ patientId, title }) {
     const today = useMemo(() => new Date(), []);
+    const { t, language } = useTranslation();
+    const displayTitle = title || t('streak.history') || "Historia passy";
     const [cursor, setCursor] = useState({ year: today.getFullYear(), month: today.getMonth() + 1 });
     const [calendar, setCalendar] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -27,7 +30,7 @@ export default function StreakCalendar({ patientId, title = "Historia passy" }) 
                 const data = await api.streaks.getCalendar(patientId, cursor.year, cursor.month);
                 setCalendar(data);
             } catch (err) {
-                setError(err.message || "Nie udalo sie pobrac historii passy");
+                setError(err.message || t('streak.errorLoad') || "Nie udalo sie pobrac historii passy");
             } finally {
                 setLoading(false);
             }
@@ -51,7 +54,7 @@ export default function StreakCalendar({ patientId, title = "Historia passy" }) 
         return result;
     }, [calendar, cursor]);
 
-    const monthLabel = new Date(cursor.year, cursor.month - 1, 1).toLocaleDateString("pl-PL", {
+    const monthLabel = new Date(cursor.year, cursor.month - 1, 1).toLocaleDateString(language === 'en' ? "en-US" : "pl-PL", {
         month: "long",
         year: "numeric",
     });
@@ -74,22 +77,22 @@ export default function StreakCalendar({ patientId, title = "Historia passy" }) 
                 <div>
                     <h2 className="text-xl font-bold flex items-center gap-2">
                         <FlameIcon className="w-5 h-5 text-amber-400" />
-                        {title}
+                        {displayTitle}
                     </h2>
                     {calendar && (
                         <p className="text-xs text-muted mt-1">
-                            {calendar.active_days} aktywnych dni w miesiacu, rekord: {calendar.longest_streak} dni
+                            {t('streak.activeDays') ? t('streak.activeDays').replace('{days}', calendar.active_days).replace('{record}', calendar.longest_streak) : `${calendar.active_days} aktywnych dni w miesiacu, rekord: ${calendar.longest_streak} dni`}
                         </p>
                     )}
                 </div>
                 <div className="flex items-center gap-2">
-                    <button onClick={() => moveMonth(-1)} className="btn-ghost !px-3" aria-label="Poprzedni miesiac">
+                    <button onClick={() => moveMonth(-1)} className="btn-ghost !px-3" aria-label={t('streak.prevMonth') || "Poprzedni miesiac"}>
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                         </svg>
                     </button>
                     <span className="min-w-36 text-center text-sm font-semibold capitalize">{monthLabel}</span>
-                    <button onClick={() => moveMonth(1)} className="btn-ghost !px-3" aria-label="Nastepny miesiac">
+                    <button onClick={() => moveMonth(1)} className="btn-ghost !px-3" aria-label={t('streak.nextMonth') || "Nastepny miesiac"}>
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                         </svg>
@@ -99,12 +102,12 @@ export default function StreakCalendar({ patientId, title = "Historia passy" }) 
 
             {error && <div className="error-box mb-4">{error}</div>}
             {loading ? (
-                <div className="text-sm text-muted py-8 text-center">Ladowanie kalendarza...</div>
+                <div className="text-sm text-muted py-8 text-center">{t('streak.loading') || "Ladowanie kalendarza..."}</div>
             ) : (
                 <>
                     <div className="grid grid-cols-7 gap-1.5 mb-2 text-center">
-                        {["Pn", "Wt", "Sr", "Cz", "Pt", "So", "Nd"].map(day => (
-                            <span key={day} className="text-[11px] uppercase font-bold text-muted">{day}</span>
+                        {[t('streak.days.mon'), t('streak.days.tue'), t('streak.days.wed'), t('streak.days.thu'), t('streak.days.fri'), t('streak.days.sat'), t('streak.days.sun')].map((day, idx) => (
+                            <span key={idx} className="text-[11px] uppercase font-bold text-muted">{day || ["Pn", "Wt", "Sr", "Cz", "Pt", "So", "Nd"][idx]}</span>
                         ))}
                     </div>
                     <div className="flex flex-col gap-1.5">
@@ -123,9 +126,9 @@ export default function StreakCalendar({ patientId, title = "Historia passy" }) 
                         ))}
                     </div>
                     <div className="flex flex-wrap gap-3 mt-4 text-xs text-muted">
-                        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-emerald-500/80"></span> wykonane</span>
-                        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-rose-500/20 border border-rose-400/30"></span> pominiete</span>
-                        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-white/[0.04] border border-outline"></span> bez zadan</span>
+                        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-emerald-500/80"></span> {t('streak.legend.completed') || "wykonane"}</span>
+                        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-rose-500/20 border border-rose-400/30"></span> {t('streak.legend.missed') || "pominiete"}</span>
+                        <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-white/[0.04] border border-outline"></span> {t('streak.legend.none') || "bez zadan"}</span>
                     </div>
                 </>
             )}

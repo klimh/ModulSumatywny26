@@ -82,14 +82,14 @@ function PatientDashboard() {
                             <FlameIcon className="w-8 h-8" />
                         </div>
                         <div>
-                            <div className="text-xs uppercase tracking-wider text-muted font-bold">Aktualna passa</div>
-                            <div className="text-3xl font-black text-amber-300">{streak.current_streak} dni</div>
+                            <div className="text-xs uppercase tracking-wider text-muted font-bold">{t('streak.currentStreak') || 'Aktualna passa'}</div>
+                            <div className="text-3xl font-black text-amber-300">{streak.current_streak} {t('streak.days') || 'dni'}</div>
                         </div>
                     </div>
                     <div className="flex flex-wrap gap-3 text-sm">
-                        <span className="badge-success">Rekord: {streak.longest_streak} dni</span>
+                        <span className="badge-success">{t('streak.record') || 'Rekord:'} {streak.longest_streak} {t('streak.days') || 'dni'}</span>
                         <span className={streak.completed_today ? "badge-success" : "badge-warning"}>
-                            {streak.completed_today ? "Dzisiaj wykonane" : "Do zrobienia dzisiaj"}
+                            {streak.completed_today ? (t('streak.doneToday') || "Dzisiaj wykonane") : (t('streak.todoToday') || "Do zrobienia dzisiaj")}
                         </span>
                     </div>
                 </div>
