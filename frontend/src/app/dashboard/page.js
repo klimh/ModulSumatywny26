@@ -9,6 +9,7 @@ import Link from "next/link";
 import { api } from "@/lib/api";
 import { useTranslation } from "@/hooks/useTranslation";
 import { FlameIcon } from "@/components/StreakCalendar";
+import TiltCard from "@/components/TiltCard";
 
 function PatientDashboard() {
     const { plan, physio, physioLoading, loading, error, fetchMyPlan, fetchMyPhysio, disconnectPhysio } = usePatient();
@@ -96,56 +97,56 @@ function PatientDashboard() {
             
             {summary && (
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-2">
-                    <div className="card-hover p-5 flex flex-col justify-between border border-outline/50 bg-panel/50 backdrop-blur-sm gap-3">
-                        <div className="flex justify-between items-start">
+                    <TiltCard className="card-hover p-5 flex flex-col justify-between border border-outline/50 bg-panel/50 backdrop-blur-sm gap-3">
+                        <div className="flex justify-between items-start w-full" style={{ transform: "translateZ(30px)" }}>
                             <div className="text-sm font-semibold text-muted">{t('dashboard.patient.precision') || 'Precyzja'}</div>
-                            <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-400">
+                            <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-400 shadow-lg">
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
                             </div>
                         </div>
-                        <div>
-                            <div className="text-3xl font-black text-white">
+                        <div className="w-full" style={{ transform: "translateZ(50px)" }}>
+                            <div className="text-3xl font-black text-white drop-shadow-md">
                                 {summary.overall_avg_accuracy ? `${summary.overall_avg_accuracy}%` : '-'}
                             </div>
                             <div className="text-xs text-emerald-400 font-medium mt-1">
                                 {t('dashboard.patient.overallAccuracy') || 'Ogólna poprawność'}
                             </div>
                         </div>
-                    </div>
+                    </TiltCard>
 
-                    <div className="card-hover p-5 flex flex-col justify-between border border-outline/50 bg-panel/50 backdrop-blur-sm gap-3">
-                        <div className="flex justify-between items-start">
+                    <TiltCard className="card-hover p-5 flex flex-col justify-between border border-outline/50 bg-panel/50 backdrop-blur-sm gap-3">
+                        <div className="flex justify-between items-start w-full" style={{ transform: "translateZ(30px)" }}>
                             <div className="text-sm font-semibold text-muted">{t('dashboard.patient.sessions') || 'Sesje'}</div>
-                            <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400">
+                            <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400 shadow-lg">
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
                             </div>
                         </div>
-                        <div>
-                            <div className="text-3xl font-black text-white">
+                        <div className="w-full" style={{ transform: "translateZ(50px)" }}>
+                            <div className="text-3xl font-black text-white drop-shadow-md">
                                 {summary.total_sessions || 0}
                             </div>
                             <div className="text-xs text-blue-400 font-medium mt-1">
                                 {t('dashboard.patient.totalSessions') || 'Odbytych sesji'}
                             </div>
                         </div>
-                    </div>
+                    </TiltCard>
 
-                    <div className="card-hover p-5 flex flex-col justify-between border border-outline/50 bg-panel/50 backdrop-blur-sm gap-3">
-                        <div className="flex justify-between items-start">
+                    <TiltCard className="card-hover p-5 flex flex-col justify-between border border-outline/50 bg-panel/50 backdrop-blur-sm gap-3">
+                        <div className="flex justify-between items-start w-full" style={{ transform: "translateZ(30px)" }}>
                             <div className="text-sm font-semibold text-muted">{t('dashboard.patient.activity') || 'Aktywność'}</div>
-                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${summary.status === 'ok' ? 'bg-emerald-500/20 text-emerald-400' : summary.status === 'warning' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-red-500/20 text-red-400'}`}>
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center shadow-lg ${summary.status === 'ok' ? 'bg-emerald-500/20 text-emerald-400' : summary.status === 'warning' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-red-500/20 text-red-400'}`}>
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                             </div>
                         </div>
-                        <div>
-                            <div className="text-lg font-black text-white">
+                        <div className="w-full" style={{ transform: "translateZ(50px)" }}>
+                            <div className="text-lg font-black text-white drop-shadow-md">
                                 {summary.status === 'ok' ? (t('dashboard.patient.statusGood') || 'W formie') : summary.status === 'warning' ? (t('dashboard.patient.statusWarning') || 'Wymaga uwagi') : (t('dashboard.patient.statusCritical') || 'Brak aktywności')}
                             </div>
                             <div className="text-xs text-muted font-medium mt-1">
                                 {summary.days_since_activity !== null ? `${t('dashboard.patient.lastWorkout') || 'Ostatni:'} ${summary.days_since_activity} dni temu` : (t('dashboard.patient.noData') || 'Brak danych')}
                             </div>
                         </div>
-                    </div>
+                    </TiltCard>
                 </div>
             )}
 
