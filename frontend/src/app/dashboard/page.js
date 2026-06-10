@@ -286,9 +286,9 @@ function PatientDashboard() {
             </div>
 
             {/* INTEGRATION PANEL */}
-            <div className="card border border-indigo-500/30 bg-gradient-to-r from-indigo-500/10 via-panel to-blue-500/10 p-6 flex flex-col gap-4 mt-2 mb-8">
+            <div className="card border border-indigo-500/30 bg-gradient-to-r from-indigo-500/10 via-panel to-blue-500/10 p-6 flex flex-col gap-4 mt-2 mb-8 text-left">
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center shrink-0">
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
                     </div>
                     <div>
@@ -297,16 +297,16 @@ function PatientDashboard() {
                     </div>
                 </div>
                 
-                <div className="flex flex-col sm:flex-row gap-3 items-end sm:items-center">
+                <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-end w-full">
                     {apiKey ? (
                         <div className="flex-1 w-full flex flex-col gap-1">
                             <label className="text-xs font-mono text-muted uppercase tracking-wider">{t('dashboard.patient.yourApiKey') || 'Twój klucz API:'}</label>
-                            <div className="flex bg-main/50 border border-outline rounded-xl overflow-hidden shadow-inner">
+                            <div className="flex w-full bg-main/50 border border-outline rounded-xl overflow-hidden shadow-inner">
                                 <input 
                                     type="text" 
                                     readOnly 
                                     value={apiKey} 
-                                    className="flex-1 bg-transparent px-4 py-2 font-mono text-sm text-indigo-200 outline-none w-full"
+                                    className="flex-1 bg-transparent px-4 py-3 font-mono text-sm text-indigo-200 outline-none w-full min-w-0"
                                 />
                                 <button 
                                     onClick={() => {
@@ -314,7 +314,7 @@ function PatientDashboard() {
                                         setCopied(true);
                                         setTimeout(() => setCopied(false), 2000);
                                     }}
-                                    className={`px-4 py-2 text-sm font-bold transition-colors border-l border-outline flex items-center gap-2 ${copied ? 'bg-emerald-500/20 text-emerald-400' : 'bg-panel hover:bg-white/5 text-white'}`}
+                                    className={`px-4 py-3 text-sm font-bold transition-colors border-l border-outline flex items-center gap-2 shrink-0 ${copied ? 'bg-emerald-500/20 text-emerald-400' : 'bg-panel hover:bg-white/5 text-white'}`}
                                 >
                                     {copied ? (
                                         <>{t('dashboard.patient.keyCopied') || 'Skopiowano!'}</>
@@ -328,8 +328,8 @@ function PatientDashboard() {
                             </div>
                         </div>
                     ) : (
-                        <div className="flex-1 w-full text-sm text-amber-400/80 bg-amber-500/10 px-4 py-3 rounded-xl border border-amber-500/20">
-                            Nie masz jeszcze wygenerowanego klucza dostępu.
+                        <div className="flex-1 w-full text-sm text-amber-400/80 bg-amber-500/10 px-4 py-3 rounded-xl border border-amber-500/20 flex items-center">
+                            {t('dashboard.patient.noApiKey') || 'Nie masz jeszcze wygenerowanego klucza dostępu.'}
                         </div>
                     )}
                     <button 
@@ -341,7 +341,7 @@ function PatientDashboard() {
                                 console.error(e);
                             }
                         }}
-                        className="btn whitespace-nowrap bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 border border-indigo-500/30"
+                        className="px-6 py-3 font-bold rounded-xl whitespace-nowrap bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 border border-indigo-500/30 transition-colors shrink-0"
                     >
                         {apiKey ? (t('dashboard.patient.reGenerateKey') || 'Wygeneruj Nowy') : (t('dashboard.patient.generateKey') || 'Wygeneruj Klucz')}
                     </button>
