@@ -83,6 +83,11 @@
         text-align: center;
         overflow-x: hidden;
         transition: background-color 0.5s ease-in-out, color 0.5s ease-in-out;
+        cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><circle cx="16" cy="16" r="4" fill="%2310b981" /><circle cx="16" cy="16" r="12" fill="none" stroke="%2310b981" stroke-width="1.5" opacity="0.3" /></svg>') 16 16, auto;
+    }
+
+    button, a, [role="button"], .cursor-pointer, input[type="submit"], input[type="button"] {
+        cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><circle cx="16" cy="16" r="6" fill="%2314b8a6" /><circle cx="16" cy="16" r="16" fill="none" stroke="%2314b8a6" stroke-width="2" opacity="0.6" /></svg>') 16 16, pointer !important;
     }
 }
 @utility btn-primary {
