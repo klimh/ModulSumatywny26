@@ -9,16 +9,12 @@ from core.security import (
 )
 
 def test_password_hashing():
-    """
-    Test 10: Weryfikacja poprawności hashowania hasła oraz jego sprawdzania.
-    """
+
     password = "SuperSecretPassword123"
     hashed = get_password_hash(password)
     
-    # Hasło nie powinno być zapisane jawnym tekstem
     assert hashed != password
     
-    # Weryfikacja poprawnego hasła
     assert verify_password(password, hashed) is True
     
     # Weryfikacja błędnego hasła
@@ -26,9 +22,7 @@ def test_password_hashing():
 
 
 def test_jwt_token_generation_and_decoding():
-    """
-    Test 11: Generowanie tokenu JWT i dekodowanie danych (sub).
-    """
+
     import jwt
     from core.security import SECRET_KEY, ALGORITHM
     
@@ -46,12 +40,9 @@ def test_jwt_token_generation_and_decoding():
 
 
 def test_role_checker_dependency():
-    """
-    Test 12: Weryfikacja działania dekoratora RoleChecker dla różnych ról.
-    """
+
     checker = RoleChecker(["fizjoterapeuta", "admin"])
     
-    # Użytkownik z poprawną rolą powinien zostać przepuszczony
     physio_user = User(first_name="Adam", last_name="Nowak", email="a@a.com", role="fizjoterapeuta")
     allowed_user = checker(physio_user)
     assert allowed_user == physio_user

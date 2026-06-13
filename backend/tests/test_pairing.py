@@ -10,7 +10,7 @@ from core.pairing_tasks import check_and_reassign_expired_requests
 
 @pytest.fixture
 def physios(db_session):
-    """Tworzy trzech fizjoterapeutów z różnymi obciążeniami i specjalizacjami."""
+
     users = []
     physio_profiles = []
     
@@ -51,9 +51,7 @@ def patient(db_session):
 
 
 def test_find_available_physio_least_load(db_session, physios, patient):
-    """
-    Test 8: Wyszukiwanie fizjoterapeuty z najmniejszym obciążeniem (najmniejsza liczba PENDING).
-    """
+
     p1, p2, p3 = physios
     
     # Tworzymy oczekujące zapytanie przypisane do p1 (obciążony ortopeda)
@@ -66,10 +64,7 @@ def test_find_available_physio_least_load(db_session, physios, patient):
 
 
 def test_check_and_reassign_expired_requests(db_session, physios, patient):
-    """
-    Test 9: Automatyczne przenoszenie wygasłych zapytań (np. po 24h bez reakcji)
-    lub odrzuconych do nowego wolnego fizjoterapeuty.
-    """
+
     p1, p2, p3 = physios
     
     # Tworzymy zapytanie do p1, które wygasło (updated_at przed 24h)
@@ -86,11 +81,9 @@ def test_check_and_reassign_expired_requests(db_session, physios, patient):
     # Wywołujemy scheduler do przepisywania wygasłych zapytań
     check_and_reassign_expired_requests(db_session, expiration_hours=24)
     
-    # Stare zapytanie powinno mieć status EXPIRED
     db_session.refresh(req)
     assert req.status == PairingStatus.EXPIRED
     
-    # Powinno powstać nowe zapytanie do wolnego ortopedy (p2 lub p3 - z racji braku specjalizacji w reassign wybiera dowolnego wolnego)
     new_reqs = db_session.query(PairingRequest).filter(
         PairingRequest.patient_id == patient.user_id,
         PairingRequest.status == PairingStatus.PENDING
