@@ -92,3 +92,110 @@ def test_pairing_flow_request(client, db_session):
     assert len(pending_data) == 1
     assert pending_data[0]["problem_description"] == "Rehabilitacja po zawałowa"
     assert "Jan Pacjent" in pending_data[0]["patient_name"]
+
+
+def test_chat_between_paired_users(client, db_session):
+    from core.security import get_password_hash, create_access_token
+    from db_models.patient import Patient
+    from db_models.patient_physiotherapist import PatientPhysiotherapist
+    
+    physio_user = User(first_name="Adam", last_name="Fizjo", email="adam.fizjo@example.com", password=get_password_hash("pass"), role="fizjoterapeuta")
+    patient_user = User(first_name="Ewa", last_name="Pacjentka", email="ewa.pacjentka@example.com", password=get_password_hash("pass"), role="pacjent")
+    db_session.add(physio_user)
+    db_session.add(patient_user)
+    db_session.flush()
+    
+    physio = Physiotherapist(user_id=physio_user.user_id, specialization="Ortopedia", is_verified=True, is_available=True)
+    patient = Patient(user_id=patient_user.user_id)
+    db_session.add(physio)
+    db_session.add(patient)
+    db_session.flush()
+    
+    # 2. Tworzymy zaakceptowaną relację parowania
+    relation = PatientPhysiotherapist(patient_id=patient_user.user_id, physio_id=physio_user.user_id, status="ZAAKCEPTOWANE")
+    db_session.add(relation)
+    db_session.commit()
+    
+    # Nagłówki uwierzytelniania
+    patient_token = create_access_token({"sub": patient_user.email, "role": "pacjent", "user_id": patient_user.user_id})
+    physio_token = create_access_token({"sub": physio_user.email, "role": "fizjoterapeuta", "user_id": physio_user.user_id})
+    patient_headers = {"Authorization": f"Bearer {patient_token}"}
+    physio_headers = {"Authorization": f"Bearer {physio_token}"}
+    
+    # 3. Pacjent wysyła wiadomość do fizjoterapeuty
+    msg_payload = {"receiver_id": physio_user.user_id, "content": "Cześć, dzisiaj bez bólu!"}
+    send_resp = client.post("/chat/", json=msg_payload, headers=patient_headers)
+    assert send_resp.status_code == 200
+    assert send_resp.json()["content"] == "Cześć, dzisiaj bez bólu!"
+    
+    # 4. Fizjoterapeuta sprawdza nieprzeczytane wiadomości
+    unread_resp = client.get("/chat/status/unread-count", headers=physio_headers)
+    assert unread_resp.status_code == 200
+    assert unread_resp.json()["unread_count"] == 1
+    
+    # 5. Fizjoterapeuta pobiera historię wiadomości (powinno oznaczyć jako przeczytane)
+    history_resp = client.get(f"/chat/{patient_user.user_id}", headers=physio_headers)
+    assert history_resp.status_code == 200
+    assert len(history_resp.json()) == 1
+    assert history_resp.json()[0]["content"] == "Cześć, dzisiaj bez bólu!"
+    
+    # Po pobraniu historii nieprzeczytane wiadomości powinny wynosić 0
+    unread_resp_after = client.get("/chat/status/unread-count", headers=physio_headers)
+    assert unread_resp_after.json()["unread_count"] == 0
+
+
+def test_chat_forbidden_for_unpaired_users(client, db_session):
+    from core.security import get_password_hash, create_access_token
+    
+    physio_user = User(first_name="Piotr", last_name="Fizjo", email="piotr.fizjo@example.com", password=get_password_hash("pass"), role="fizjoterapeuta")
+    patient_user = User(first_name="Kamil", last_name="Pacjent", email="kamil.pacjent@example.com", password=get_password_hash("pass"), role="pacjent")
+    db_session.add(physio_user)
+    db_session.add(patient_user)
+    db_session.commit()
+    
+    patient_token = create_access_token({"sub": patient_user.email, "role": "pacjent", "user_id": patient_user.user_id})
+    patient_headers = {"Authorization": f"Bearer {patient_token}"}
+    
+    # Próba wysłania wiadomości (powinna zwrócić 403 Forbidden)
+    msg_payload = {"receiver_id": physio_user.user_id, "content": "Wiadomość zabroniona"}
+    send_resp = client.post("/chat/", json=msg_payload, headers=patient_headers)
+    assert send_resp.status_code == 403
+    assert "Cannot send message" in send_resp.json()["detail"]
+
+
+def test_streaks_api_endpoints_and_admin_jobs(client, db_session):
+    
+    from core.security import get_password_hash, create_access_token
+    from db_models.patient import Patient
+    
+    # 1. Tworzymy pacjenta i admina
+    patient_user = User(first_name="Ola", last_name="Kowalska", email="ola.k@example.com", password=get_password_hash("pass"), role="pacjent")
+    admin_user = User(first_name="Admin", last_name="Admin", email="admin.test@example.com", password=get_password_hash("pass"), role="admin")
+    db_session.add(patient_user)
+    db_session.add(admin_user)
+    db_session.flush()
+    
+    patient = Patient(user_id=patient_user.user_id, streak_count=3)
+    db_session.add(patient)
+    db_session.commit()
+    
+    patient_token = create_access_token({"sub": patient_user.email, "role": "pacjent", "user_id": patient_user.user_id})
+    admin_token = create_access_token({"sub": admin_user.email, "role": "admin", "user_id": admin_user.user_id})
+    
+    patient_headers = {"Authorization": f"Bearer {patient_token}"}
+    admin_headers = {"Authorization": f"Bearer {admin_token}"}
+    
+    # 2. Pacjent pobiera swoje podsumowanie passy
+    summary_resp = client.get("/streaks/me", headers=patient_headers)
+    assert summary_resp.status_code == 200
+    assert summary_resp.json()["current_streak"] == 3
+    
+    # 3. Pacjent próbuje wywołać midnight-check (powinno być 403 Forbidden - brak roli admina)
+    job_resp = client.post("/streaks/jobs/midnight-check", headers=patient_headers)
+    assert job_resp.status_code == 403
+    
+    # 4. Admin wywołuje midnight-check (powinno być 200 OK)
+    job_resp_admin = client.post("/streaks/jobs/midnight-check", headers=admin_headers)
+    assert job_resp_admin.status_code == 200
+    assert "reset_count" in job_resp_admin.json()
+
