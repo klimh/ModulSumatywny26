@@ -107,3 +107,76 @@ def test_reset_expired_streaks_with_freeze_credits(db_session, test_patient):
     assert streak.current_streak == 5
     assert streak.freeze_credits == 1
 
+
+def test_record_activity_milestones(db_session, test_patient):
+    """
+    Test 6: Weryfikacja, czy record_activity generuje powiadomienie o kamieniu milowym
+    (np. 7 dni passy) oraz standardowe gratulacje.
+    """
+    from db_models.streak import AppNotification
+    
+    # Ustawiamy passę na 6 dni i ostatnią aktywność na wczoraj
+    streak = get_or_create_streak(db_session, test_patient.user_id)
+    streak.current_streak = 6
+    streak.longest_streak = 6
+    streak.last_activity_date = date.today() - timedelta(days=1)
+    db_session.commit()
+    
+    # Rejestrujemy dzisiejszą aktywność -> passa rośnie do 7 (kamień milowy)
+    record_activity(db_session, test_patient.user_id, activity_date=date.today())
+    db_session.commit()
+    
+    # Powinny zostać wysłane 2 powiadomienia: gratulacje ("streak_congrats") oraz kamień milowy ("streak_milestone")
+    notifications = db_session.query(AppNotification).filter(AppNotification.user_id == test_patient.user_id).all()
+    types = [n.notification_type for n in notifications]
+    assert "streak_congrats" in types
+    assert "streak_milestone" in types
+
+
+def test_create_evening_reminders(db_session, test_patient):
+    """
+    Test 7: Weryfikacja, czy create_evening_reminders wysyła powiadomienie
+    dla pacjentów z aktywnym planem, którzy dzisiaj nie wykonali treningu.
+    """
+    from db_models.physiotherapist import Physiotherapist
+    from db_models.rehab_plan import RehabPlan
+    from db_models.streak import AppNotification
+    from core.streaks import create_evening_reminders
+    
+    # 1. Tworzymy fizjoterapeutę
+    u_physio = User(
+        first_name="Adam",
+        last_name="Nowak",
+        email="adam.nowak@example.com",
+        password="test_hashed_password",
+        role="fizjoterapeuta"
+    )
+    db_session.add(u_physio)
+    db_session.commit()
+    
+    physio = Physiotherapist(user_id=u_physio.user_id, specialization="Ortopedia", is_verified=True, is_available=True)
+    db_session.add(physio)
+    db_session.commit()
+    
+    # 2. Tworzymy aktywny plan rehabilitacji dla pacjenta
+    plan = RehabPlan(
+        physio_id=physio.user_id,
+        patient_id=test_patient.user_id,
+        title="Plan kolano",
+        is_active=True
+    )
+    db_session.add(plan)
+    db_session.commit()
+    
+    # 3. Wywołujemy przypomnienia wieczorne
+    sent = create_evening_reminders(db_session, reminder_date=date.today())
+    db_session.commit()
+    
+    # Powinno wysłać jedno powiadomienie typu "streak_reminder"
+    assert sent == 1
+    notification = db_session.query(AppNotification).filter(
+        AppNotification.user_id == test_patient.user_id,
+        AppNotification.notification_type == "streak_reminder"
+    ).first()
+    assert notification is not None
+    assert "Passa jest zagrozona" in notification.title
