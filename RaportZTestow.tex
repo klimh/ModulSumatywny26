@@ -1,0 +1,455 @@
+\documentclass[11pt,a4paper]{article}
+
+% ====================== PAKIETY ======================
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[polish]{babel}
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage{lmodern}
+\usepackage{graphicx}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, fit, backgrounds}
+\usepackage[hidelinks]{hyperref}
+\usepackage{caption}
+
+% ====================== KOLORY ======================
+\definecolor{primary}{RGB}{30,90,150}
+\definecolor{accent}{RGB}{0,140,120}
+\definecolor{lightgray}{RGB}{240,242,245}
+\definecolor{midgray}{RGB}{200,205,210}
+\definecolor{riskhigh}{RGB}{200,60,60}
+\definecolor{riskmed}{RGB}{220,150,40}
+\definecolor{risklow}{RGB}{90,160,90}
+\definecolor{passgreen}{RGB}{40,150,70}
+\definecolor{failred}{RGB}{200,50,50}
+\definecolor{lukacol}{RGB}{255,235,150}
+
+% ====================== STYLE NAGŁÓWKÓW ======================
+\titleformat{\section}
+  {\normalfont\Large\bfseries\color{primary}}
+  {\thesection.}{0.6em}{}
+\titleformat{\subsection}
+  {\normalfont\large\bfseries\color{accent}}
+  {\thesubsection}{0.6em}{}
+
+\titlespacing*{\section}{0pt}{18pt}{8pt}
+
+% ====================== STOPKA / NAGŁÓWEK ======================
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}
+\fancyhead[L]{\small\color{primary}\textbf{RehabSense}}
+\fancyhead[R]{\small Raport z Testów}
+\fancyfoot[L]{\small Politechnika Łódzka}
+\fancyfoot[R]{\small Strona \thepage}
+
+% ====================== POMOCNICZE ======================
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcommand{\sysname}{\textbf{RehabSense}}
+
+% Komenda oznaczająca lukę do samodzielnego uzupełnienia
+\newcommand{\luka}[1]{\colorbox{lukacol}{\,\textit{[#1]}\,}}
+% Status wyniku
+\newcommand{\zdany}{\textcolor{passgreen}{\textbf{Zdany}}}
+\newcommand{\niezdany}{\textcolor{failred}{\textbf{Niezdany}}}
+\newcommand{\statusluka}{\luka{Zdany / Niezdany}}
+
+\setlist{itemsep=2pt, topsep=3pt}
+
+% ====================== STRONA TYTUŁOWA ======================
+\begin{document}
+
+\begin{titlepage}
+\centering
+\vspace*{2cm}
+
+{\Huge\bfseries\color{primary} Raport z Testów\par}
+\vspace{0.5cm}
+{\LARGE System wspomagania rehabilitacji\par}
+\vspace{0.3cm}
+{\Huge\bfseries RehabSense\par}
+
+\vspace{1.2cm}
+\rule{0.7\textwidth}{1.2pt}\par
+\vspace{1.2cm}
+
+{\large\textbf{Instytucja:} Politechnika Łódzka\par}
+\vspace{0.4cm}
+{\large\textbf{Dokument:} Raport z Testów (Test Report)\par}
+\vspace{0.4cm}
+{\large\textbf{Dokument referencyjny:} Plan Testów RehabSense v1.0\par}
+\vspace{0.4cm}
+{\large\textbf{Wersja:} 1.0\par}
+\vspace{0.4cm}
+{\large\textbf{Data wykonania testów:} \luka{zakres dat}\par}
+\vspace{0.4cm}
+{\large\textbf{Data raportu:} \luka{data}\par}
+
+\vfill
+{\small Dokument przedstawia wyniki procesu testowego aplikacji RehabSense\\ w odniesieniu do Planu Testów.}
+\end{titlepage}
+
+% ====================== LISTA CZŁONKÓW ZESPOŁU ======================
+\section*{Lista członków zespołu}
+\addcontentsline{toc}{section}{Lista członków zespołu}
+
+\begin{table}[h]
+\centering
+\begin{tabularx}{\textwidth}{>{\bfseries}p{4cm} p{3.5cm} Y}
+\toprule
+\textbf{Imię i nazwisko} & \textbf{Rola} & \textbf{Udział w testach} \\
+\midrule
+Kacper Romek & Tester & Autor i wykonawca przypadków testowych, raportowanie defektów, autor raportu. \\
+Kacper Błaszczyk & Project Manager & Akceptacja kryteriów wyjścia, priorytetyzacja defektów, nadzór nad harmonogramem. \\
+Klim Hudzenko & Backend Developer & Testy jednostkowe backendu, naprawa defektów backendu, wsparcie środowiska. \\
+Maciej Miazek & Frontend Developer & Testy interfejsu i modułu AI, naprawa defektów frontendu. \\
+Remigiusz Tomecki & Frontend Developer & Testy interfejsu i modułu AI, naprawa defektów frontendu. \\
+\bottomrule
+\end{tabularx}
+\caption{Skład zespołu projektowego i jego udział w procesie testowym.}
+\end{table}
+
+\vspace{0.5cm}
+\noindent\textbf{Osoba raportująca:} \luka{imię i nazwisko}\quad\textbf{Data:} \luka{data}
+
+\newpage
+
+% ====================== SPIS TREŚCI ======================
+\tableofcontents
+\newpage
+
+% ====================================================
+\section{Wprowadzenie}
+% ====================================================
+
+\subsection{Cel dokumentu}
+Niniejszy dokument stanowi \textbf{Raport z Testów} aplikacji \sysname{} i podsumowuje przebieg oraz rezultaty procesu testowego przeprowadzonego zgodnie z dokumentem \textit{Plan Testów RehabSense v1.0}. Celem raportu jest przedstawienie zakresu wykonanych testów, osiągniętych wyników i metryk jakościowych, wykrytych defektów oraz sformułowanie wniosków i rekomendacji dotyczących gotowości systemu do wdrożenia.
+
+\subsection{Zakres projektu}
+\sysname{} to system wspomagania rehabilitacji wykorzystujący analizę wizyjną ruchu (AI) do oceny poprawności ćwiczeń wykonywanych przez pacjenta oraz wspierający współpracę pacjenta z fizjoterapeutą. Projekt obejmuje aplikację webową (frontend), warstwę logiki biznesowej (backend / REST API), moduł analizy pozy (AI) oraz hostowaną bazę danych NeonDB.
+
+\subsection{Odbiorcy dokumentu}
+Dokument skierowany jest do:
+\begin{itemize}
+  \item \textbf{Project Managera} oraz zespołu projektowego — jako podstawa decyzji o zakończeniu fazy testów i wdrożeniu.
+  \item \textbf{Deweloperów} — jako źródło informacji o wykrytych defektach i obszarach wymagających poprawy.
+  \item \textbf{Prowadzącego / interesariuszy akademickich} — jako dokumentacja jakościowa projektu.
+\end{itemize}
+
+% ====================================================
+\section{Opis testowanego systemu}
+% ====================================================
+
+\subsection{Przeznaczenie oprogramowania}
+\sysname{} to inteligentny interfejs człowiek–maszyna wspomagający proces diagnostyki, terapii oraz rehabilitacji. Aplikacja wykorzystuje sztuczną inteligencję (analizę wizyjną postawy) do precyzyjnej oceny aktywności fizycznej pacjenta, umożliwiając wykonywanie ćwiczeń rehabilitacyjnych bez stałej fizycznej obecności terapeuty.
+
+\subsection{Główne funkcje}
+\begin{itemize}
+  \item \textbf{Pacjent} — sesje ćwiczeń analizowane przez AI, panel statystyk i postępów, system passy (grywalizacja), czat z fizjoterapeutą.
+  \item \textbf{Fizjoterapeuta} — zarządzanie pacjentami, tworzenie i przypisywanie planów rehabilitacji, monitoring postępów, certyfikaty.
+  \item \textbf{Administrator} — zarządzanie kontami i konfiguracją systemu.
+  \item \textbf{Parowanie} — łączenie pacjentów z fizjoterapeutami wraz z automatycznym wygaszaniem i ponownym przypisaniem żądań.
+\end{itemize}
+
+\subsection{Architektura systemu}
+System zaprojektowano w modelu trójwarstwowym (klient–serwer). Frontend (Next.js) komunikuje się z backendem (FastAPI) poprzez REST API; analiza pozy odbywa się po stronie klienta z użyciem biblioteki MediaPipe, a wyniki zapisywane są w hostowanej, serverlessowej bazie NeonDB (PostgreSQL).
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[
+  node distance=0.9cm and 1.4cm,
+  box/.style={rectangle, rounded corners, draw=primary, thick, fill=lightgray,
+              minimum width=3.2cm, minimum height=1cm, align=center, font=\small},
+  ext/.style={rectangle, rounded corners, draw=accent, thick, fill=white,
+              minimum width=2.8cm, minimum height=0.9cm, align=center, font=\small},
+  arr/.style={-{Stealth[length=3mm]}, thick, draw=primary!70},
+]
+\node[box] (front) {\textbf{Warstwa Prezentacji}\\ Frontend (Next.js)\\ \footnotesize Pacjent / Fizjoterapeuta / Admin};
+\node[ext, below left=1.3cm and -0.5cm of front] (ai) {\textbf{Moduł AI}\\ MediaPipe + DTW\\ \footnotesize (analiza pozy w przeglądarce)};
+\node[box, below=2.6cm of front] (back) {\textbf{Warstwa Logiki}\\ Backend (FastAPI / Python)\\ \footnotesize Auth, Pacjent, Fizjo, Admin, Chat, Passy};
+\node[box, below=1.2cm of back] (db) {\textbf{Warstwa Danych}\\ NeonDB (PostgreSQL) + SQLAlchemy\\ \footnotesize profile, wyniki, plany, wiadomości};
+\node[ext, right=2.2cm of back] (cloud) {\textbf{Usługi zewn.}\\ Cloudinary\\ \footnotesize (multimedia)};
+\node[ext, right=2.2cm of front] (extapi) {\textbf{API zewn.}\\ \texttt{/external/v1}\\ \footnotesize (klucz API)};
+\draw[arr] (front) -- node[right, font=\scriptsize] {REST / JWT} (back);
+\draw[arr] (back) -- (db);
+\draw[arr] (ai.south) |- (back.west);
+\draw[arr] (back.east) -- (cloud.west);
+\draw[arr] (extapi.south) -- (back.north east);
+\end{tikzpicture}
+\caption{Architektura trójwarstwowa systemu RehabSense.}
+\end{figure}
+
+\subsection{Integracje z systemami zewnętrznymi}
+\begin{itemize}
+  \item \textbf{NeonDB} — hostowana, serverlessowa baza PostgreSQL (połączenie przez \texttt{DATABASE\_URL}, \texttt{pool\_pre\_ping}).
+  \item \textbf{Cloudinary} — przechowywanie i serwowanie materiałów multimedialnych.
+  \item \textbf{API zewnętrzne} (\texttt{/external/v1}) — udostępnienie danych systemom zewnętrznym, autoryzacja kluczem API.
+\end{itemize}
+
+% ====================================================
+\section{Cel testów}
+% ====================================================
+
+Testy miały zweryfikować zgodność aplikacji \sysname{} z wymaganiami funkcjonalnymi i niefunkcjonalnymi oraz potwierdzić bezpieczeństwo i stabilność systemu przed wdrożeniem — zgodnie z celami zdefiniowanymi w Planie Testów.
+
+\subsection{Weryfikowane obszary}
+\begin{enumerate}
+  \item Poprawność kluczowych procesów biznesowych: rejestracja i logowanie, parowanie pacjent–fizjoterapeuta, czat, naliczanie passy.
+  \item Mechanizmy bezpieczeństwa: uwierzytelnianie (JWT), autoryzacja oparta na rolach (\texttt{RoleChecker}), bezpieczne przechowywanie haseł.
+  \item Poprawna integracja warstwy frontendu z backendowym REST API oraz integracje zewnętrzne.
+  \item Wiarygodność analizy ruchu (AI / DTW) w zakresie oczekiwanej dokładności oceny ćwiczeń.
+\end{enumerate}
+
+\subsection{Adresowane ryzyka jakościowe (wg Planu Testów)}
+\begin{table}[h]
+\centering
+\begin{tabularx}{\textwidth}{Y c Y}
+\toprule
+\textbf{Ryzyko (z Planu Testów)} & \textbf{Poziom} & \textbf{Status po testach} \\
+\midrule
+Niska dokładność analizy ruchu AI (MediaPipe/DTW) & \textcolor{riskhigh}{Wysoki} & \luka{zaadresowane / pozostaje} \\
+Luki w autoryzacji (dostęp do cudzych danych medycznych) & \textcolor{riskhigh}{Wysoki} & \luka{zaadresowane / pozostaje} \\
+Błędy w naliczaniu / resetowaniu passy & \textcolor{riskmed}{Średni} & \luka{zaadresowane / pozostaje} \\
+Niespójność kontraktu API frontend–backend & \textcolor{riskmed}{Średni} & \luka{zaadresowane / pozostaje} \\
+Niedostępność / opóźnienia hostowanej bazy NeonDB & \textcolor{riskmed}{Średni} & \luka{zaadresowane / pozostaje} \\
+\bottomrule
+\end{tabularx}
+\caption{Status ryzyk jakościowych po przeprowadzeniu testów.}
+\end{table}
+
+% ====================================================
+\section{Zakres testów}
+% ====================================================
+
+\subsection{W zakresie}
+\begin{itemize}
+  \item Moduł autoryzacji (rejestracja, logowanie, JWT, kontrola ról).
+  \item Moduł parowania (pairing) — żądania, wygaszanie, ponowne przypisanie.
+  \item Moduł czatu pacjent–fizjoterapeuta.
+  \item Moduł passy (streaks) — naliczanie, reset wygasłych, kamienie milowe, przypomnienia, odznaki.
+  \item Mechanizmy bezpieczeństwa (hashowanie haseł, tokeny, \texttt{RoleChecker}).
+  \item Integracja REST API (kontrakt żądanie/odpowiedź, kody statusu HTTP).
+  \item Moduł AI / analizy pozy (\texttt{PoseDetector.js}, \texttt{dtwAnalyzer.js}).
+\end{itemize}
+
+\subsection{Poza zakresem}
+\begin{itemize}
+  \item Wewnętrzna implementacja bibliotek zewnętrznych (MediaPipe, FastAPI, Cloudinary).
+  \item Testy wydajnościowe i obciążeniowe na pełną skalę produkcyjną.
+  \item Infrastruktura chmurowa i konfiguracja sieciowa hostingu produkcyjnego.
+  \item Pełna zgodność ze standardami dostępności (WCAG).
+  \item Dokładność sprzętowa kamer użytkownika.
+\end{itemize}
+
+% ====================================================
+\section{Przyjęte strategie testowe}
+% ====================================================
+
+\subsection{Strategie z Planu Testów}
+\begin{itemize}
+  \item \textbf{Poziomy:} testy jednostkowe (unit), integracyjne (API przez \texttt{TestClient} FastAPI), systemowe (E2E).
+  \item \textbf{Typy:} funkcjonalne, bezpieczeństwa, regresji, integracji API, testowanie UI.
+  \item \textbf{Techniki:} black-box (klasy równoważności, wartości brzegowe, tablice decyzyjne), white-box (pokrycie instrukcji i gałęzi logiki biznesowej).
+  \item \textbf{Narzędzia:} \texttt{pytest}, FastAPI \texttt{TestClient}, Postman, Docker Compose, GitHub Actions (CI).
+\end{itemize}
+
+\subsection{Modyfikacje względem Planu Testów}
+W trakcie realizacji testów wprowadzono następujące odstępstwa / modyfikacje względem pierwotnego planu:
+\begin{itemize}
+  \item \luka{opis modyfikacji — np. zmiana narzędzia, dodanie/pominięcie poziomu testów}
+  \item \luka{opis modyfikacji lub: „Brak modyfikacji — testy przeprowadzono zgodnie z planem"}
+\end{itemize}
+
+% ====================================================
+\section{Wykorzystane środowisko testowe}
+% ====================================================
+
+\begin{table}[h]
+\centering
+\begin{tabularx}{\textwidth}{>{\bfseries}p{3.5cm} Y}
+\toprule
+\textbf{Element} & \textbf{Konfiguracja użyta podczas testów} \\
+\midrule
+System operacyjny & \luka{np. Windows 11 / Linux (Docker)} \\
+Backend & Python 3.11+, FastAPI 0.135, SQLAlchemy 2.0 \\
+Frontend & Node.js 20+, Next.js 16, React 19 \\
+Baza danych & NeonDB (hostowany PostgreSQL); SQLite in-memory dla testów jednostkowych/integracyjnych \\
+Przeglądarki & \luka{np. Chrome 13x, Firefox 13x} \\
+Konteneryzacja & Docker Compose \\
+Narzędzia testowe & \texttt{pytest}, FastAPI \texttt{TestClient}, Postman, GitHub Actions \\
+Sprzęt & \luka{np. laptop, kamera internetowa — model} \\
+\bottomrule
+\end{tabularx}
+\caption{Środowisko, w którym przeprowadzono testy.}
+\end{table}
+
+% ====================================================
+\section{Wyniki testów}
+% ====================================================
+
+\subsection{Podsumowanie ilościowe}
+\begin{table}[h]
+\centering
+\begin{tabularx}{\textwidth}{Y c}
+\toprule
+\textbf{Wskaźnik} & \textbf{Wartość} \\
+\midrule
+Liczba zaplanowanych przypadków testowych & \luka{liczba} \\
+Liczba wykonanych przypadków testowych & \luka{liczba} \\
+Liczba testów zdanych & \luka{liczba} \\
+Liczba testów niezdanych & \luka{liczba} \\
+Wskaźnik zdawalności (pass rate) & \luka{\%} \\
+Pokrycie kodu testami (coverage) & \luka{\%} \\
+\bottomrule
+\end{tabularx}
+\caption{Podsumowanie ilościowe wykonanych testów.}
+\end{table}
+
+\subsection{Odchylenia względem Planu Testów}
+\begin{itemize}
+  \item \luka{opis odchyleń — np. testy pominięte, dodane, zmiana zakresu, lub „Brak odchyleń"}
+\end{itemize}
+
+\subsection{Szczegółowa lista wykonanych testów}
+Poniższa tabela zawiera testy automatyczne zaimplementowane w projekcie (\texttt{backend/tests/}). Kolumnę statusu oraz wyjaśnienia należy uzupełnić rzeczywistymi wynikami.
+
+\begin{longtable}{p{0.42\textwidth} c p{0.34\textwidth}}
+\toprule
+\textbf{Test} & \textbf{Wynik} & \textbf{Wyjaśnienie (jeśli niezdany)} \\
+\midrule
+\endhead
+\multicolumn{3}{l}{\textit{\textbf{Moduł bezpieczeństwa} — \texttt{test\_security.py}}}\\
+\addlinespace
+Hashowanie i weryfikacja haseł (\texttt{test\_password\_hashing}) & \statusluka & \luka{---} \\
+Generowanie i dekodowanie JWT (\texttt{test\_jwt\_token\_generation\_and\_decoding}) & \statusluka & \luka{---} \\
+Kontrola dostępu wg ról (\texttt{test\_role\_checker\_dependency}) & \statusluka & \luka{---} \\
+\addlinespace
+\multicolumn{3}{l}{\textit{\textbf{Integracja API} — \texttt{test\_integration\_api.py}}}\\
+\addlinespace
+Rejestracja i logowanie użytkownika (\texttt{test\_user\_register\_and\_login}) & \statusluka & \luka{---} \\
+Przepływ żądania parowania (\texttt{test\_pairing\_flow\_request}) & \statusluka & \luka{---} \\
+Czat między sparowanymi użytkownikami (\texttt{test\_chat\_between\_paired\_users}) & \statusluka & \luka{---} \\
+Blokada czatu dla niesparowanych (\texttt{test\_chat\_forbidden\_for\_unpaired\_users}) & \statusluka & \luka{---} \\
+Endpointy passy i zadania admina (\texttt{test\_streaks\_api\_endpoints\_and\_admin\_jobs}) & \statusluka & \luka{---} \\
+\addlinespace
+\multicolumn{3}{l}{\textit{\textbf{Moduł parowania} — \texttt{test\_pairing.py}}}\\
+\addlinespace
+Dobór fizjoterapeuty wg obciążenia (\texttt{test\_find\_available\_physio\_least\_load}) & \statusluka & \luka{---} \\
+Wygaszanie i ponowne przypisanie żądań (\texttt{test\_check\_and\_reassign\_expired\_requests}) & \statusluka & \luka{---} \\
+\addlinespace
+\multicolumn{3}{l}{\textit{\textbf{Moduł passy} — \texttt{test\_streaks.py}}}\\
+\addlinespace
+Utworzenie passy dla nowego pacjenta (\texttt{test\_get\_or\_create\_streak\_new\_patient}) & \statusluka & \luka{---} \\
+Aktywność w kolejnych dniach (\texttt{test\_record\_activity\_consecutive\_days}) & \statusluka & \luka{---} \\
+Aktywność tego samego dnia (\texttt{test\_record\_activity\_same\_day}) & \statusluka & \luka{---} \\
+Aktywność po przerwie (\texttt{test\_record\_activity\_after\_gap}) & \statusluka & \luka{---} \\
+Reset wygasłych passy z kredytami zamrożenia (\texttt{test\_reset\_expired\_streaks\_with\_freeze\_credits}) & \statusluka & \luka{---} \\
+Kamienie milowe passy (\texttt{test\_record\_activity\_milestones}) & \statusluka & \luka{---} \\
+Wieczorne przypomnienia (\texttt{test\_create\_evening\_reminders}) & \statusluka & \luka{---} \\
+\addlinespace
+\multicolumn{3}{l}{\textit{\textbf{Testy manualne / E2E / UI}}}\\
+\addlinespace
+\luka{nazwa testu manualnego} & \statusluka & \luka{---} \\
+\luka{nazwa testu manualnego} & \statusluka & \luka{---} \\
+\bottomrule
+\end{longtable}
+
+% ====================================================
+\section{Znalezione błędy}
+% ====================================================
+
+W trakcie testów zidentyfikowano następujące defekty:
+
+\begin{longtable}{c p{0.30\textwidth} c c p{0.26\textwidth}}
+\toprule
+\textbf{ID} & \textbf{Opis defektu} & \textbf{Priorytet} & \textbf{Status} & \textbf{Moduł / uwagi} \\
+\midrule
+\endhead
+\luka{BUG-01} & \luka{opis} & \luka{kryt./wys./śr./niski} & \luka{otwarty/zamkn.} & \luka{moduł} \\
+\luka{BUG-02} & \luka{opis} & \luka{} & \luka{} & \luka{} \\
+\luka{BUG-03} & \luka{opis} & \luka{} & \luka{} & \luka{} \\
+\luka{...} & \luka{opis} & \luka{} & \luka{} & \luka{} \\
+\bottomrule
+\end{longtable}
+
+\noindent\textit{Jeśli nie wykryto defektów w danej kategorii, należy zaznaczyć: „Brak wykrytych defektów".}
+
+% ====================================================
+\section{Osiągnięte metryki}
+% ====================================================
+
+\begin{table}[h]
+\centering
+\begin{tabularx}{\textwidth}{Y c c}
+\toprule
+\textbf{Metryka} & \textbf{Cel (Plan Testów)} & \textbf{Osiągnięto} \\
+\midrule
+Wskaźnik zdawalności testów & $\geq 95\%$ & \luka{\%} \\
+Pokrycie testami kluczowych modułów & $\geq 80\%$ & \luka{\%} \\
+Liczba defektów krytycznych / wysokich (otwarte) & $0$ & \luka{liczba} \\
+Liczba defektów ogółem (per moduł) & --- & \luka{liczba} \\
+Gęstość defektów & --- & \luka{wartość} \\
+Defekty otwarte vs. zamknięte & --- & \luka{x / y} \\
+Średni czas naprawy defektu & --- & \luka{wartość} \\
+Wskaźnik regresji & --- & \luka{wartość} \\
+\bottomrule
+\end{tabularx}
+\caption{Zestawienie metryk planowanych i osiągniętych.}
+\end{table}
+
+\subsection{Ocena kryteriów wyjścia (Exit Criteria)}
+\begin{table}[h]
+\centering
+\begin{tabularx}{\textwidth}{Y c}
+\toprule
+\textbf{Kryterium wyjścia} & \textbf{Spełnione?} \\
+\midrule
+Wykonano 100\% zaplanowanych przypadków testowych & \luka{Tak / Nie} \\
+Wskaźnik zdawalności $\geq 95\%$ & \luka{Tak / Nie} \\
+Brak otwartych defektów krytycznych i wysokich & \luka{Tak / Nie} \\
+Pokrycie kluczowych modułów $\geq 80\%$ & \luka{Tak / Nie} \\
+Raport końcowy przygotowany i zaakceptowany & \luka{Tak / Nie} \\
+\bottomrule
+\end{tabularx}
+\caption{Weryfikacja spełnienia kryteriów wyjścia z Planu Testów.}
+\end{table}
+
+% ====================================================
+\section{Podsumowanie}
+% ====================================================
+
+\subsection{Wnioski}
+\luka{Ogólna ocena jakości systemu na podstawie wyników testów — czy system spełnia kryteria wyjścia i jest gotowy do wdrożenia.}
+
+\subsection{Pozostałe ryzyka}
+\begin{itemize}
+  \item \luka{ryzyko, które nie zostało w pełni zaadresowane wraz z oceną wpływu}
+  \item \luka{kolejne ryzyko lub „Brak istotnych pozostałych ryzyk"}
+\end{itemize}
+
+\subsection{Rekomendacje}
+\begin{itemize}
+  \item \luka{rekomendacja — np. naprawa konkretnych defektów przed wdrożeniem}
+  \item \luka{rekomendacja — np. rozszerzenie pokrycia testami modułu X}
+  \item \luka{rekomendacja — np. testy wydajnościowe przed produkcją}
+\end{itemize}
+
+\vspace{0.8cm}
+\noindent\textbf{Decyzja końcowa:} \luka{Rekomendacja wdrożenia / wdrożenie warunkowe / wstrzymanie}
+
+\vspace{1cm}
+\begin{center}
+\rule{0.5\textwidth}{0.4pt}\\
+\small\textit{Koniec dokumentu — Raport z Testów RehabSense v1.0}
+\end{center}
+
+\end{document}

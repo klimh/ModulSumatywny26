@@ -1,0 +1,379 @@
+\documentclass[11pt,a4paper]{article}
+
+% ====================== PAKIETY ======================
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[polish]{babel}
+\usepackage[a4paper,margin=2.5cm]{geometry}
+\usepackage{lmodern}
+\usepackage{graphicx}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, fit, backgrounds}
+\usepackage[hidelinks]{hyperref}
+\usepackage{caption}
+
+% ====================== KOLORY ======================
+\definecolor{primary}{RGB}{30,90,150}
+\definecolor{accent}{RGB}{0,140,120}
+\definecolor{lightgray}{RGB}{240,242,245}
+\definecolor{midgray}{RGB}{200,205,210}
+\definecolor{riskhigh}{RGB}{200,60,60}
+\definecolor{riskmed}{RGB}{220,150,40}
+\definecolor{risklow}{RGB}{90,160,90}
+
+% ====================== STYLE NAGŁÓWKÓW ======================
+\titleformat{\section}
+  {\normalfont\Large\bfseries\color{primary}}
+  {\thesection.}{0.6em}{}
+\titleformat{\subsection}
+  {\normalfont\large\bfseries\color{accent}}
+  {\thesubsection}{0.6em}{}
+
+\titlespacing*{\section}{0pt}{18pt}{8pt}
+
+% ====================== STOPKA / NAGŁÓWEK ======================
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}
+\fancyhead[L]{\small\color{primary}\textbf{RehabSense}}
+\fancyhead[R]{\small Plan Testów}
+\fancyfoot[L]{\small Politechnika Łódzka}
+\fancyfoot[R]{\small Strona \thepage}
+
+% ====================== POMOCNICZE ======================
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcommand{\sysname}{\textbf{RehabSense}}
+
+\setlist{itemsep=2pt, topsep=3pt}
+
+% ====================== STRONA TYTUŁOWA ======================
+\begin{document}
+
+\begin{titlepage}
+\centering
+\vspace*{2cm}
+
+{\Huge\bfseries\color{primary} Plan Testów\par}
+\vspace{0.5cm}
+{\LARGE System wspomagania rehabilitacji\par}
+\vspace{0.3cm}
+{\Huge\bfseries RehabSense\par}
+
+\vspace{1.5cm}
+\rule{0.7\textwidth}{1.2pt}\par
+\vspace{1.5cm}
+
+{\large\textbf{Instytucja:} Politechnika Łódzka\par}
+\vspace{0.4cm}
+{\large\textbf{Dokument:} Plan Testów (Test Plan)\par}
+\vspace{0.4cm}
+{\large\textbf{Wersja:} 1.0\par}
+\vspace{0.4cm}
+{\large\textbf{Data:} 16 czerwca 2026\par}
+
+\vspace{2cm}
+
+\begin{tabular}{ll}
+\textbf{Zespół projektowy:} & Kacper Błaszczyk (Project Manager) \\
+ & Klim Hudzenko (Backend Developer) \\
+ & Maciej Miazek (Frontend Developer) \\
+ & Remigiusz Tomecki (Frontend Developer) \\
+ & Kacper Romek (Tester) \\
+\end{tabular}
+
+\vfill
+{\small Dokument opisuje strategię, zakres oraz harmonogram procesu testowego\\ aplikacji RehabSense.}
+\end{titlepage}
+
+% ====================== SPIS TREŚCI ======================
+\tableofcontents
+\newpage
+
+% ====================================================
+\section{Opis testowanego systemu}
+% ====================================================
+
+\sysname{} to inteligentny interfejs człowiek–maszyna wspomagający proces diagnostyki, terapii oraz rehabilitacji. Aplikacja wykorzystuje sztuczną inteligencję (analizę wizyjną postawy) do precyzyjnej oceny aktywności fizycznej pacjenta, umożliwiając wykonywanie ćwiczeń rehabilitacyjnych bez stałej fizycznej obecności terapeuty.
+
+\subsection{Główne grupy użytkowników}
+\begin{itemize}
+  \item \textbf{Pacjent} — wykonuje sesje ćwiczeń analizowane przez AI, przegląda statystyki i postępy, zdobywa passy (grywalizacja) oraz komunikuje się z fizjoterapeutą przez czat.
+  \item \textbf{Fizjoterapeuta} — zarządza listą pacjentów, tworzy spersonalizowane plany rehabilitacji, monitoruje postępy i poprawność ćwiczeń, wystawia certyfikaty.
+  \item \textbf{Administrator} — zarządza kontami i konfiguracją systemu.
+  \item \textbf{Systemy zewnętrzne} — integrują się przez dedykowane API (\texttt{/external/v1}) zabezpieczone kluczem API.
+\end{itemize}
+
+\subsection{Architektura systemu}
+System został zaprojektowany w modelu trójwarstwowym (klient–serwer). Frontend (Next.js) komunikuje się z backendem (FastAPI) poprzez REST API; analiza pozy odbywa się po stronie klienta z użyciem biblioteki MediaPipe, a wyniki zapisywane są w warstwie danych opartej o hostowaną, serverlessową bazę \textbf{NeonDB} (PostgreSQL).
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[
+  node distance=0.9cm and 1.4cm,
+  box/.style={rectangle, rounded corners, draw=primary, thick, fill=lightgray,
+              minimum width=3.2cm, minimum height=1cm, align=center, font=\small},
+  ext/.style={rectangle, rounded corners, draw=accent, thick, fill=white,
+              minimum width=2.8cm, minimum height=0.9cm, align=center, font=\small},
+  arr/.style={-{Stealth[length=3mm]}, thick, draw=primary!70},
+]
+
+% Warstwa prezentacji
+\node[box] (front) {\textbf{Warstwa Prezentacji}\\ Frontend (Next.js)\\ \footnotesize Pacjent / Fizjoterapeuta / Admin};
+
+% Moduł AI
+\node[ext, below left=1.3cm and -0.5cm of front] (ai) {\textbf{Moduł AI}\\ MediaPipe + DTW\\ \footnotesize (analiza pozy w przeglądarce)};
+
+% Backend
+\node[box, below=2.6cm of front] (back) {\textbf{Warstwa Logiki}\\ Backend (FastAPI / Python)\\ \footnotesize Auth, Pacjent, Fizjo, Admin, Chat, Passy};
+
+% Baza danych
+\node[box, below=1.2cm of back] (db) {\textbf{Warstwa Danych}\\ NeonDB (PostgreSQL) + SQLAlchemy\\ \footnotesize profile, wyniki, plany, wiadomości};
+
+% Integracje zewnętrzne
+\node[ext, right=2.2cm of back] (cloud) {\textbf{Usługi zewn.}\\ Cloudinary\\ \footnotesize (multimedia)};
+\node[ext, right=2.2cm of front] (extapi) {\textbf{API zewn.}\\ \texttt{/external/v1}\\ \footnotesize (klucz API)};
+
+% Strzałki
+\draw[arr] (front) -- node[right, font=\scriptsize] {REST / JWT} (back);
+\draw[arr] (back) -- (db);
+\draw[arr] (ai.south) |- (back.west);
+\draw[arr] (back.east) -- (cloud.west);
+\draw[arr] (extapi.south) -- (back.north east);
+
+\end{tikzpicture}
+\caption{Architektura trójwarstwowa systemu RehabSense.}
+\end{figure}
+
+\subsection{Stack technologiczny}
+\begin{itemize}
+  \item \textbf{Frontend:} Next.js 16, React 19, Tailwind CSS, Zustand (stan), Chart.js (wykresy).
+  \item \textbf{Backend:} Python, FastAPI, SQLAlchemy, Pydantic; uwierzytelnianie JWT (PyJWT), hashowanie haseł (bcrypt).
+  \item \textbf{Baza danych:} NeonDB — hostowany, serverlessowy PostgreSQL (połączenie przez \texttt{DATABASE\_URL}, \texttt{pool\_pre\_ping}); lokalnie/testowo SQLite jako fallback.
+  \item \textbf{Sztuczna inteligencja:} Google MediaPipe (analiza postawy) oraz algorytm DTW (\texttt{dtwAnalyzer.js}) do porównywania ruchu.
+  \item \textbf{Integracje:} Cloudinary (przechowywanie multimediów), zewnętrzne API z autoryzacją kluczem.
+  \item \textbf{Wdrożenie:} Docker / Docker Compose (usługi \texttt{backend} i \texttt{frontend}).
+\end{itemize}
+
+% ====================================================
+\section{Cel testów}
+% ====================================================
+
+Głównym celem procesu testowego jest \textbf{weryfikacja zgodności aplikacji RehabSense z wymaganiami funkcjonalnymi i niefunkcjonalnymi} oraz potwierdzenie, że system jest bezpieczny, stabilny i gotowy do wdrożenia produkcyjnego.
+
+\subsection{Cele szczegółowe}
+\begin{enumerate}
+  \item Potwierdzenie poprawności kluczowych procesów biznesowych: rejestracja i logowanie, parowanie pacjent–fizjoterapeuta, tworzenie planów rehabilitacji, przebieg sesji ćwiczeń oraz naliczanie passy.
+  \item Weryfikacja mechanizmów bezpieczeństwa — uwierzytelniania (JWT), autoryzacji opartej na rolach (\texttt{RoleChecker}) oraz bezpiecznego przechowywania haseł.
+  \item Zapewnienie poprawnej integracji warstwy frontendu z backendowym REST API oraz integracji z usługami zewnętrznymi.
+  \item Wykrycie i raportowanie defektów na możliwie wczesnym etapie, aby ograniczyć koszt ich naprawy.
+  \item Potwierdzenie wiarygodności analizy ruchu (AI/DTW) w zakresie oczekiwanej dokładności oceny ćwiczeń.
+  \item Dostarczenie obiektywnych metryk jakości umożliwiających podjęcie decyzji o wdrożeniu.
+\end{enumerate}
+
+% ====================================================
+\section{Zakres testów}
+% ====================================================
+
+\subsection{Komponenty objęte testowaniem (w zakresie)}
+\begin{itemize}
+  \item \textbf{Moduł autoryzacji} — rejestracja, logowanie, generowanie i walidacja tokenów JWT, kontrola dostępu wg ról.
+  \item \textbf{Moduł Pacjenta} — sesje ćwiczeń, panel statystyk, historia rehabilitacji, system passy.
+  \item \textbf{Moduł Fizjoterapeuty} — zarządzanie pacjentami, tworzenie i przypisywanie planów rehabilitacji, monitoring postępów, certyfikaty.
+  \item \textbf{Moduł parowania (pairing)} — wysyłanie i obsługa zapytań, automatyczne wygaszanie i ponowne przypisanie żądań.
+  \item \textbf{Moduł czatu} — komunikacja tekstowa pacjent–fizjoterapeuta.
+  \item \textbf{Moduł passy (streaks)} — naliczanie, resetowanie wygasłej passy, przypomnienia, odznaki (badges).
+  \item \textbf{Moduł postępów (progress)} — agregacja i prezentacja wyników ćwiczeń, notatki.
+  \item \textbf{Moduł AI / analizy pozy} — \texttt{PoseDetector.js}, \texttt{dtwAnalyzer.js} (poprawność porównywania ruchu).
+  \item \textbf{API zewnętrzne} (\texttt{/external/v1}) — autoryzacja kluczem API.
+  \item \textbf{Warstwa danych} — poprawność modeli i relacji (SQLAlchemy).
+\end{itemize}
+
+\subsection{Elementy wyłączone z testowania (poza zakresem)}
+\begin{itemize}
+  \item Testy wewnętrznej implementacji bibliotek zewnętrznych (MediaPipe, FastAPI, Cloudinary) — przyjmujemy je jako zaufane.
+  \item Testy wydajnościowe i obciążeniowe na pełną skalę produkcyjną (poza podstawowym sprawdzeniem czasów odpowiedzi API).
+  \item Testy infrastruktury chmurowej i konfiguracji sieciowej hostingu produkcyjnego.
+  \item Pełna zgodność ze standardami dostępności (WCAG) — poza zakresem bieżącej iteracji.
+  \item Dokładność sprzętowa kamer użytkownika (różnice jakości obrazu wynikające ze sprzętu klienckiego).
+\end{itemize}
+
+% ====================================================
+\section{Strategie testowe}
+% ====================================================
+
+\subsection{Poziomy testów}
+\begin{itemize}
+  \item \textbf{Testy jednostkowe (unit)} — izolowana weryfikacja pojedynczych funkcji i klas (np. \texttt{test\_security.py} — hashowanie haseł, generowanie JWT, \texttt{RoleChecker}; \texttt{test\_streaks.py} — logika passy; \texttt{test\_pairing.py} — logika parowania).
+  \item \textbf{Testy integracyjne (integration)} — weryfikacja współpracy komponentów przez REST API z użyciem \texttt{TestClient} FastAPI oraz bazy w pamięci (\texttt{test\_integration\_api.py}), np. pełny przepływ rejestracji i logowania.
+  \item \textbf{Testy systemowe (E2E)} — sprawdzenie kompletnych scenariuszy użytkownika przez interfejs (frontend + backend), np. ścieżka: rejestracja → parowanie → przypisanie planu → sesja → naliczenie passy.
+\end{itemize}
+
+\subsection{Typy testów}
+\begin{itemize}
+  \item \textbf{Funkcjonalne} — zgodność zachowania z wymaganiami biznesowymi.
+  \item \textbf{Bezpieczeństwa} — uwierzytelnianie, autoryzacja ról, ochrona danych (np. próba dostępu pacjenta do zasobów fizjoterapeuty → 403).
+  \item \textbf{Regresji} — uruchamiane po każdej zmianie kodu (zestaw \texttt{pytest}).
+  \item \textbf{Integracji API} — kontrakt żądanie/odpowiedź, kody statusu HTTP, walidacja Pydantic.
+  \item \textbf{Testowanie UI} — interfejs (maksymalnie 5 kliknięć do kluczowych funkcji), responsywność.
+\end{itemize}
+
+\subsection{Techniki testowania}
+\begin{itemize}
+  \item \textbf{Black-box:} klasy równoważności i wartości brzegowe (np. walidacja e-mail, długość hasła), tablice decyzyjne dla uprawnień ról, testowanie scenariuszowe.
+  \item \textbf{White-box:} pokrycie instrukcji i gałęzi w testach jednostkowych logiki biznesowej (passy, parowanie, bezpieczeństwo).
+\end{itemize}
+
+\subsection{Narzędzia}
+\begin{itemize}
+  \item \texttt{pytest} oraz FastAPI \texttt{TestClient} — testy jednostkowe i integracyjne backendu.
+  \item Postman — testy odpowiedzi z API.
+  \item Docker Compose — uruchomienie środowiska zbliżonego do produkcyjnego.
+  \item GitHub Actions — workflows, CI
+\end{itemize}
+
+% ====================================================
+\section{Środowiska testowe}
+% ====================================================
+
+\subsection{Wymagania środowiskowe}
+\begin{table}[h]
+\centering
+\begin{tabularx}{\textwidth}{>{\bfseries}p{3.5cm} Y}
+\toprule
+\textbf{Element} & \textbf{Wymaganie} \\
+\midrule
+System operacyjny & Windows 10/11, Linux (kontenery Docker) \\
+Backend & Python 3.11+, FastAPI 0.135, SQLAlchemy 2.0 \\
+Frontend & Node.js 20+, Next.js 16, React 19 \\
+Baza danych & NeonDB (hostowany, serverlessowy PostgreSQL); SQLite jako fallback lokalny/testowy \\
+Przeglądarki & Google Chrome, Firefox, Safari \\
+Konteneryzacja & Docker Compose \\
+Sprzęt & Laptop/PC, Kamera internetowa\\
+\bottomrule
+\end{tabularx}
+\caption{Wymagane środowisko testowe.}
+\end{table}
+
+\subsection{Lista zależności}
+\begin{itemize}
+  \item \textbf{Dane testowe:} predefiniowane konta (pacjent, fizjoterapeuta), przykładowe plany rehabilitacji i ćwiczenia, nagrania referencyjne ruchu dla modułu AI.
+  \item \textbf{Konta:} konto administratora (seedowane przy starcie: login \texttt{admin}), konta testowe dla każdej roli, klucz API dla integracji zewnętrznej.
+  \item \textbf{Integracje:} konto Cloudinary, JWT.
+  \item \textbf{Baza danych:} dostęp do hostowanej instancji NeonDB (łańcuch połączenia \texttt{DATABASE\_URL}); osobna baza/branch testowy w NeonDB, aby odizolować dane testowe od produkcyjnych.
+\end{itemize}
+
+% ====================================================
+\section{Ryzyka i działania mitygujące}
+% ====================================================
+
+\begin{longtable}{p{0.30\textwidth} c p{0.50\textwidth}}
+\toprule
+\textbf{Ryzyko} & \textbf{Poziom} & \textbf{Działania mitygujące} \\
+\midrule
+\endhead
+Niska dokładność analizy ruchu AI (MediaPipe/DTW) przy słabym oświetleniu lub kamerze
+ & \textcolor{riskhigh}{\textbf{Wysoki}}
+ & Testy w zróżnicowanych warunkach; zdefiniowanie progów tolerancji; komunikaty ostrzegawcze dla użytkownika o jakości obrazu. \\
+\addlinespace
+Luki w autoryzacji (dostęp do cudzych danych medycznych)
+ & \textcolor{riskhigh}{\textbf{Wysoki}}
+ & Priorytetowe testy bezpieczeństwa ról (\texttt{RoleChecker}); testy negatywne (403/401); przegląd kodu endpointów. \\
+\addlinespace
+Błędy w naliczaniu passy / resetowaniu wygasłych (logika czasowa, scheduler)
+ & \textcolor{riskmed}{\textbf{Średni}}
+ & Testy jednostkowe z manipulacją czasem; pokrycie przypadków brzegowych (północ, strefy czasowe). \\
+\addlinespace
+Niespójność kontraktu API między frontendem a backendem
+ & \textcolor{riskmed}{\textbf{Średni}}
+ & Testy integracyjne kontraktu; walidacja schematów Pydantic; wspólna dokumentacja OpenAPI. \\
+\addlinespace
+Niedostępność lub opóźnienia hostowanej bazy NeonDB (zimny start serverless, limity połączeń, sieć)
+ & \textcolor{riskmed}{\textbf{Średni}}
+ & Użycie \texttt{pool\_pre\_ping} i ponawianie połączeń; osobny branch testowy NeonDB; lokalny fallback SQLite dla testów jednostkowych. \\
+\addlinespace
+\bottomrule
+\end{longtable}
+
+% ====================================================
+\section{Metryki oraz kryteria wejścia/wyjścia}
+% ====================================================
+
+\subsection{Zbierane metryki}
+\begin{itemize}
+  \item \textbf{Liczba defektów na funkcję/moduł} — z podziałem na priorytety (krytyczny / wysoki / średni / niski).
+  \item \textbf{Gęstość defektów} — liczba defektów względem rozmiaru/liczby scenariuszy modułu.
+  \item \textbf{Pokrycie testami} — procent pokrycia kodu backendu testami \texttt{pytest}.
+  \item \textbf{Wskaźnik zdawalności} — \% testów zakończonych powodzeniem.
+  \item \textbf{Liczba defektów otwartych vs. zamkniętych} — tempo usuwania błędów w czasie.
+  \item \textbf{Czas naprawy defektu} — średni czas od zgłoszenia do zamknięcia.
+  \item \textbf{Wskaźnik regresji} — liczba nowych defektów ujawnionych po zmianach.
+\end{itemize}
+
+\subsection{Kryteria wejścia (Entry Criteria)}
+\begin{itemize}
+  \item Plan testów został zatwierdzony, a środowisko testowe jest skonfigurowane i dostępne.
+  \item Funkcjonalności przeznaczone do testów zostały zaimplementowane i przeszły wewnętrzny build.
+  \item Dane testowe oraz konta dla wszystkich ról są przygotowane.
+  \item Kod kompiluje się i uruchamia bez błędów krytycznych blokujących start aplikacji.
+\end{itemize}
+
+\subsection{Kryteria wyjścia (Exit Criteria)}
+\begin{itemize}
+  \item Wykonano 100\% zaplanowanych przypadków testowych.
+  \item Wskaźnik zdawalności testów wynosi co najmniej \textbf{95\%}.
+  \item Brak otwartych defektów o priorytecie \textbf{krytycznym} i \textbf{wysokim}.
+  \item Defekty o priorytecie średnim i niskim są udokumentowane i zaakceptowane przez PM.
+  \item Pokrycie testami kluczowych modułów (autoryzacja, parowanie, passy) wynosi co najmniej \textbf{80\%}.
+  \item Raport końcowy z testów został przygotowany i zaakceptowany.
+\end{itemize}
+
+% ====================================================
+\section{Harmonogram i odpowiedzialności}
+% ====================================================
+
+\subsection{Harmonogram procesu testowego}
+Faza testowania przypada na tygodnie 17–20 harmonogramu projektu.
+
+\begin{longtable}{c p{0.34\textwidth} p{0.40\textwidth}}
+\toprule
+\textbf{Etap} & \textbf{Zakres} & \textbf{Termin / Tydzień} \\
+\midrule
+\endhead
+1 & Przygotowanie planu testów i środowiska & Tydzień 17 \\
+2 & Projektowanie przypadków testowych & Tydzień 17 \\
+3 & Testy jednostkowe (backend) & Tydzień 18 \\
+4 & Testy integracyjne API & Tydzień 18 \\
+5 & Testy bezpieczeństwa & Tydzień 19 \\
+6 & Testy modułu AI / analizy ruchu & Tydzień 19 \\
+7 & Testy regresji i retesty defektów & Tydzień 20 \\
+8 & Raport końcowy & Tydzień 20 \\
+\bottomrule
+\end{longtable}
+
+\subsection{Odpowiedzialności zespołu}
+\begin{table}[h]
+\centering
+\begin{tabularx}{\textwidth}{>{\bfseries}p{3.6cm} p{3.2cm} Y}
+\toprule
+\textbf{Osoba} & \textbf{Rola} & \textbf{Odpowiedzialność} \\
+\midrule
+Kacper Romek & Tester & Autor i wykonawca przypadków testowych, raportowanie defektów, raport końcowy. \\
+Kacper Błaszczyk & Project Manager & Akceptacja planu i kryteriów wyjścia, priorytetyzacja defektów, nadzór nad harmonogramem. \\
+Klim Hudzenko & Backend Developer & Testy jednostkowe backendu, naprawa defektów backendu, wsparcie środowiska testowego. \\
+Maciej Miazek & Frontend Developer & Testy interfejsu i modułu AI, naprawa defektów frontendu. \\
+Remigiusz Tomecki & Frontend Developer & Testy interfejsu i modułu AI, naprawa defektów frontendu. \\
+\bottomrule
+\end{tabularx}
+\caption{Tabela odpowiedzialności zespołu testowego.}
+\end{table}
+
+\end{document}
