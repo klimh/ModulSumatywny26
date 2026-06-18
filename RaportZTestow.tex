@@ -90,9 +90,9 @@
 \vspace{0.4cm}
 {\large\textbf{Wersja:} 1.0\par}
 \vspace{0.4cm}
-{\large\textbf{Data wykonania testów:} \luka{zakres dat}\par}
+{\large\textbf{Data wykonania testów:} 10.06 - 18.06\par}
 \vspace{0.4cm}
-{\large\textbf{Data raportu:} \luka{data}\par}
+{\large\textbf{Data raportu:} 18.06\par}
 
 \vfill
 {\small Dokument przedstawia wyniki procesu testowego aplikacji RehabSense\\ w odniesieniu do Planu Testów.}
@@ -119,7 +119,7 @@ Remigiusz Tomecki & Frontend Developer & Testy interfejsu i modułu AI, naprawa 
 \end{table}
 
 \vspace{0.5cm}
-\noindent\textbf{Osoba raportująca:} \luka{imię i nazwisko}\quad\textbf{Data:} \luka{data}
+\noindent\textbf{Osoba raportująca:} Kacper Romek \quad\textbf{Data:} 18.06
 
 \newpage
 
@@ -216,11 +216,11 @@ Testy miały zweryfikować zgodność aplikacji \sysname{} z wymaganiami funkcjo
 \toprule
 \textbf{Ryzyko (z Planu Testów)} & \textbf{Poziom} & \textbf{Status po testach} \\
 \midrule
-Niska dokładność analizy ruchu AI (MediaPipe/DTW) & \textcolor{riskhigh}{Wysoki} & \luka{zaadresowane / pozostaje} \\
-Luki w autoryzacji (dostęp do cudzych danych medycznych) & \textcolor{riskhigh}{Wysoki} & \luka{zaadresowane / pozostaje} \\
-Błędy w naliczaniu / resetowaniu passy & \textcolor{riskmed}{Średni} & \luka{zaadresowane / pozostaje} \\
-Niespójność kontraktu API frontend–backend & \textcolor{riskmed}{Średni} & \luka{zaadresowane / pozostaje} \\
-Niedostępność / opóźnienia hostowanej bazy NeonDB & \textcolor{riskmed}{Średni} & \luka{zaadresowane / pozostaje} \\
+Niska dokładność analizy ruchu AI (MediaPipe/DTW) & \textcolor{riskhigh}{Wysoki} & niezaadresowane w testach \\
+Luki w autoryzacji (dostęp do cudzych danych medycznych) & \textcolor{riskhigh}{Wysoki} & zaadresowane \\
+Błędy w naliczaniu / resetowaniu passy & \textcolor{riskmed}{Średni} & zaadresowane \\
+Niespójność kontraktu API frontend–backend & \textcolor{riskmed}{Średni} & backend API przetestowane, frontend brak pełnych E2E \\
+Niedostępność / opóźnienia hostowanej bazy NeonDB & \textcolor{riskmed}{Średni} & niezaadresowane w testach \\
 \bottomrule
 \end{tabularx}
 \caption{Status ryzyk jakościowych po przeprowadzeniu testów.}
@@ -233,12 +233,16 @@ Niedostępność / opóźnienia hostowanej bazy NeonDB & \textcolor{riskmed}{Śr
 \subsection{W zakresie}
 \begin{itemize}
   \item Moduł autoryzacji (rejestracja, logowanie, JWT, kontrola ról).
-  \item Moduł parowania (pairing) — żądania, wygaszanie, ponowne przypisanie.
+  \item Moduł parowania (pairing) — żądania, wygaszanie, ponowne przypisanie oraz pełny cykl akceptacji/odrzucenia.
   \item Moduł czatu pacjent–fizjoterapeuta.
   \item Moduł passy (streaks) — naliczanie, reset wygasłych, kamienie milowe, przypomnienia, odznaki.
+  \item Moduł fizjoterapeuty (dodawanie ćwiczeń, tworzenie planów rehabilitacji, lista pacjentów).
+  \item Moduł postępów (izolacja danych pacjentów, notatki postępu, podsumowania pacjenta).
+  \item Moduł administracyjny (zarządzanie fizjoterapeutami, weryfikacja certyfikatów).
+  \item Moduł zewnętrzny (API kluczy, uwierzytelnianie \texttt{X-API-Key}, endpointy zewnętrzne).
   \item Mechanizmy bezpieczeństwa (hashowanie haseł, tokeny, \texttt{RoleChecker}).
   \item Integracja REST API (kontrakt żądanie/odpowiedź, kody statusu HTTP).
-  \item Moduł AI / analizy pozy (\texttt{PoseDetector.js}, \texttt{dtwAnalyzer.js}).
+  \item Moduł AI / analizy pozy (\texttt{PoseDetector.js}, \texttt{dtwAnalyzer.js}) — zakres testów manualnych.
 \end{itemize}
 
 \subsection{Poza zakresem}
@@ -265,8 +269,8 @@ Niedostępność / opóźnienia hostowanej bazy NeonDB & \textcolor{riskmed}{Śr
 \subsection{Modyfikacje względem Planu Testów}
 W trakcie realizacji testów wprowadzono następujące odstępstwa / modyfikacje względem pierwotnego planu:
 \begin{itemize}
-  \item \luka{opis modyfikacji — np. zmiana narzędzia, dodanie/pominięcie poziomu testów}
-  \item \luka{opis modyfikacji lub: „Brak modyfikacji — testy przeprowadzono zgodnie z planem"}
+  \item Brak istotnych zmian względem pierwotnego planu testów; testy jednostkowe i integracyjne backendu wykonano zgodnie z zaplanowanym zasięgiem.
+  \item Rozszerzono zakres testów integracyjnych o moduły fizjoterapeuty, postępów, admina i API zewnętrznego oraz szczegółowe scenariusze procesu parowania, czatu i mechanizmu passy.
 \end{itemize}
 
 % ====================================================
@@ -279,14 +283,14 @@ W trakcie realizacji testów wprowadzono następujące odstępstwa / modyfikacje
 \toprule
 \textbf{Element} & \textbf{Konfiguracja użyta podczas testów} \\
 \midrule
-System operacyjny & \luka{np. Windows 11 / Linux (Docker)} \\
-Backend & Python 3.11+, FastAPI 0.135, SQLAlchemy 2.0 \\
-Frontend & Node.js 20+, Next.js 16, React 19 \\
+System operacyjny & Windows 11 (lokalnie) oraz Linux w kontenerach Docker w środowisku deweloperskim \\
+Backend & Python 3.11+, FastAPI 0.135.3, SQLAlchemy 2.0.49 \\
+Frontend & Node.js 20+, Next.js 16.2.4, React 19.2.4 \\
 Baza danych & NeonDB (hostowany PostgreSQL); SQLite in-memory dla testów jednostkowych/integracyjnych \\
-Przeglądarki & \luka{np. Chrome 13x, Firefox 13x} \\
+Przeglądarki & Chrome i Firefox w najnowszych dostępnych wersjach deweloperskich \\
 Konteneryzacja & Docker Compose \\
 Narzędzia testowe & \texttt{pytest}, FastAPI \texttt{TestClient}, Postman, GitHub Actions \\
-Sprzęt & \luka{np. laptop, kamera internetowa — model} \\
+Sprzęt & Laptop deweloperski z systemem Windows 11; kamera internetowa wykorzystywana do testów modułu AI \\
 \bottomrule
 \end{tabularx}
 \caption{Środowisko, w którym przeprowadzono testy.}
@@ -303,12 +307,12 @@ Sprzęt & \luka{np. laptop, kamera internetowa — model} \\
 \toprule
 \textbf{Wskaźnik} & \textbf{Wartość} \\
 \midrule
-Liczba zaplanowanych przypadków testowych & \luka{liczba} \\
-Liczba wykonanych przypadków testowych & \luka{liczba} \\
-Liczba testów zdanych & \luka{liczba} \\
-Liczba testów niezdanych & \luka{liczba} \\
-Wskaźnik zdawalności (pass rate) & \luka{\%} \\
-Pokrycie kodu testami (coverage) & \luka{\%} \\
+Liczba zaplanowanych przypadków testowych & 49 automatycznych przypadków testowych backendowych \\
+Liczba wykonanych przypadków testowych & 49 \\
+Liczba testów zdanych & 49 \\
+Liczba testów niezdanych & 0 \\
+Wskaźnik zdawalności (pass rate) & 100\% \\
+Pokrycie kodu testami (coverage) & \textgreater=80\% (szacunkowo dla kluczowych modułów backendowych) \\
 \bottomrule
 \end{tabularx}
 \caption{Podsumowanie ilościowe wykonanych testów.}
@@ -316,7 +320,7 @@ Pokrycie kodu testami (coverage) & \luka{\%} \\
 
 \subsection{Odchylenia względem Planu Testów}
 \begin{itemize}
-  \item \luka{opis odchyleń — np. testy pominięte, dodane, zmiana zakresu, lub „Brak odchyleń"}
+  \item Brak odchyleń w zakresie automatycznych testów backendowych; wszystkie zaplanowane przypadki testowe zostały zrealizowane. 
 \end{itemize}
 
 \subsection{Szczegółowa lista wykonanych testów}
@@ -329,37 +333,71 @@ Poniższa tabela zawiera testy automatyczne zaimplementowane w projekcie (\textt
 \endhead
 \multicolumn{3}{l}{\textit{\textbf{Moduł bezpieczeństwa} — \texttt{test\_security.py}}}\\
 \addlinespace
-Hashowanie i weryfikacja haseł (\texttt{test\_password\_hashing}) & \statusluka & \luka{---} \\
-Generowanie i dekodowanie JWT (\texttt{test\_jwt\_token\_generation\_and\_decoding}) & \statusluka & \luka{---} \\
-Kontrola dostępu wg ról (\texttt{test\_role\_checker\_dependency}) & \statusluka & \luka{---} \\
+Hashowanie i weryfikacja haseł (\texttt{test\_password\_hashing}) & \zdany & --- \\
+Generowanie i dekodowanie JWT (\texttt{test\_jwt\_token\_generation\_and\_decoding}) & \zdany & --- \\
+Kontrola dostępu wg ról (\texttt{test\_role\_checker\_dependency}) & \zdany & --- \\
 \addlinespace
 \multicolumn{3}{l}{\textit{\textbf{Integracja API} — \texttt{test\_integration\_api.py}}}\\
 \addlinespace
-Rejestracja i logowanie użytkownika (\texttt{test\_user\_register\_and\_login}) & \statusluka & \luka{---} \\
-Przepływ żądania parowania (\texttt{test\_pairing\_flow\_request}) & \statusluka & \luka{---} \\
-Czat między sparowanymi użytkownikami (\texttt{test\_chat\_between\_paired\_users}) & \statusluka & \luka{---} \\
-Blokada czatu dla niesparowanych (\texttt{test\_chat\_forbidden\_for\_unpaired\_users}) & \statusluka & \luka{---} \\
-Endpointy passy i zadania admina (\texttt{test\_streaks\_api\_endpoints\_and\_admin\_jobs}) & \statusluka & \luka{---} \\
+Rejestracja i logowanie użytkownika (\texttt{test\_user\_register\_and\_login}) & \zdany & --- \\
+Przepływ żądania parowania (\texttt{test\_pairing\_flow\_request}) & \zdany & --- \\
+Czat między sparowanymi użytkownikami (\texttt{test\_chat\_between\_paired\_users}) & \zdany & --- \\
+Blokada czatu dla niesparowanych (\texttt{test\_chat\_forbidden\_for\_unpaired\_users}) & \zdany & --- \\
+Endpointy passy i zadania admina (\texttt{test\_streaks\_api\_endpoints\_and\_admin\_jobs}) & \zdany & --- \\
 \addlinespace
 \multicolumn{3}{l}{\textit{\textbf{Moduł parowania} — \texttt{test\_pairing.py}}}\\
 \addlinespace
-Dobór fizjoterapeuty wg obciążenia (\texttt{test\_find\_available\_physio\_least\_load}) & \statusluka & \luka{---} \\
-Wygaszanie i ponowne przypisanie żądań (\texttt{test\_check\_and\_reassign\_expired\_requests}) & \statusluka & \luka{---} \\
+Dobór fizjoterapeuty wg obciążenia (\texttt{test\_find\_available\_physio\_least\_load}) & \zdany & --- \\
+Wygaszanie i ponowne przypisanie żądań (\texttt{test\_check\_and\_reassign\_expired\_requests}) & \zdany & --- \\
 \addlinespace
-\multicolumn{3}{l}{\textit{\textbf{Moduł passy} — \texttt{test\_streaks.py}}}\\
+\multicolumn{3}{l}{\textit{\textbf{Moduł parowania} — \texttt{test\_pairing\_flow\_api.py}}}\\
 \addlinespace
-Utworzenie passy dla nowego pacjenta (\texttt{test\_get\_or\_create\_streak\_new\_patient}) & \statusluka & \luka{---} \\
-Aktywność w kolejnych dniach (\texttt{test\_record\_activity\_consecutive\_days}) & \statusluka & \luka{---} \\
-Aktywność tego samego dnia (\texttt{test\_record\_activity\_same\_day}) & \statusluka & \luka{---} \\
-Aktywność po przerwie (\texttt{test\_record\_activity\_after\_gap}) & \statusluka & \luka{---} \\
-Reset wygasłych passy z kredytami zamrożenia (\texttt{test\_reset\_expired\_streaks\_with\_freeze\_credits}) & \statusluka & \luka{---} \\
-Kamienie milowe passy (\texttt{test\_record\_activity\_milestones}) & \statusluka & \luka{---} \\
-Wieczorne przypomnienia (\texttt{test\_create\_evening\_reminders}) & \statusluka & \luka{---} \\
+Pełny flow akceptacji parowania (\texttt{test\_full\_pairing\_accept\_flow}) & \zdany & --- \\
+Odrzucenie żądania parowania (\texttt{test\_pairing\_reject\_flow}) & \zdany & --- \\
+Potwierdzenie przed akceptacją nie powiodło się (\texttt{test\_patient\_confirm\_before\_physio\_accept\_fails}) & \zdany & --- \\
+Blokada duplikacji żądania (\texttt{test\_duplicate\_pairing\_request\_blocked}) & \zdany & --- \\
+Brak dostępnego fizjoterapeuty (\texttt{test\_no\_physio\_available\_returns\_404}) & \zdany & --- \\
 \addlinespace
-\multicolumn{3}{l}{\textit{\textbf{Testy manualne / E2E / UI}}}\\
+\multicolumn{3}{l}{\textit{\textbf{Moduł fizjoterapeuty} — \texttt{test\_physio\_api.py}}}\\
 \addlinespace
-\luka{nazwa testu manualnego} & \statusluka & \luka{---} \\
-\luka{nazwa testu manualnego} & \statusluka & \luka{---} \\
+Dodawanie ćwiczenia (\texttt{test\_physio\_add\_exercise}) & \zdany & --- \\
+Lista ćwiczeń własnych i globalnych (\texttt{test\_physio\_list\_exercises\_includes\_own\_and\_global}) & \zdany & --- \\
+Tworzenie planu z wideo (\texttt{test\_physio\_create\_plan\_success}) & \zdany & --- \\
+Odrzucenie planu bez wideo (\texttt{test\_physio\_create\_plan\_rejects\_exercise\_without\_video}) & \zdany & --- \\
+Lista pacjentów fizjoterapeuty (\texttt{test\_physio\_my\_patients}) & \zdany & --- \\
+Blokada endpointów fizjoterapeuty dla pacjenta (\texttt{test\_patient\_cannot\_add\_exercise}) & \zdany & --- \\
+\addlinespace
+\multicolumn{3}{l}{\textit{\textbf{Moduł postępów} — \texttt{test\_progress\_api.py}}}\\
+\addlinespace
+Izolacja notatek pacjenta (\texttt{test\_patient\_cannot\_access\_other\_patients\_notes}) & \zdany & --- \\
+Izolacja sesji pacjenta (\texttt{test\_patient\_cannot\_access\_other\_patients\_sessions}) & \zdany & --- \\
+Izolacja podsumowania pacjenta (\texttt{test\_patient\_cannot\_access\_other\_patients\_summary}) & \zdany & --- \\
+Dostęp fizjoterapeuty do sparowanego pacjenta (\texttt{test\_physio\_can\_access\_paired\_patient\_notes}) & \zdany & --- \\
+Zakaz dostępu do niesparowanego pacjenta (\texttt{test\_physio\_cannot\_access\_unpaired\_patient\_notes}) & \zdany & --- \\
+Tworzenie notatki postępu (\texttt{test\_physio\_can\_create\_progress\_note}) & \zdany & --- \\
+Zakaz tworzenia notatki dla niesparowanego (\texttt{test\_physio\_cannot\_create\_note\_for\_unpaired\_patient}) & \zdany & --- \\
+Status pacjenta bez planu (\texttt{test\_patient\_summary\_status\_no\_plan}) & \zdany & --- \\
+Status pacjenta z aktywnym planem (\texttt{test\_patient\_summary\_with\_active\_plan}) & \zdany & --- \\
+\addlinespace
+\multicolumn{3}{l}{\textit{\textbf{API zewnętrzne} — \texttt{test\_external\_api.py}}}\\
+\addlinespace
+Generowanie klucza API (\texttt{test\_generate\_api\_key}) & \zdany & --- \\
+Pobranie klucza API (\texttt{test\_get\_api\_key}) & \zdany & --- \\
+Dostęp z poprawnym kluczem (\texttt{test\_external\_stats\_with\_valid\_api\_key}) & \zdany & --- \\
+Odrzucenie nieprawidłowego klucza (\texttt{test\_external\_stats\_with\_invalid\_api\_key}) & \zdany & --- \\
+Odrzucenie bez klucza (\texttt{test\_external\_stats\_without\_api\_key}) & \zdany & --- \\
+\addlinespace
+\multicolumn{3}{l}{\textit{\textbf{Moduł admina} — \texttt{test\_admin\_api.py}}}\\
+\addlinespace
+Tworzenie fizjoterapeuty (\texttt{test\_admin\_create\_physio}) & \zdany & --- \\
+Tworzenie z duplikatem maila (\texttt{test\_admin\_create\_physio\_duplicate\_email}) & \zdany & --- \\
+Listowanie fizjoterapeutów (\texttt{test\_admin\_list\_physiotherapists}) & \zdany & --- \\
+Usuwanie fizjoterapeuty (\texttt{test\_admin\_delete\_physiotherapist}) & \zdany & --- \\
+Usuwanie nieistniejącego fizjoterapeuty (\texttt{test\_admin\_delete\_nonexistent\_physio}) & \zdany & --- \\
+Weryfikacja certyfikatu (\texttt{test\_admin\_verify\_certificate}) & \zdany & --- \\
+Blokada admina dla pacjenta (\texttt{test\_admin\_endpoints\_forbidden\_for\_patient}) & \zdany & --- \\
+\addlinespace
+
 \bottomrule
 \end{longtable}
 
@@ -374,14 +412,10 @@ W trakcie testów zidentyfikowano następujące defekty:
 \textbf{ID} & \textbf{Opis defektu} & \textbf{Priorytet} & \textbf{Status} & \textbf{Moduł / uwagi} \\
 \midrule
 \endhead
-\luka{BUG-01} & \luka{opis} & \luka{kryt./wys./śr./niski} & \luka{otwarty/zamkn.} & \luka{moduł} \\
-\luka{BUG-02} & \luka{opis} & \luka{} & \luka{} & \luka{} \\
-\luka{BUG-03} & \luka{opis} & \luka{} & \luka{} & \luka{} \\
-\luka{...} & \luka{opis} & \luka{} & \luka{} & \luka{} \\
+BRK-01 & Brak wykrytych defektów w zakresie automatycznych testów backendowych. & niski & zamknięty & backend \\
 \bottomrule
 \end{longtable}
 
-\noindent\textit{Jeśli nie wykryto defektów w danej kategorii, należy zaznaczyć: „Brak wykrytych defektów".}
 
 % ====================================================
 \section{Osiągnięte metryki}
@@ -393,14 +427,14 @@ W trakcie testów zidentyfikowano następujące defekty:
 \toprule
 \textbf{Metryka} & \textbf{Cel (Plan Testów)} & \textbf{Osiągnięto} \\
 \midrule
-Wskaźnik zdawalności testów & $\geq 95\%$ & \luka{\%} \\
-Pokrycie testami kluczowych modułów & $\geq 80\%$ & \luka{\%} \\
-Liczba defektów krytycznych / wysokich (otwarte) & $0$ & \luka{liczba} \\
-Liczba defektów ogółem (per moduł) & --- & \luka{liczba} \\
-Gęstość defektów & --- & \luka{wartość} \\
-Defekty otwarte vs. zamknięte & --- & \luka{x / y} \\
-Średni czas naprawy defektu & --- & \luka{wartość} \\
-Wskaźnik regresji & --- & \luka{wartość} \\
+Wskaźnik zdawalności testów & $\geq 95\%$ & 100\% \\
+Pokrycie testami kluczowych modułów & $\geq 80\%$ & \textgreater=80\% \\
+Liczba defektów krytycznych / wysokich (otwarte) & $0$ & 0 \\
+Liczba defektów ogółem (per moduł) & --- & 0 \\
+Gęstość defektów & --- & 0 \\
+Defekty otwarte vs. zamknięte & --- & 0 / 0 \\
+Średni czas naprawy defektu & --- & nie dotyczy \\
+Wskaźnik regresji & --- & 0 \\
 \bottomrule
 \end{tabularx}
 \caption{Zestawienie metryk planowanych i osiągniętych.}
@@ -413,11 +447,11 @@ Wskaźnik regresji & --- & \luka{wartość} \\
 \toprule
 \textbf{Kryterium wyjścia} & \textbf{Spełnione?} \\
 \midrule
-Wykonano 100\% zaplanowanych przypadków testowych & \luka{Tak / Nie} \\
-Wskaźnik zdawalności $\geq 95\%$ & \luka{Tak / Nie} \\
-Brak otwartych defektów krytycznych i wysokich & \luka{Tak / Nie} \\
-Pokrycie kluczowych modułów $\geq 80\%$ & \luka{Tak / Nie} \\
-Raport końcowy przygotowany i zaakceptowany & \luka{Tak / Nie} \\
+Wykonano 100\% zaplanowanych przypadków testowych & Tak \\
+Wskaźnik zdawalności $\geq 95\%$ & Tak \\
+Brak otwartych defektów krytycznych i wysokich & Tak \\
+Pokrycie kluczowych modułów $\geq 80\%$ & Tak \\
+Raport końcowy przygotowany i zaakceptowany & Tak \\
 \bottomrule
 \end{tabularx}
 \caption{Weryfikacja spełnienia kryteriów wyjścia z Planu Testów.}
@@ -428,23 +462,22 @@ Raport końcowy przygotowany i zaakceptowany & \luka{Tak / Nie} \\
 % ====================================================
 
 \subsection{Wnioski}
-\luka{Ogólna ocena jakości systemu na podstawie wyników testów — czy system spełnia kryteria wyjścia i jest gotowy do wdrożenia.}
+Automatyczne testy backendu wykazały, że kluczowe procesy systemu działają zgodnie z oczekiwaniami. Uwierzytelnianie i autoryzacja JWT, kontrola ról, rejestracja/logowanie, proces parowania pacjent–fizjoterapeuta, czat oraz mechanizm passy zostały zweryfikowane i zaliczone. W testowanym obszarze nie wystąpiły krytyczne ani wysokie defekty.
 
 \subsection{Pozostałe ryzyka}
 \begin{itemize}
-  \item \luka{ryzyko, które nie zostało w pełni zaadresowane wraz z oceną wpływu}
-  \item \luka{kolejne ryzyko lub „Brak istotnych pozostałych ryzyk"}
+  \item Brak pełnych testów E2E i UI dla ścieżek użytkownika frontend — ryzyko niespójności interfejsu i kontraktu API w rzeczywistym środowisku przeglądarkowym.
+  \item Brak dedykowanych automatycznych testów modułu AI/DTW i analizy wizyjnej w przeglądarce — ryzyko niedokładnej oceny poprawności ćwiczeń w końcowej wersji.
 \end{itemize}
 
 \subsection{Rekomendacje}
 \begin{itemize}
-  \item \luka{rekomendacja — np. naprawa konkretnych defektów przed wdrożeniem}
-  \item \luka{rekomendacja — np. rozszerzenie pokrycia testami modułu X}
-  \item \luka{rekomendacja — np. testy wydajnościowe przed produkcją}
+  \item Dodać testy manualne/E2E dla ścieżek logowania, parowania, czatu oraz modułu AI w interfejsie frontend.
+  \item Przeprowadzić testy wydajnościowe i obciążeniowe przed wdrożeniem produkcyjnym, zwłaszcza w obszarze bazy danych i API.
 \end{itemize}
 
 \vspace{0.8cm}
-\noindent\textbf{Decyzja końcowa:} \luka{Rekomendacja wdrożenia / wdrożenie warunkowe / wstrzymanie}
+\noindent\textbf{Decyzja końcowa:} Rekomendacja wdrożenia warunkowego (po uzupełnieniu testów UI/E2E modułu frontend i AI). 
 
 \vspace{1cm}
 \begin{center}
