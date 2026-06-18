@@ -182,6 +182,7 @@ System zaprojektowano w modelu trójwarstwowym (klient–serwer). Frontend (Next
   \item \textbf{Google MediaPipe} — biblioteka wizyjna (tasks-vision) ładowana po stronie klienta.
 \end{itemize}
 
+\newpage
 % ====================================================
 \section{Diagramy przypadków użycia}
 % ====================================================
@@ -191,100 +192,137 @@ Poniższy diagram przedstawia główne przypadki użycia systemu \sysname{} oraz
 \centering
 \resizebox{0.98\textwidth}{!}{%
 \begin{tikzpicture}
-% --- Granica systemu ---
-\node[draw=midgray, thick, rounded corners, minimum width=9cm, minimum height=11.5cm, label={[font=\bfseries\small,primary]north:System RehabSense}] (sys) at (0,0) {};
+
+% --- Definicja nowej ikony dla Systemu (sześcian zamiast głowy) ---
+\tikzset{
+    systempic/.pic={
+        % Głowa (sześcian izometryczny)
+        \draw[thick] (0,0) -- (-0.25, 0.15) -- (-0.25, 0.45) -- (0, 0.6) -- (0.25, 0.45) -- (0.25, 0.15) -- cycle; 
+        \draw[thick] (0,0) -- (0, 0.3); 
+        \draw[thick] (-0.25, 0.45) -- (0, 0.3) -- (0.25, 0.45); 
+        % Tułów
+        \draw[thick] (0,0) -- (0,-0.6);
+        % Ramiona (przecinające się u podstawy sześcianu)
+        \draw[thick] (-0.4,0) -- (0.4,0);
+        % Nogi
+        \draw[thick] (-0.3,-1) -- (0,-0.6) -- (0.3,-1);
+    }
+}
+
+% --- Granica systemu (standardowa zakładka UML) ---
+% Zwiększono szerokość ramki z 8.5 na 9.5 z prawej strony
+\draw[thick] (-5.5, -8.0) rectangle (10, 7.5);
+\draw[thick, fill=white] (-5.5, 7.5) -- (-5.5, 8.3) -- (-2.5, 8.3) -- (-2.2, 7.5) -- cycle;
+\node[font=\bfseries, right] at (-5.3, 7.9) {RehabSense};
 
 % --- Przypadki użycia (wewnątrz) ---
-\node[uc] (reg)   at (0, 4.2)  {Rejestracja \\ i logowanie};
-\node[uc] (pair)  at (0, 2.6)  {Parowanie \\ pacjent–fizjoterapeuta};
-\node[uc] (sess)  at (0, 1.0)  {Sesja rehabilitacji \\ (analiza AI)};
-\node[uc] (prog)  at (0, -0.6) {Przeglądanie \\ postępów};
-\node[uc] (chat)  at (0, -2.2) {Czat \\ pacjent–fizjoterapeuta};
-\node[uc] (plan)  at (0, -3.8) {Tworzenie planu \\ rehabilitacji};
-\node[uc] (mng)   at (0, -5.0) {Zarządzanie \\ fizjoterapeutami};
+\node[uc] (passy)        at (0.0, 6.5)   {Wyświetlanie \\ passy};
+\node[uc] (sesja)        at (1.5, 4.5)   {Wykonywanie sesji \\ ćwiczeń};
+% Przesunięto X z 6.0 na 7.5, by wydłużyć strzałki include
+\node[uc] (sledzenie)    at (7.5, 5.5)   {Śledzenie poprawności \\ wykonywanych ćwiczeń};
+\node[uc] (aktualizacja) at (7.5, 3.0)   {Aktualizacja postępu \\ rehabilitacji};
+\node[uc] (plan)         at (2.5, 1.5)   {Wyświetlanie planu \\ rehabilitacji};
+\node[uc] (polaczenie)   at (-1.0, 2.5)  {Połączenie z \\ fizjoterapeutą};
+\node[uc] (statystyki)   at (-3.0, 0.5)  {Wyświetlanie \\ statystyk \\ rehabilitacji};
+\node[uc] (komunikacja)  at (1.0, -1.0)  {Komunikacja z \\ pacjentem/ \\ fizjoterapeutą};
+\node[uc] (tworzenie)    at (2.5, -3.0)  {Tworzenie planów \\ ćwiczeń};
+\node[uc] (lista)        at (-2.5, -4.5) {Przeglądanie listy \\ pacjentów};
+\node[uc] (admin_uc)     at (0.0, -6.5)  {Dodawanie profili \\ fizjoterapeutów};
 
 % --- Aktorzy ---
-\pic at (-7,2.0) {actorpic};
-\node[font=\small\bfseries] at (-7,0.6) {Pacjent};
-\pic at (7,2.0) {actorpic};
-\node[font=\small\bfseries] at (7,0.6) {Fizjoterapeuta};
-\pic at (7,-4.0) {actorpic};
-\node[font=\small\bfseries,align=center] at (7,-5.4) {Administrator};
-\pic at (-7,-3.4) {actorpic};
-\node[font=\small\bfseries] at (-7,-4.8) {System (AI)};
+\pic at (-7.5, 3.5) {actorpic};
+\node[font=\small\bfseries] at (-7.5, 1.3) {Pacjent}; 
+
+\pic at (-7.5, -2.0) {actorpic};
+\node[font=\small\bfseries] at (-7.5, -4.2) {Fizjoterapeuta}; 
+
+\pic at (-7.5, -7.0) {actorpic};
+\node[font=\small\bfseries] at (-7.5, -9.2) {Administrator}; 
+
+% Przesunięto System z 10.0 na 11.5, by dopasować się do nowej szerokości ramki
+\pic at (11.5, 4.25) {systempic};
+\node[font=\small\bfseries] at (11.5, 2.45) {System}; 
 
 % --- Powiązania Pacjent ---
-\draw (-6.6,1.5) -- (reg.west);
-\draw (-6.6,1.5) -- (pair.west);
-\draw (-6.6,1.5) -- (sess.west);
-\draw (-6.6,1.5) -- (prog.west);
-\draw (-6.6,1.5) -- (chat.west);
-% --- Powiązania System(AI) ---
-\draw (-6.6,-3.9) -- (sess.west);
-\draw (-6.6,-3.9) -- (pair.west);
+\draw (-7.1, 3.5) -- (passy.west);
+\draw (-7.1, 3.5) -- (sesja.west);
+\draw (-7.1, 3.5) -- (plan.west);
+\draw (-7.1, 3.5) -- (polaczenie.west);
+\draw (-7.1, 3.5) -- (statystyki.west);
+\draw (-7.1, 3.5) -- (komunikacja.west);
+
 % --- Powiązania Fizjoterapeuta ---
-\draw (6.6,1.5) -- (plan.east);
-\draw (6.6,1.5) -- (chat.east);
-\draw (6.6,1.5) -- (prog.east);
-\draw (6.6,1.5) -- (reg.east);
+\draw (-7.1, -2.0) -- (statystyki.west);
+\draw (-7.1, -2.0) -- (komunikacja.west);
+\draw (-7.1, -2.0) -- (tworzenie.west);
+\draw (-7.1, -2.0) -- (lista.west);
+
 % --- Powiązania Administrator ---
-\draw (6.6,-4.5) -- (mng.east);
+\draw (-7.1, -7.0) -- (admin_uc.west);
+
+% --- Powiązania System ---
+\draw (11.1, 4.25) -- (sledzenie.east);
+\draw (11.1, 4.25) -- (aktualizacja.east);
+
+% --- Zależności <<include>> ---
+\draw[-latex, dashed] (sesja.east) -- node[midway, sloped, above, font=\scriptsize] {<<include>>} (sledzenie.west);
+\draw[-latex, dashed] (sesja.east) -- node[midway, sloped, above, font=\scriptsize] {<<include>>} (aktualizacja.west);
+
 \end{tikzpicture}}
 \caption{Diagram przypadków użycia systemu RehabSense.}
 \end{figure}
 
 \FloatBarrier
+\clearpage
 \subsection{Scenariusze przypadków użycia}
-Poniżej opisano scenariusze trzech najważniejszych przypadków użycia.
+Poniżej opisano scenariusze trzech ważnych przypadków użycia.
 
-% ---------- UC1 ----------
+% ---------- 1. ----------
 \begin{table}[ht]
 \small
-\renewcommand{\arraystretch}{1.25}
+\renewcommand{\arraystretch}{1.2}
 \begin{tabularx}{\textwidth}{|>{\bfseries}p{0.22\textwidth}|Y|}
 \hline
 Nazwa & Parowanie pacjenta i fizjoterapeuty \\ \hline
-Numer & 1 \\ \hline
 Poziom ważności & Wysoki \\ \hline
-Aktorzy & Pacjent, Fizjoterapeuta, System \\ \hline
-Krótki opis & Automatyczny dobór fizjoterapeuty przez system na podstawie potrzeb pacjenta oraz zatwierdzenie połączenia przez obie strony. \\ \hline
+Aktorzy & Pacjent, Fizjoterapeuta \\ \hline
+Krótki opis & Sparowanie pacjenta z fizjoterapeutą. \\ \hline
 Warunki wstępne & Pacjent i Fizjoterapeuta są zarejestrowani; pacjent jest zalogowany. \\ \hline
-Warunki końcowe & Profile pacjenta i fizjoterapeuty zostają trwale połączone (status \texttt{ZAAKCEPTOWANE}). \\ \hline
-Główny przepływ & 1. Pacjent rozpoczyna szukanie fizjoterapeuty i określa swój problem.\newline
-2. System dobiera dostępnego fizjoterapeutę o pasującej specjalizacji (najmniejsze obciążenie).\newline
-3. Fizjoterapeuta zatwierdza prośbę na podstawie informacji o pacjencie.\newline
-4. Pacjent ostatecznie potwierdza specjalistę, co łączy ich profile. \\ \hline
-Przepływy alternatywne & \textbf{3a.} Jeśli fizjoterapeuta odrzuci prośbę lub nie odpowie w określonym czasie, system automatycznie wybiera innego specjalistę (powrót do kroku 2). \\ \hline
-Wymagania specjalne & Wydajny algorytm filtrujący dostępnych specjalistów. \\ \hline
+Warunki końcowe & Profile pacjenta i fizjoterapeuty zostają połączone (status \texttt{ZAAKCEPTOWANE}). \\ \hline
+Główny przepływ & 1. Pacjent wyszukuje fizjoterapeutę w panelu wyboru fizjoterapeuty.\newline
+2. Pacjent wybiera fizjoterapeutę i wysyła prośbę o połączenie.\newline
+3. Fizjoterapeuta zatwierdza prośbę.\newline
+4. System wysyła na chat między pacjentem, a fizjoterapeutą komunikat o poprawnym sparowaniu \\ \hline
+Przepływy alternatywne & \textbf{2a.} Pacjent wyświetla certyfikat fizjoterapeuty. \newline \textbf{3a.} Fizjoterapeuta odrzuci prośbę. (powrót do kroku 2). \\ \hline
+Wymagania specjalne & brak \\ \hline
 \end{tabularx}
-\caption{Scenariusz UC1 — Parowanie pacjenta i fizjoterapeuty.}
+\caption{Scenariusz 1 — Parowanie pacjenta i fizjoterapeuty.}
 \end{table}
 \FloatBarrier
 
-% ---------- UC2 ----------
+% ---------- 2.  ----------
 \begin{table}[ht]
 \small
-\renewcommand{\arraystretch}{1.25}
+\renewcommand{\arraystretch}{1.2}
 \begin{tabularx}{\textwidth}{|>{\bfseries}p{0.22\textwidth}|Y|}
 \hline
 Nazwa & Sesja rehabilitacji (analiza AI) \\ \hline
-Numer & 2 \\ \hline
 Poziom ważności & Krytyczny \\ \hline
-Aktorzy & Pacjent, System (Moduł AI) \\ \hline
-Krótki opis & Pacjent wykonuje przypisane ćwiczenia przed kamerą; system w czasie rzeczywistym ocenia poprawność ruchu (MediaPipe + DTW), a wyniki sesji są zapisywane i aktualizują postępy oraz passę. \\ \hline
-Warunki wstępne & Pacjent jest zalogowany; ma aktywny plan rehabilitacji; dostępna jest kamera internetowa. \\ \hline
-Warunki końcowe & Wyniki sesji (powtórzenia, dokładność, feedback) zostają zapisane; passa i ewentualne odznaki zaktualizowane. \\ \hline
+Aktorzy & Pacjent, System \\ \hline
+Krótki opis & Pacjent wykonuje ćwiczenia przed kamerą z analizą postawy ciała i postępem passy. \\ \hline
+Warunki wstępne & Pacjent jest zalogowany; ma aktywny plan rehabilitacji i kamerke internetowa. \\ \hline
+Warunki końcowe & Wyniki sesji (powtórzenia, dokładność) zostają zapisane. Passa i ewentualne odznaki zaktualizowane. \\ \hline
 Główny przepływ & 1. Pacjent rozpoczyna sesję; system pobiera aktywny plan i ćwiczenia.\newline
-2. Dla ćwiczenia system pobiera dane wzorcowe (\texttt{mediapipe\_pattern\_data}).\newline
-3. Pacjent wykonuje ruch; moduł AI (MediaPipe) wykrywa pozę, a algorytm DTW porównuje ją ze wzorcem.\newline
+2. Dla ćwiczenia system pobiera dane wzorcowe.\newline
+3. System wykrywa ruch pacjenta i algorytm DTW porównuje szkielet MediaPipe ze wzorcem.\newline
 4. System wyświetla informację zwrotną w czasie rzeczywistym (dokładność).\newline
-5. Po zakończeniu pacjent wysyła wyniki; system zapisuje sesję i wyniki ćwiczeń.\newline
+5. System zapisuje sesję i wyniki ćwiczeń.\newline
 6. System nalicza passę i przyznaje odznaki. \\ \hline
 Przepływy alternatywne & \textbf{3a.} Niska jakość obrazu / brak wykrycia postawy — system informuje o problemie i prosi o korektę warunków.\newline
 \textbf{5a.} Błąd zapisu wyników — sesja zostaje oznaczona jako nieukończona. \\ \hline
-Wymagania specjalne & Analiza w czasie rzeczywistym (>= ok. 30 FPS), dokładność detekcji min. 75\%. \\ \hline
+Wymagania specjalne & Analiza w czasie rzeczywistym (ok. 30 FPS). \\ \hline
 \end{tabularx}
-\caption{Scenariusz UC2 — Sesja rehabilitacji (analiza AI).}
+\caption{Scenariusz 2 — Sesja rehabilitacji (analiza AI).}
 \end{table}
 \FloatBarrier
 
@@ -298,18 +336,18 @@ Nazwa & Tworzenie i przypisanie planu rehabilitacji \\ \hline
 Numer & 3 \\ \hline
 Poziom ważności & Wysoki \\ \hline
 Aktorzy & Fizjoterapeuta, System \\ \hline
-Krótki opis & Fizjoterapeuta tworzy spersonalizowany plan ćwiczeń (z liczbą serii i powtórzeń) i przypisuje go wybranemu pacjentowi; pacjent otrzymuje powiadomienie. \\ \hline
-Warunki wstępne & Fizjoterapeuta jest zalogowany; ma co najmniej jednego przypisanego pacjenta; dostępne są ćwiczenia (globalne lub własne). \\ \hline
-Warunki końcowe & Nowy aktywny plan zostaje utworzony; poprzedni aktywny plan pacjenta zostaje dezaktywowany; pacjent otrzymuje powiadomienie systemowe. \\ \hline
+Krótki opis & Fizjoterapeuta tworzy spersonalizowany plan ćwiczeń i przypisuje go wybranemu pacjentowi, który otrzymuje powiadomienie. \\ \hline
+Warunki wstępne & Fizjoterapeuta jest zalogowany i ma co najmniej jednego przypisanego pacjenta oraz dostępne są ćwiczenia (globalne lub własne). \\ \hline
+Warunki końcowe & Nowy aktywny plan zostaje utworzony. Poprzedni aktywny plan pacjenta zostaje dezaktywowany. Pacjent otrzymuje powiadomienie systemowe. \\ \hline
 Główny przepływ & 1. Fizjoterapeuta otwiera kreator planu i pobiera listę swoich pacjentów oraz ćwiczeń.\newline
 2. Wybiera pacjenta oraz ćwiczenia wraz z liczbą serii i powtórzeń.\newline
 3. System dezaktywuje poprzedni aktywny plan pacjenta.\newline
 4. System tworzy nowy plan i przypisuje do niego ćwiczenia.\newline
 5. System wysyła pacjentowi powiadomienie o aktualizacji planu. \\ \hline
 Przepływy alternatywne & \textbf{2a.} Wybrane ćwiczenie nie posiada przypisanego wideo — system odrzuca utworzenie planu i informuje o błędzie. \\ \hline
-Wymagania specjalne & Walidacja kompletności ćwiczeń (każde musi mieć wideo). \\ \hline
+Wymagania specjalne & Każde ćwiczenie musi mieć filmik instruktażowy. \\ \hline
 \end{tabularx}
-\caption{Scenariusz UC3 — Tworzenie i przypisanie planu rehabilitacji.}
+\caption{Scenariusz 3 — Tworzenie i przypisanie planu rehabilitacji.}
 \end{table}
 \FloatBarrier
 
@@ -322,32 +360,65 @@ Poniższy diagram przedstawia logiczny podział systemu na komponenty oraz ich z
 \begin{figure}[ht]
 \centering
 \resizebox{\textwidth}{!}{%
-\begin{tikzpicture}[node distance=1.0cm and 1.2cm]
-% Frontend container
-\node[comp, fill=ucfill] (ui) {Interfejs UI \\ (Next.js / React)};
-\node[comp, below=of ui, fill=ucfill] (posed) {Moduł AI \\ PoseDetector + DTW};
-\node[draw=primary, dashed, thick, rounded corners, fit=(ui)(posed), inner sep=10pt, label={[font=\bfseries\footnotesize,primary]north:Frontend (klient)}] (febox) {};
+\begin{tikzpicture}[node distance=0.8cm and 3.5cm]
 
-% Backend components
-\node[comp, right=4.2cm of ui] (auth) {Auth \\ (JWT, RoleChecker)};
-\node[comp, below=of auth] (api) {API biznesowe \\ Pacjent / Fizjo / Admin};
-\node[comp, below=of api] (core) {Logika domenowa \\ Pairing / Streaks / Badges};
-\node[comp, right=1.0cm of api] (aiapi) {AI API \\ (wzorce ćwiczeń)};
-\node[comp, above=of aiapi] (extc) {External API \\ (\texttt{/external/v1})};
-\node[draw=accent, dashed, thick, rounded corners, fit=(auth)(api)(core)(aiapi)(extc), inner sep=10pt, label={[font=\bfseries\footnotesize,accent]north:Backend (FastAPI)}] (bebox) {};
+% Definicja ikony komponentu (UML)
+\newcommand{\drawcompicon}[1]{
+  \draw[accent, thick, fill=white] ($(#1.north east) + (-0.5,-0.2)$) rectangle ($(#1.north east) + (-0.1,-0.6)$);
+  \draw[accent, thick, fill=white] ($(#1.north east) + (-0.6,-0.3)$) rectangle ($(#1.north east) + (-0.4,-0.35)$);
+  \draw[accent, thick, fill=white] ($(#1.north east) + (-0.6,-0.45)$) rectangle ($(#1.north east) + (-0.4,-0.5)$);
+}
 
-% Data + external
-\node[comp, fill=lightgray, below=2.2cm of core] (db) {NeonDB \\ (PostgreSQL / SQLAlchemy)};
-\node[comp, fill=white, right=1.2cm of db] (cloud) {Cloudinary \\ (multimedia)};
+% Węzły - Środek
+\node[comp, minimum width=4.5cm, minimum height=1.5cm] (mp) {Moduł Pacjenta};
+\node[comp, minimum width=4.5cm, minimum height=1.5cm, above=of mp] (ma) {Moduł Administracji};
+\node[comp, minimum width=4.5cm, minimum height=1.5cm, below=of mp] (mf) {Moduł Fizjoterapeuty};
+\node[comp, minimum width=4.5cm, minimum height=1.5cm, below=of mf] (mai) {Moduł AI};
 
-% Zależności
-\draw[arr] (febox.east) -- node[above,font=\scriptsize]{REST / JWT} (bebox.west);
-\draw[arr] (api) -- (core);
-\draw[arr] (auth) -- (api);
-\draw[arr] (api.south) |- (db);
-\draw[arr] (core.south) |- (db);
-\draw[arr] (api.east) -- (cloud.north);
-\draw[arr] (posed.west) -- ++(-1.2,0) |- node[pos=0.25,left,font=\scriptsize]{kamera} (febox.west);
+% Rysowanie ikon UML dla środka
+\drawcompicon{mp}
+\drawcompicon{ma}
+\drawcompicon{mf}
+\drawcompicon{mai}
+
+% Lewa strona - Interfejs Graficzny
+\node[comp, minimum width=4.5cm, minimum height=2cm, left=3.5cm of mp, yshift=-1.15cm] (ig) {Interfejs Graficzny};
+\drawcompicon{ig}
+
+% Prawa strona - Baza Danych
+\node[comp, minimum width=4.5cm, minimum height=2cm, right=3.5cm of mp, yshift=-1.15cm] (bd) {Baza Danych};
+\drawcompicon{bd}
+
+% Konfiguracja symbolu interfejsu (łapka i kółko)
+\tikzset{
+    interface/.pic={
+        % Wypełnienie tła, by ukryć fragment linii wewnątrz łapki
+        \fill[white] (0, 2.5mm) arc (90:270:2.5mm) -- cycle;
+        % Łapka (gniazdo) po lewej stronie
+        \draw[thick, draw=accent] (0, 2.5mm) arc (90:270:2.5mm);
+        % Kółko (wtyczka) na środku
+        \node[circle, draw=accent, fill=white, inner sep=0pt, minimum size=3.5mm] at (0,0) {};
+    }
+}
+
+% Interfejsy - Lewa strona (IG do Modułów)
+\draw[thick, draw=accent] (ig.east) -- pic[pos=0.5, sloped] {interface} node[pos=0.5, above left, yshift=1mm, font=\scriptsize] {IAdmin} (ma.west);
+
+\draw[thick, draw=accent] (ig.east) -- pic[pos=0.5, sloped] {interface} node[pos=0.5, above left, yshift=1mm, font=\scriptsize] {IPatient} (mp.west);
+
+\draw[thick, draw=accent] (ig.east) -- pic[pos=0.5, sloped] {interface} node[pos=0.5, below left, yshift=-1mm, font=\scriptsize] {IPhysiotherapist} (mf.west);
+
+\draw[thick, draw=accent] (ig.east) -- pic[pos=0.5, sloped] {interface} node[pos=0.5, below left, yshift=-1mm, font=\scriptsize] {IAIAnalysis} (mai.west);
+
+% Interfejsy - Prawa strona (Moduły do Bazy Danych)
+\draw[thick, draw=accent] (ma.east) -- pic[pos=0.5, sloped] {interface} node[pos=0.5, above right, yshift=1mm, font=\scriptsize] {IDatabase} (bd.west);
+
+\draw[thick, draw=accent] (mp.east) -- pic[pos=0.5, sloped] {interface} node[pos=0.5, above right, yshift=1mm, font=\scriptsize] {IDatabase} (bd.west);
+
+\draw[thick, draw=accent] (mf.east) -- pic[pos=0.5, sloped] {interface} node[pos=0.5, below right, yshift=-1mm, font=\scriptsize] {IDatabase} (bd.west);
+
+\draw[thick, draw=accent] (mai.east) -- pic[pos=0.5, sloped] {interface} node[pos=0.5, below right, yshift=-1mm, font=\scriptsize] {IDatabase} (bd.west);
+
 \end{tikzpicture}}
 \caption{Diagram komponentów systemu RehabSense.}
 \end{figure}
@@ -374,84 +445,123 @@ Diagram przedstawia kluczowe encje modelu danych (mapowane przez SQLAlchemy) wra
 \begin{figure}[ht]
 \centering
 \resizebox{\textwidth}{!}{%
-\begin{tikzpicture}[every node/.style={font=\scriptsize}]
-\node[cls] (user) at (0,0)
-  {\textbf{User}\nodepart{second} user\_id : int \\ first\_name, last\_name \\ email, password \\ role, api\_key};
-\node[cls] (patient) at (-5,-3.2)
-  {\textbf{Patient}\nodepart{second} user\_id : FK \\ streak\_count \\ last\_activity};
-\node[cls] (physio) at (5,-3.2)
-  {\textbf{Physiotherapist}\nodepart{second} user\_id : FK \\ specialization \\ is\_verified \\ is\_available};
-\node[cls] (pp) at (0,-3.2)
-  {\textbf{PatientPhysiotherapist}\nodepart{second} id : int \\ patient\_id, physio\_id \\ status};
-\node[cls] (streak) at (-10,-3.2)
-  {\textbf{Streak}\nodepart{second} streak\_id : int \\ patient\_id : FK \\ current\_streak \\ longest\_streak \\ freeze\_credits};
-\node[cls] (msg) at (9.5,0)
-  {\textbf{Message}\nodepart{second} id : int \\ sender\_id, receiver\_id \\ content, timestamp};
-\node[cls] (plan) at (-5,-7.2)
-  {\textbf{RehabPlan}\nodepart{second} rehab\_id : int \\ physio\_id, patient\_id \\ title, is\_active};
-\node[cls] (rpe) at (0.3,-7.2)
-  {\textbf{RehabPlanExercise}\nodepart{second} id : int \\ rehab\_id, exercise\_id \\ reps\_nr, sets\_nr};
-\node[cls] (ex) at (6,-7.2)
-  {\textbf{Exercise}\nodepart{second} exercise\_id : int \\ name, description \\ video\_url \\ mediapipe\_pattern\_data};
-\node[cls] (sess) at (-5,-11)
-  {\textbf{Session}\nodepart{second} session\_id : int \\ rehab\_id, patient\_id \\ title, created\_at};
-\node[cls] (res) at (0.3,-11)
-  {\textbf{ExerciseResult}\nodepart{second} result\_id : int \\ session\_id, exercise\_id \\ reps\_completed \\ avg\_accuracy, max\_rom \\ ai\_feedback, pain\_level};
+\begin{tikzpicture}[every node/.style={font=\scriptsize}, cls/.append style={text width=5.0cm}]
+
+% User
+\node[cls] (user) at (-15,0)
+  {\textbf{User}\nodepart{second} +user\_id: Integer [PK] \\ +first\_name: String \\ +last\_name: String \\ +email: String \\ +password: String \\ +role: String \\ +api\_key: String};
+
+% Message
+\node[cls] (msg) at (-15,-5)
+  {\textbf{Message}\nodepart{second} +id: Integer [PK] \\ +sender\_id: Integer [FK] \\ +receiver\_id: Integer [FK] \\ +content: String \\ +timestamp: DateTime \\ +is\_read: Boolean};
+
+% Patient
+\node[cls] (patient) at (-7,0)
+  {\textbf{Patient}\nodepart{second} +user\_id: Integer [PK, FK] \\ +streak\_count: Integer \\ +last\_activity: Date};
+
+% Physiotherapist
+\node[cls] (physio) at (-7,-5)
+  {\textbf{Physiotherapist}\nodepart{second} +user\_id: Integer [PK, FK] \\ +specialization: String \\ +is\_verified: Boolean \\ +is\_available: Boolean};
+
+% ProgressNote
+\node[cls] (note) at (-7,-10)
+  {\textbf{ProgressNote}\nodepart{second} +note\_id: Integer [PK] \\ +patient\_id: Integer [FK] \\ +physio\_id: Integer [FK] \\ +created\_at: DateTime \\ +note\_content: String \\ +pain\_level: Integer \\ +mobility\_level: Integer};
+
+% PatientPhysiotherapist
+\node[cls] (pp) at (1,-5)
+  {\textbf{PatientPhysiotherapist}\nodepart{second} +id: Integer [PK] \\ +patient\_id: Integer [FK] \\ +physio\_id: Integer [FK] \\ +status: String};
+
+% RehabPlan
+\node[cls] (plan) at (9,0)
+  {\textbf{RehabPlan}\nodepart{second} +rehab\_id: Integer [PK] \\ +physio\_id: Integer [FK] \\ +patient\_id: Integer [FK] \\ +title: String \\ +is\_active: Boolean};
+
+% RehabPlanExercise
+\node[cls] (rpe) at (9,-10)
+  {\textbf{RehabPlanExercise}\nodepart{second} +id: Integer [PK] \\ +rehab\_id: Integer [FK] \\ +exercise\_id: Integer [FK] \\ +reps\_nr: Integer \\ +sets\_nr: Integer};
+
+% Session
+\node[cls] (sess) at (16,0)
+  {\textbf{Session}\nodepart{second} +session\_id: Integer [PK] \\ +rehab\_id: Integer [FK] \\ +patient\_id: Integer [FK] \\ +title: String \\ +is\_active: Boolean \\ +created\_at: DateTime};
+
+% ExerciseResult
+\node[cls] (res) at (16,-5)
+  {\textbf{ExerciseResult}\nodepart{second} +result\_id: Integer [PK] \\ +exercise\_id: Integer [FK] \\ +session\_id: Integer [FK] \\ +reps\_completed: Integer \\ +avg\_accuracy: Float \\ +ai\_feedback: String \\ +max\_rom: Float \\ +pain\_level: Integer};
+
+% Exercise
+\node[cls] (ex) at (16,-10)
+  {\textbf{Exercise}\nodepart{second} +exercise\_id: Integer [PK] \\ +name: String \\ +description: Text \\ +video\_url: String \\ +mediapipe\_pattern\_data: Text};
 
 % Relacje
-\draw[-{Stealth}] (patient.north) -- node[left]{1} (user.south west);
-\draw[-{Stealth}] (physio.north) -- node[right]{1} (user.south east);
-\draw[-] (patient.east) -- node[above]{1..*}(pp.west);
-\draw[-] (pp.east) -- node[above]{*..1}(physio.west);
-\draw[-] (patient.west) -- node[above]{1}(streak.east);
-\draw[-{Stealth}] (plan.north) -- node[left]{*}(patient.south);
-\draw[-{Stealth}] (plan.north east) .. controls (3,-5) .. node[right]{*}(physio.south);
-\draw[-] (plan.east) -- node[above]{1..*}(rpe.west);
-\draw[-] (rpe.east) -- node[above]{*..1}(ex.west);
-\draw[-{Stealth}] (sess.north) -- node[left]{*}(plan.south);
-\draw[-] (sess.east) -- node[above]{1..*}(res.west);
-\draw[-{Stealth}] (res.east) .. controls (5,-10) .. node[right]{*..1}(ex.south);
-\draw[-] (user.east) -- node[above]{1..*}(msg.west);
+\draw[-] (user.east) -- node[above, font=\tiny]{has profile} node[pos=0.05, above, font=\tiny]{1} node[pos=0.95, above, font=\tiny]{0..1} (patient.west);
+
+\draw[-] (user.south east) -- node[above, sloped, font=\tiny]{has profile} node[pos=0.05, above, font=\tiny]{1} node[pos=0.95, above, font=\tiny]{0..1} (physio.north west);
+
+\draw[-] (user.south) -- node[right, font=\tiny]{sends / receives} node[pos=0.05, right, font=\tiny]{1} node[pos=0.95, right, font=\tiny]{*} (msg.north);
+
+\draw[-] (patient.south west) -- ++(-0.6, 0) |- node[pos=0.25, right, font=\tiny]{has} node[pos=0.05, above, font=\tiny]{1} node[pos=0.95, above, font=\tiny]{*} (note.west);
+
+\draw[-] (physio.south) -- node[right, font=\tiny]{writes} node[pos=0.05, right, font=\tiny]{1} node[pos=0.95, right, font=\tiny]{*} (note.north);
+
+\draw[-] (patient.south east) -- node[above, sloped, font=\tiny]{is associated with} node[pos=0.05, above, font=\tiny]{1} node[pos=0.95, above, font=\tiny]{*} (pp.north west);
+
+\draw[-] (physio.east) -- node[above, font=\tiny]{is associated with} node[pos=0.05, above, font=\tiny]{1} node[pos=0.95, above, font=\tiny]{*} (pp.west);
+
+\draw[-] (patient.east) -- node[above, font=\tiny]{assigned to} node[pos=0.05, above, font=\tiny]{1} node[pos=0.95, above, font=\tiny]{*} (plan.west);
+
+\draw[-] (physio.north east) -- node[above, sloped, font=\tiny]{creates} node[pos=0.05, above, font=\tiny]{1} node[pos=0.95, above, font=\tiny]{*} (plan.south west);
+
+\draw[-] (plan.south) -- node[right, font=\tiny]{contains} node[pos=0.05, right, font=\tiny]{1} node[pos=0.95, right, font=\tiny]{*} (rpe.north);
+
+\draw[-] (plan.east) -- node[above, font=\tiny]{has} node[pos=0.05, above, font=\tiny]{1} node[pos=0.95, above, font=\tiny]{*} (sess.west);
+
+\draw[-] (patient.north) -- ++(0, 2.0) -| node[pos=0.25, above, font=\tiny]{participates in} node[pos=0.02, right, font=\tiny]{1} node[pos=0.98, right, font=\tiny]{*} (sess.north);
+
+\draw[-] (rpe.east) -- node[above, font=\tiny]{part of} node[pos=0.05, above, font=\tiny]{*} node[pos=0.95, above, font=\tiny]{1} (ex.west);
+
+\draw[-] (sess.south) -- node[right, font=\tiny]{records} node[pos=0.05, right, font=\tiny]{1} node[pos=0.95, right, font=\tiny]{*} (res.north);
+
+\draw[-] (res.south) -- node[right, font=\tiny]{result of} node[pos=0.05, right, font=\tiny]{*} node[pos=0.95, right, font=\tiny]{1} (ex.north);
 \end{tikzpicture}}
 \caption{Diagram klas (model danych) systemu RehabSense.}
 \end{figure}
 
 % ====================================================
 \FloatBarrier
+\clearpage
 \section{Diagramy interakcji}
 % ====================================================
 Poniżej przedstawiono diagramy sekwencji dla trzech opisanych wcześniej przypadków użycia.
 
 % ---------- SD1: Parowanie ----------
-\subsection{UC1 — Parowanie pacjenta i fizjoterapeuty}
+\subsection{Diagram sekwencji do scenariusza 1 - Parowanie pacjenta i fizjoterapeuty}
 \begin{figure}[ht]
 \centering
 \resizebox{\textwidth}{!}{%
 \begin{tikzpicture}
 \node[part] (pac) at (0,0) {Pacjent};
-\node[part] (fe)  at (3.3,0) {Frontend};
-\node[part] (be)  at (6.6,0) {Backend API};
-\node[part] (db)  at (9.9,0) {NeonDB};
-\node[part] (fiz) at (13.2,0) {Fizjoterapeuta};
-\foreach \p in {pac,fe,be,db,fiz} \draw[dashed,midgray] (\p.south) -- (\p |- 0,-9.4);
+\node[part] (fe)  at (3.6,0) {Frontend};
+\node[part] (be)  at (7.2,0) {Backend API};
+\node[part] (db)  at (10.8,0) {NeonDB};
+\node[part] (fiz) at (14.4,0) {Fizjoterapeuta};
+\foreach \p in {pac,fe,be,db,fiz} \draw[dashed,midgray] (\p.south) -- (\p |- 0,-11.2);
 \msg{pac}{fe}{-1.0}{wybór „Szukaj fizjo'' + problem}
 \msg{fe}{be}{-1.8}{POST /pairing/request}
 \msg{be}{db}{-2.6}{find\_available\_physio()}
 \rsg{db}{be}{-3.4}{dane fizjoterapeuty}
 \msg{be}{db}{-4.2}{create\_pairing\_request (OCZEKUJACE)}
 \rsg{be}{fe}{-5.0}{200 (request\_id)}
-\msg{fiz}{be}{-5.8}{POST /\{id\}/physio-respond (akceptuj)}
-\msg{be}{db}{-6.6}{update\_request\_status}
-\msg{pac}{be}{-7.4}{POST /\{id\}/patient-confirm}
-\msg{be}{db}{-8.2}{PatientPhysiotherapist = ZAAKCEPTOWANE}
-\rsg{be}{pac}{-9.0}{potwierdzenie połączenia}
+\msg{fiz}{fe}{-5.8}{akceptacja zapytania w panelu}
+\msg{fe}{be}{-6.6}{POST /pairing/\{request\_id\}/physio-respond}
+\msg{be}{db}{-7.4}{PatientPhysiotherapist = ZAAKCEPTOWANE}
+\msg{be}{db}{-8.2}{Message [SYSTEM:CONNECT]}
+\rsg{be}{pac}{-9.0}{komunikat na czacie}
 \end{tikzpicture}}
-\caption{Diagram sekwencji UC1 — Parowanie pacjenta i fizjoterapeuty.}
+\caption{Diagram sekwencji 1 Parowanie pacjenta i fizjoterapeuty.}
 \end{figure}
 
 % ---------- SD2: Sesja ----------
 \FloatBarrier
-\subsection{UC2 — Sesja rehabilitacji (analiza AI)}
+\subsection{Diagram sekwencji do scenariusza 2 - Sesja rehabilitacji (analiza AI)}
 \begin{figure}[ht]
 \centering
 \resizebox{\textwidth}{!}{%
@@ -474,12 +584,13 @@ Poniżej przedstawiono diagramy sekwencji dla trzech opisanych wcześniej przypa
 \msg{be}{db}{-9.2}{zapis Session + ExerciseResult, passa, odznaki}
 \rsg{be}{fe}{-10.0}{streak, longest\_streak, new\_badges}
 \end{tikzpicture}}
-\caption{Diagram sekwencji UC2 — Sesja rehabilitacji z analizą AI.}
+\caption{Diagram sekwencji 2. Sesja rehabilitacji z analizą AI.}
 \end{figure}
 
 % ---------- SD3: Tworzenie planu ----------
 \FloatBarrier
-\subsection{UC3 — Tworzenie i przypisanie planu rehabilitacji}
+\clearpage
+\subsection{Diagram sekwencji do scenariusza 3 - Tworzenie i przypisanie planu rehabilitacji}
 \begin{figure}[ht]
 \centering
 \resizebox{\textwidth}{!}{%
@@ -501,7 +612,7 @@ Poniżej przedstawiono diagramy sekwencji dla trzech opisanych wcześniej przypa
 \msg{be}{db}{-8.2}{Message [SYSTEM:PLAN\_UPDATE]}
 \rsg{be}{fe}{-9.0}{plan utworzony}
 \end{tikzpicture}}
-\caption{Diagram sekwencji UC3 — Tworzenie i przypisanie planu rehabilitacji.}
+\caption{Diagram sekwencji 3. Tworzenie i przypisanie planu rehabilitacji.}
 \end{figure}
 
 % ====================================================
