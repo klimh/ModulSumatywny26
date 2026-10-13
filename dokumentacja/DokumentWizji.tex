@@ -1,0 +1,442 @@
+\documentclass[11pt,a4paper]{article}
+
+% ====================== PAKIETY ======================
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[polish]{babel}
+\usepackage[a4paper,margin=2.3cm]{geometry}
+\usepackage{lmodern}
+\usepackage{graphicx}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, shapes.multipart, arrows.meta, positioning, fit, backgrounds, calc}
+\usepackage[hidelinks]{hyperref}
+\usepackage{caption}
+\usepackage{placeins}
+
+% ====================== KOLORY ======================
+\definecolor{primary}{RGB}{30,90,150}
+\definecolor{accent}{RGB}{0,140,120}
+\definecolor{lightgray}{RGB}{240,242,245}
+\definecolor{midgray}{RGB}{170,178,186}
+\definecolor{riskhigh}{RGB}{200,60,60}
+\definecolor{riskmed}{RGB}{220,150,40}
+\definecolor{risklow}{RGB}{90,160,90}
+\definecolor{passgreen}{RGB}{40,150,70}
+
+% ====================== STYLE NAGŁÓWKÓW ======================
+\titleformat{\section}{\normalfont\Large\bfseries\color{primary}}{\thesection.}{0.6em}{}
+\titleformat{\subsection}{\normalfont\large\bfseries\color{accent}}{\thesubsection.}{0.6em}{}
+\titleformat{\subsubsection}{\normalfont\normalsize\bfseries\color{primary!80!black}}{\thesubsubsection.}{0.5em}{}
+\titlespacing*{\section}{0pt}{16pt}{6pt}
+\titlespacing*{\subsection}{0pt}{12pt}{4pt}
+
+% ====================== STOPKA / NAGŁÓWEK ======================
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}
+\fancyhead[L]{\small\color{primary}\textbf{RehabSense} -- Dokument Wizji}
+\fancyhead[R]{\small Modernizacja Modułu MediaPipe AI}
+\fancyfoot[L]{\small Politechnika Łódzka}
+\fancyfoot[R]{\small Strona \thepage}
+
+% ====================== POMOCNICZE ======================
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcommand{\sysname}{\textbf{RehabSense}}
+\setlist{itemsep=2pt, topsep=3pt}
+
+% ---- Style diagramów TikZ ----
+\tikzset{
+  layer/.style={rectangle, rounded corners, draw=primary, thick, fill=lightgray,
+                minimum width=3.4cm, minimum height=1cm, align=center, font=\small},
+  ext/.style={rectangle, rounded corners, draw=accent, thick, fill=white,
+              minimum width=2.8cm, minimum height=0.9cm, align=center, font=\small},
+  box/.style={rectangle, rounded corners=3pt, draw=primary, thick, fill=white,
+              minimum width=3.0cm, minimum height=1.1cm, align=center, font=\small},
+  ai_comp/.style={rectangle, rounded corners=3pt, draw=accent, very thick, fill=accent!10,
+                  minimum width=3.2cm, minimum height=1.1cm, align=center, font=\small\bfseries},
+  arr/.style={-{Stealth[length=3mm]}, thick, draw=primary!80},
+  arr_accent/.style={-{Stealth[length=3mm]}, thick, draw=accent},
+}
+
+\begin{document}
+
+\pagenumbering{gobble}
+
+% ====================== STRONA TYTUŁOWA ======================
+\begin{titlepage}
+\centering
+\vspace*{1.5cm}
+{\Huge\bfseries\color{primary} DOKUMENT WIZJI\par}
+\vspace{0.4cm}
+{\LARGE\bfseries System wspomagania rehabilitacji\par}
+\vspace{0.3cm}
+{\Huge\bfseries\color{accent} RehabSense 2.0\par}
+\vspace{0.8cm}
+{\large\textsc{Koncepcja Rozwoju i Udoskonalenia Modułu Rehabilitacji AI z Wykorzystaniem Google MediaPipe}\par}
+\vspace{1.2cm}
+\rule{0.75\textwidth}{1.2pt}\par
+\vspace{1.2cm}
+
+{\large\textbf{Instytucja:} Politechnika Łódzka\par}
+\vspace{0.3cm}
+{\large\textbf{Przedmiot:} Moduł Sumatywny\par}
+\vspace{0.3cm}
+{\large\textbf{Dokument:} Dokument Wizji Produktu\par}
+\vspace{0.3cm}
+{\large\textbf{Wersja:} 2.0-draft\par}
+\vspace{0.3cm}
+{\large\textbf{Data opracowania:} 13 października 2026\par}
+
+\vfill
+{\small Dokument definiuje wizję rozwojową systemu RehabSense, koncentrując się na kluczowym zadaniu modernizacji modułu analizy ruchu AI opartego na MediaPipe w celu osiągnięcia najwyższej dokładności, precyzji biometrycznej i skuteczności terapeutycznej.}
+\end{titlepage}
+
+\newpage
+\pagenumbering{arabic}
+
+% ====================== LISTA CZŁONKÓW ZESPOŁU ======================
+\section*{Lista członków zespołu}
+\addcontentsline{toc}{section}{Lista członków zespołu}
+\begin{table}[ht]
+\centering
+\begin{tabularx}{0.85\textwidth}{>{\raggedright\arraybackslash\bfseries}p{6.0cm} Y}
+\toprule
+\textbf{Imię i nazwisko} & \textbf{Rola w projekcie} \\
+\midrule
+Kacper Błaszczyk (251485) & Project Manager \\
+Klim Hudzenko (253833) & Backend Developer \\
+Maciej Miazek (251589) & Frontend \& AI Engineer \\
+Remigiusz Tomecki (251652) & Frontend Developer \\
+Kacper Romek (251619) & Tester \\
+\bottomrule
+\end{tabularx}
+\caption{Skład zespołu projektowego RehabSense.}
+\end{table}
+
+\newpage
+\tableofcontents
+\newpage
+
+% ====================================================
+\section{Informacje o dokumencie}
+% ====================================================
+
+\subsection{Cel dokumentu}
+Celem niniejszego dokumentu jest przedstawienie spójnej i kompleksowej wizji rozwoju produktu \sysname{} w wersji 2.0, jego wartości biznesowej, docelowych grup użytkowników, zakresu funkcjonalnego oraz kluczowych założeń.
+
+Głównym motywem przewodnim nowej iteracji systemu jest \textbf{udoskonalenie modułu rehabilitacji wykorzystującego technologię Google MediaPipe}. Dokument precyzuje, w jaki sposób dotychczasowy moduł wizyjny zostanie zmodernizowany, aby wyeliminować ograniczenia zidentyfikowane w wersji 1.0.
+
+\subsection{Historia zmian}
+Poniższa tabela przedstawia historię ewolucji dokumentacji oraz kamieni milowych projektu.
+
+\begin{table}[ht]
+\centering
+\small
+\begin{tabularx}{\textwidth}{p{1.6cm} p{2.2cm} p{3.6cm} Y}
+\toprule
+\textbf{Wersja} & \textbf{Data} & \textbf{Autorzy} & \textbf{Opis wprowadzonych zmian} \\
+\midrule
+1.0 & 19.06.2026 & Zespół projektowy & Opracowanie Dokumentu Architektury, Planu Testów, Instrukcji Użytkownika, wdrożenie wersji 1.0 systemu oraz publikacja Raportu z Testów. \\
+\textbf{2.0} & \textbf{14.10.2026} & \textbf{Zespół projektowy} & \textbf{Opracowanie kompleksowego Dokumentu Wizji dla RehabSense 2.0; ukierunkowanie rozwoju na udoskonalenie modułu rehabilitacji MediaPipe.} \\
+\bottomrule
+\end{tabularx}
+\caption{Historia zmian dokumentu wizji.}
+\end{table}
+
+\subsection{Definicje i skróty}
+\begin{itemize}
+    \item \textbf{MediaPipe (Google AI Edge):} Zestaw bibliotek uczenia maszynowego pracujących po stronie klienta (przeglądarka), służący do detekcji punktów orientacyjnych ciała w czasie rzeczywistym.
+    \item \textbf{DTW (Dynamic Time Warping):} Algorytm porównywania sekwencji czasowych o zróżnicowanej dynamice tempa wykonania.
+    \item \textbf{DDTW (Derivative Dynamic Time Warping):} Rozszerzenie algorytmu DTW uwzględniające pierwszą pochodną kątową (prędkość kątową), zapobiegające błędnemu dopasowywaniu pozycji statycznych do faz dynamicznych.
+    \item \textbf{JWT (JSON Web Token):} Bezstanowy mechanizm uwierzytelniania użytkowników w komunikacji REST API.
+    \item \textbf{NeonDB:} Chmurowa baza danych PostgreSQL wykorzystywana w architekturze backendowej.
+\end{itemize}
+
+% ====================================================
+\section{Problem biznesowy}
+% ====================================================
+
+\subsection{Obecna sytuacja}
+Tradycyjny proces rehabilitacji ruchowej opiera się na bezpośrednich wizytach pacjenta w gabinecie fizjoterapeutycznym. Po instruktażu gabinetowym pacjent otrzymuje zalecenie wykonywania serii ćwiczeń w domu. Wdrożona dotychczas wersja 1.0 aplikacji \sysname{} wprowadziła automatyzację tego procesu poprzez webowy interfejs z kamerą internetową, łączący pacjenta ze specjalistą oraz analizę MediaPipe z algorytmem DTW.
+
+\subsubsection{Jak proces działa obecnie?}
+\begin{enumerate}
+    \item Fizjoterapeuta tworzy plan rehabilitacji i przypisuje ćwiczenia zawierające referencyjne wideo instruktażowe.
+    \item Pacjent uruchamia sesję w przeglądarce przed kamerą internetową.
+    \item Frontend pobiera wideo referencyjne i odtwarza je obok obrazu z kamery pacjenta.
+    \item Moduł analizy uruchamia model detekcji pozy dwukrotnie w każdej klatce: raz dla strumienia wideo z kamery i raz dla klatki wideo referencyjnego.
+    \item Z wykrytych punktów 2D obliczane jest 8 płaskich kątów stawowych (łokcie, ramiona, biodra, kolana).
+    \item Wyniki poddawane są analizie z wykorzystaniem DTW, wyliczającej procent dopasowania ruchu, a zliczenie powtórzenia następuje w momencie zapętlenia wideo wzorcowego.
+\end{enumerate}
+
+\subsubsection{Jakie występują problemy?}
+\begin{itemize}
+    \item \textbf{Analiza 2D podatna na błędy perspektywy:} Obliczanie kątów w przestrzeni ekranu sprawia, że niewielki obrót pacjenta względem osi kamery zmienia pozorne kąty stawowe, generując fałszywe powiadomienia o błędach.
+    \item \textbf{Brak detekcji oszustwa:} Pacjent może oszukiwać test, unosząc całe ciało zamiast zginąć przedramię.
+    \item \textbf{Zliczanie powtórzeń zależne od wideo:} Jeśli pacjent ćwiczy wolniej, szybciej lub z przerwami, zliczenia nie są zsynchronizowane.
+\end{itemize}
+
+\subsubsection{Jakie są koszty lub ryzyka?}
+\begin{itemize}
+    \item \textbf{Ryzyko pogłębienia urazu i utrwalenia patologicznych wzorców:} Niepoprawnie wykonywane ćwiczenie bez korekcji kompensacji może prowadzić do przeciążenia sąsiednich stawów.
+    \item \textbf{Utrata zaufania fizjoterapeutów:} Terapeuci nie mogą polegać na wskaźnikach dokładności, jeśli są one obarczone artefaktami perspektywy i oświetlenia.
+    \item \textbf{Frustracja i spadek motywacji pacjentów:} Niesprawiedliwe obniżanie oceny lub brak zaliczania powtórzeń z powodu czysto technicznych zakłóceń prowadzi do porzucania domowej terapii.
+\end{itemize}
+
+\subsection{Problem do rozwiązania}
+Zadaniem stojącym przed projektem jest gruntowna modernizacja modułu analizy AI - uodpornienie analizy na zakłócenia i próby oszustwa.
+
+% ====================================================
+\section{Wizja produktu}
+% ====================================================
+
+Zgodnie z przyjętym standardem inżynierii wymagań, wizja produktu definiuje się następująco:
+
+\vspace{0.3cm}
+\noindent\fbox{%
+\parbox{0.97\textwidth}{%
+\textbf{Dla} pacjentów realizujących domową rehabilitację ruchową,\\
+\textbf{którzy potrzebują} specjalistycznego wsparcia ze strony fizjoterapeutów w procesie powrotu do pełnej sprawności,\\
+\textbf{produkt} \sysname{} 2.0\\
+\textbf{jest} inteligentnym, webowym systemem nadzoru rehabilitacji,\\
+\textbf{który umożliwia} adaptacyjną detekcję ruchów, śledzenie postępów wykonywanych ćwiczeń, zapewniając przy tym wysoką dokładność i bezpieczeństwo terapii domowej.
+}%
+}
+\vspace{0.3cm}
+
+% ====================================================
+\section{Cele biznesowe}
+% ====================================================
+
+\begin{enumerate}
+    \item \textbf{Zwiększenie dokładności oceny ruchu:} Podniesienie skuteczności rozpoznawania poprawności ćwiczeń do poziomu co najmniej 85--90\% poprzez lepsze dopasowanie punktów ciała pacjenta.
+    \item \textbf{Wykrywanie nieprawidłowości i oszustw:} Wprowadzenie kontroli stabilności tułowia, aby pacjent nie mógł zaliczyć ćwiczenia ruchem całego ciała zamiast ćwiczonego stawu.
+    \item \textbf{Poprawne zliczanie powtórzeń:} Zliczanie powtórzeń w oparciu o rzeczywisty ruch pacjenta (faza zgięcia i wyprostu), a nie na podstawie długości filmu wzorcowego.
+    \item \textbf{Wiarygodne dane dla fizjoterapeuty:} Zapewnienie, że wyniki i statystyki widoczne w systemie rzetelnie odzwierciedlają jakość wykonanych ćwiczeń.
+\end{enumerate}
+
+% ====================================================
+\section{Interesariusze}
+% ====================================================
+Głównymi interesariuszami projektu są:
+
+\begin{itemize}
+    \item \textbf{Pacjenci:} Osoby wykonujące ćwiczenia w domu, które oczekują dokładnej oceny swoich ruchów oraz natychmiastowej informacji o błędach.
+    \item \textbf{Fizjoterapeuci:} Specjaliści zlecający ćwiczenia, którzy potrzebują pewności, że pacjent wykonuje je poprawnie i bezpiecznie.
+    \item \textbf{Zespół projektowy:} Programiści odpowiedzialni za implementację ulepszeń w module analizy MediaPipe i utrzymanie aplikacji.
+\end{itemize}
+
+% ====================================================
+\section{Grupy użytkowników}
+% ====================================================
+W systemie występują trzy grupy użytkowników:
+
+\begin{itemize}
+    \item \textbf{Pacjent:} Uruchamia sesję ćwiczeń przed kamerą internetową, otrzymuje informację zwrotną o poprawności ruchu i widzi liczbę poprawnie wykonanych powtórzeń.
+    \item \textbf{Fizjoterapeuta:} Tworzy plany rehabilitacji, przegląda historię pacjenta i sprawdza dokładność wykonania zadanych ćwiczeń.
+    \item \textbf{Administrator:} Zarządza kontami w systemie i weryfikuje profile fizjoterapeutów.
+\end{itemize}
+
+% ====================================================
+\section{Zakres produktu}
+% ====================================================
+
+\subsection{Funkcjonalności w zakresie}
+Prace rozwojowe skupiają się wyłącznie na module analizy wykonywanych ćwiczeń:
+
+\begin{enumerate}
+    \item \textbf{Dopasowanie punktów do sylwetki:}
+    Przeliczanie współrzędnych punktów z MediaPipe względem wielkości tułowia pacjenta, dzięki czemu drobne przesunięcia lub lekki obrót względem kamery nie zafałszowują wyników.
+    
+    \item \textbf{Wykrywanie potencjalnych oszustw:}
+    Sprawdzanie, czy tułów pacjenta pozostaje stabilny podczas ruchu kończyny. Jeśli pacjent zamiast zgiąć rękę lub nogę przechyla całe ciało, system nie zalicza powtórzenia i informuje o błędzie.
+    
+    \item \textbf{Licznik powtórzeń oparty na fazach ruchu:}
+    Automatyczne rozpoznawanie momentu rozpoczęcia ruchu, osiągnięcia pełnego zgięcia oraz powrotu do pozycji wyjściowej. Zliczanie powtórzeń staje się niezależne od tempa odtwarzania wideo wzorcowego.
+    
+    \item \textbf{Ulepszone porównywanie ruchu:}
+    Większy wpływ na ocenę mają stawy kluczowe dla danego ćwiczenia (np. łokieć przy zginaniu ramienia), a mniejszy stawy, które powinny pozostać nieruchome.
+    
+    \item \textbf{Prosty komunikat o błędzie na ekranie:}
+    Wyświetlanie czytelnego ostrzeżenia wizualnego w momencie, gdy pacjent wykonuje ruch niepoprawnie (np. „Ustabilizuj tułów”).
+\end{enumerate}
+
+\subsection{Poza zakresem}
+Z zakresu prac wyłączono:
+\begin{itemize}
+    \item Przejście na modele trójwymiarowe (3D) oraz integrację z dodatkowymi czujnikami zewnętrznymi.
+    \item Modyfikację innych modułów aplikacji (np. czat, rejestracja, system logowania pozostają bez zmian).
+    \item Automatyczne diagnozowanie schorzeń przez sztuczną inteligencję (system ocenia jedynie technikę ćwiczeń zleconych przez fizjoterapeutę).
+\end{itemize}
+
+% ====================================================
+\section{Kluczowe wymagania biznesowe}
+% ====================================================
+\begin{table}[ht]
+\centering
+\small
+\begin{tabularx}{\textwidth}{l p{4.5cm} Y c}
+\toprule
+\textbf{ID} & \textbf{Wymaganie} & \textbf{Opis} & \textbf{Priorytet} \\
+\midrule
+\textbf{1} & Normalizacja pozycji ciała & System przelicza punkty względem tułowia, aby odległość od kamery nie psuła wyniku pomiaru. & Wysoki \\
+\textbf{2} & Blokada potencjalnych oszustw & System wykrywa ruch tułowia przy ćwiczeniach kończyn i nie zalicza takiego powtórzenia. & Wysoki \\
+\textbf{3} & Niezależny licznik powtórzeń & System zlicza powtórzenia po wykonaniu wszystkich faz ćwiczenia & Wysoki \\
+\textbf{4} & Ocena DTW & Większą wagę przy ocenie mają stawy wykonujące ruch w danym ćwiczeniu. & Wysoki \\
+\textbf{5} & Komunikat o błędzie techniki & Wyświetlanie ostrzeżenia na ekranie, gdy ćwiczenie wykonywane jest niepoprawnie. & Średni \\
+\bottomrule
+\end{tabularx}
+\caption{Kluczowe wymagania biznesowe.}
+\end{table}
+
+% ====================================================
+\section{Główne procesy biznesowe}
+% ====================================================
+
+\subsection{Proces 1: Rozpoczęcie sesji ćwiczeń}
+\begin{enumerate}
+    \item Pacjent wybiera ćwiczenie z planu rehabilitacji i uruchamia kamerę.
+    \item System wykrywa sylwetkę pacjenta przy użyciu MediaPipe i ustala punkty odniesienia.
+    \item Pacjent przyjmuje pozycję wyjściową i rozpoczyna ćwiczenie.
+\end{enumerate}
+
+\subsection{Proces 2: Analiza ruchu i zliczanie powtórzeń}
+\begin{enumerate}
+    \item Pacjent wykonuje ruch; system na bieżąco oblicza kąty stawów.
+    \item System sprawdza, czy tułów pacjenta jest nieruchomy.
+    \item Po osiągnięciu odpowiedniego kąta i powrocie do pozycji początkowej licznik powtórzeń jest inkrementowany.
+    \item Jeśli pacjent porusza tułowiem, system wyświetla ostrzeżenie i nie zalicza powtórzenia.
+    \item Po wykonaniu zadanej liczby powtórzeń seria zostaje zakończona.
+\end{enumerate}
+
+\subsection{Proces 3: Zapis wyników i weryfikacja przez fizjoterapeutę}
+\begin{enumerate}
+    \item Wyniki sesji są przesyłane do bazy danych.
+    \item Fizjoterapeuta w swoim panelu widzi podsumowanie i może ocenić, czy pacjent ćwiczył poprawnie.
+\end{enumerate}
+
+% ====================================================
+\section{Wymagania niefunkcjonalne}
+% ====================================================
+\begin{enumerate}
+    \item \textbf{Dokładność:} Dokładność oceny poprawności ćwiczenia na poziomie minimum 85\%.
+    \item \textbf{Wydajność:} Płynna analiza w przeglądarce internetowej (przynajmniej 25--30 klatek na sekundę).
+    \item \textbf{Prywatność danych:} Obraz z kamery jest analizowany wyłącznie w przeglądarce pacjenta i nie jest przesyłany na serwer.
+    \item \textbf{Prostota obsługi:} Brak konieczności instalowania dodatkowego oprogramowania ani kupowania drogiego sprzętu (wystarczy zwykła kamera internetowa).
+\end{enumerate}
+
+% ====================================================
+\section{Integracje}
+% ====================================================
+Moduł analizy korzysta z:
+\begin{itemize}
+    \item \textbf{Google MediaPipe:} Biblioteka działająca w przeglądarce pacjenta, wykrywająca punkty ciała na obrazie z kamery.
+    \item \textbf{Backend (FastAPI) i Baza Danych (NeonDB):} Zapisywanie informacji o wykonanych seriach, liczbie powtórzeń i średniej dokładności.
+\end{itemize}
+
+% ====================================================
+\section{Założenia i ograniczenia}
+% ====================================================
+\begin{itemize}
+    \item \textbf{Założenia:} Pacjent posiada sprawną kamerkę internetową i wykonuje ćwiczenia w oświetlonym pomieszczeniu w odległości około 1.5--2 metrów od obiektywu.
+    \item \textbf{Ograniczenia:} Zwykła kamera 2D widzi ruch tylko w jednej płaszczyźnie, dlatego pacjent powinien ustawiać się przodem lub pod lekkim kątem do kamery zgodnie z instrukcją ćwiczenia.
+\end{itemize}
+
+% ====================================================
+\section{Ryzyka}
+% ====================================================
+\begin{table}[ht]
+\centering
+\small
+\begin{tabularx}{\textwidth}{p{4cm} p{4.5cm} Y}
+\toprule
+\textbf{Ryzyko} & \textbf{Skutek} & \textbf{Działanie zapobiegawcze} \\
+\midrule
+Słabe oświetlenie w pomieszczeniu & Gorsze wykrywanie punktów ciała przez MediaPipe & Wyświetlenie prośby o poprawę oświetlenia w przypadku problemów z detekcją. \\
+\addlinespace
+Oszukiwanie ćwiczenia ruchem całego ciała & Niesłuszne zaliczenie powtórzenia & Algorytm sprawdzający bezruch tułowia podczas ćwiczenia rąk lub nóg. \\
+\addlinespace
+Nietypowe tempo ćwiczenia pacjenta & Błędne zliczanie powtórzeń & Licznik oparty na osiągnięciu kąta skrajnego, a nie na czasie trwania filmu. \\
+\bottomrule
+\end{tabularx}
+\caption{Główne ryzyka i działania zapobiegawcze.}
+\end{table}
+
+% ====================================================
+\section{Strategia sukcesu}
+% ====================================================
+Sukces wdrożenia zmian zostanie potwierdzony, gdy:
+\begin{itemize}
+    \item Błędy zliczania powtórzeń spadną poniżej 5\% przy poprawnym wykonywaniu ćwiczenia.
+    \item Próby oszukiwania ruchem tułowia będą wykrywane w co najmniej 80\% przypadków.
+    \item Aplikacja będzie działać płynnie bez zacinania obrazu na standardowym laptopie.
+\end{itemize}
+
+% ====================================================
+\section{Roadmapa produktu}
+% ====================================================
+Plan realizacji prac nad poprawą modułu analizy:
+\begin{enumerate}
+    \item \textbf{Krok 1:} Wdrożenie przeliczania punktów względem tułowia oraz wag w algorytmie DTW.
+    \item \textbf{Krok 2:} Implementacja sprawdzania stabilności tułowia w celu wykrywania oszustw.
+    \item \textbf{Krok 3:} Wdrożenie niezależnego licznika powtórzeń opartego na zgięciu i wyproście.
+    \item \textbf{Krok 4:} Testy dokładności z udziałem użytkowników i dopracowanie progów czułości.
+\end{enumerate}
+
+% ====================================================
+\section{Korzyści biznesowe}
+% ====================================================
+\begin{itemize}
+    \item \textbf{Dla pacjenta:} Pewność, że ćwiczy poprawnie i bezpiecznie, bez niesłusznego odrzucania poprawnych powtórzeń.
+    \item \textbf{Dla fizjoterapeuty:} Rzetelne statystyki pokazujące rzeczywisty wysiłek pacjenta, a nie ruchy zastępcze czy oszukane powtórzenia.
+    \item \textbf{Dla projektu:} Rozwiązanie głównego problemu z jakością analizy przy minimalnej złożoności kodu.
+\end{itemize}
+
+% ====================================================
+\section{Załączniki}
+% ====================================================
+
+\subsection{Załącznik 1: Schemat działania ulepszonego modułu analizy}
+\begin{figure}[ht]
+\centering
+\resizebox{0.9\textwidth}{!}{%
+\begin{tikzpicture}[node distance=1.2cm and 1.5cm]
+  \node[box] (cam) {\textbf{Obraz z kamery}\\ \footnotesize 30 FPS};
+  \node[ai_comp, right=1.2cm of cam] (mp) {\textbf{Google MediaPipe}\\ \footnotesize Wykrycie punktów ciała};
+  \node[box, right=1.2cm of mp] (norm) {\textbf{Normalizacja punktów}\\ \footnotesize Dopasowanie do tułowia};
+  
+  \node[box, below=1.2cm of norm] (guard) {\textbf{Sprawdzenie tułowia}\\ \footnotesize Czy pacjent nie oszukuje?};
+  \node[box, left=1.2cm of guard] (calc) {\textbf{Pomiar kątów stawów}\\ \footnotesize np. zgięcie łokcia};
+  \node[ai_comp, left=1.2cm of calc] (rep) {\textbf{Licznik powtórzeń}\\ \footnotesize Zgięcie i wyprost};
+
+  \node[layer, below=1.2cm of calc, minimum width=8cm] (out) {\textbf{Informacja na ekranie}\\ \footnotesize Aktualny wynik poprawności, liczba powtórzeń i ostrzeżenia};
+
+  \draw[arr] (cam) -- (mp);
+  \draw[arr] (mp) -- (norm);
+  \draw[arr] (norm) -- (guard);
+  \draw[arr] (guard) -- (calc);
+  \draw[arr] (calc) -- (rep);
+  \draw[arr] (calc) -- (out);
+  \draw[arr] (rep) -- (out);
+  \draw[arr] (guard) -- (out);
+\end{tikzpicture}}
+\caption{Przepływ danych w ulepszonym module analizy ćwiczeń.}
+\end{figure}
+
+\subsection{Załącznik 2: Kluczowe punkty wykorzystywane do oceny}
+\begin{itemize}
+    \item \textbf{Tułów (barki i biodra):} Służą jako baza odniesienia do sprawdzania, czy pacjent trzyma prostą postawę i nie buja ciałem.
+    \item \textbf{Łokcie i ramiona:} Mierzenie kątów przy ćwiczeniach rąk (zgięcie i wyprost).
+    \item \textbf{Kolana i biodra:} Mierzenie kątów przy ćwiczeniach nóg (np. przysiady, unoszenie nóg).
+\end{itemize}
+
+\end{document}
