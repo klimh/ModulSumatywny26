@@ -8,6 +8,7 @@
 \usepackage{lmodern}
 \usepackage{graphicx}
 \usepackage{array}
+\usepackage{float}
 \usepackage{longtable}
 \usepackage{booktabs}
 \usepackage{tabularx}
@@ -384,13 +385,19 @@ Sukces wdrożenia zmian zostanie potwierdzony, gdy:
 % ====================================================
 \section{Roadmapa produktu}
 % ====================================================
-Plan realizacji prac nad poprawą modułu analizy:
-\begin{enumerate}
-    \item \textbf{Krok 1:} Wdrożenie przeliczania punktów względem tułowia oraz wag w algorytmie DTW.
-    \item \textbf{Krok 2:} Implementacja sprawdzania stabilności tułowia w celu wykrywania oszustw.
-    \item \textbf{Krok 3:} Wdrożenie niezależnego licznika powtórzeń opartego na zgięciu i wyproście.
-    \item \textbf{Krok 4:} Testy dokładności z udziałem użytkowników i dopracowanie progów czułości.
-\end{enumerate}
+Harmonogram prac nad poprawą modułu analizy:
+\begin{itemize}
+    \item \textbf{Tydzień 1:} Przygotowanie i konsultacja Dokumentu Wizji.
+    \item \textbf{Tydzień 2:} Normalizacja współrzędnych i przeliczanie punktów względem tułowia. Implementacja względnego układu punktów kluczowych niezależnego od pozycji kamery.
+    \item \textbf{Tydzień 3:} Konfiguracja i dodanie wag stawów w algorytmie DTW. Wdrożenie ważenia poszczególnych stawów w dopasowaniu sekwencji.
+    \item \textbf{Tydzień 4:} Definiowanie wskaźników i odchyleń stabilności tułowia. Opracowanie matematycznych miar rotacji, przechyleń i kompensacji tułowia.
+    \item \textbf{Tydzień 5:} Implementacja algorytmów i progów do wykrywania oszustw. Stworzenie logiki wykrywania nieprawidłowych powtórzeń na podstawie przekroczeń stabilności.
+    \item \textbf{Tydzień 6:} Opracowanie logiki detekcji kątowej dla faz zgięcia i wyprostu. 
+    \item \textbf{Tydzień 7:} Zaimplementowanie algorytmu śledzenia kątów w stawach do identyfikacji faz ruchu.
+    \item \textbf{Tydzień 8:} Integracja niezależnego licznika powtórzeń. Wdrożenie weryfikacji pełnego zakresu ruchu i obsługa przypadków skrajnych.
+    \item \textbf{Tydzień 9:} Przeprowadzenie testów dokładności, analiza wyników i optymalizacja modułu. Kalibracja progów czułości, testy wydajnościowe.
+    \item \textbf{Tydzień 10:} Finalizacja kodu i przygotowanie do prezentacji końcowej.
+\end{itemize}
 
 % ====================================================
 \section{Korzyści biznesowe}
@@ -402,11 +409,12 @@ Plan realizacji prac nad poprawą modułu analizy:
 \end{itemize}
 
 % ====================================================
+\newpage
 \section{Załączniki}
 % ====================================================
 
 \subsection{Załącznik 1: Schemat działania ulepszonego modułu analizy}
-\begin{figure}[ht]
+\begin{figure}[H]
 \centering
 \resizebox{0.9\textwidth}{!}{%
 \begin{tikzpicture}[node distance=1.2cm and 1.5cm]
