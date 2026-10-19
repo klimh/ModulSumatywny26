@@ -1,11 +1,18 @@
 "use client";
 
-import { useRef, useEffect, useState, useCallback, forwardRef, useImperativeHandle } from "react";
 import {
-    PoseLandmarker,
-    HandLandmarker,
-    FilesetResolver,
-    DrawingUtils,
+  useRef,
+  useEffect,
+  useState,
+  useCallback,
+  forwardRef,
+  useImperativeHandle,
+} from "react";
+import {
+  PoseLandmarker,
+  HandLandmarker,
+  FilesetResolver,
+  DrawingUtils,
 } from "@mediapipe/tasks-vision";
 import { DTWAnalyzer } from "./dtwAnalyzer";
 import { useTranslation } from "@/hooks/useTranslation";
@@ -15,126 +22,210 @@ const HAND_CONNECTIONS = HandLandmarker.HAND_CONNECTIONS;
 
 const FACE_INDICES = new Set([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
 const BODY_CONNECTIONS = POSE_CONNECTIONS.filter(
-    (c) => !FACE_INDICES.has(c.start) && !FACE_INDICES.has(c.end)
+  (c) => !FACE_INDICES.has(c.start) && !FACE_INDICES.has(c.end),
 );
 
 class OneEuroFilter {
-    constructor(freq = 30, minCutoff = 1.0, beta = 0.007, dCutoff = 1.0) {
-        this.freq = freq;
-        this.minCutoff = minCutoff;
-        this.beta = beta;
-        this.dCutoff = dCutoff;
-        this.xPrev = null;
-        this.dxPrev = 0;
-        this.lastTime = null;
+  constructor(freq = 30, minCutoff = 1.0, beta = 0.007, dCutoff = 1.0) {
+    this.freq = freq;
+    this.minCutoff = minCutoff;
+    this.beta = beta;
+    this.dCutoff = dCutoff;
+    this.xPrev = null;
+    this.dxPrev = 0;
+    this.lastTime = null;
+  }
+  _alpha(cutoff) {
+    const te = 1.0 / this.freq;
+    const tau = 1.0 / (2 * Math.PI * cutoff);
+    return 1.0 / (1.0 + tau / te);
+  }
+  filter(x, timestamp) {
+    if (this.lastTime !== null && timestamp !== this.lastTime) {
+      this.freq = 1.0 / ((timestamp - this.lastTime) / 1000);
     }
-    _alpha(cutoff) {
-        const te = 1.0 / this.freq;
-        const tau = 1.0 / (2 * Math.PI * cutoff);
-        return 1.0 / (1.0 + tau / te);
+    this.lastTime = timestamp;
+    if (this.xPrev === null) {
+      this.xPrev = x;
+      this.dxPrev = 0;
+      return x;
     }
-    filter(x, timestamp) {
-        if (this.lastTime !== null && timestamp !== this.lastTime) {
-            this.freq = 1.0 / ((timestamp - this.lastTime) / 1000);
-        }
-        this.lastTime = timestamp;
-        if (this.xPrev === null) {
-            this.xPrev = x;
-            this.dxPrev = 0;
-            return x;
-        }
-        const dx = (x - this.xPrev) * this.freq;
-        const adx = this._alpha(this.dCutoff);
-        this.dxPrev = adx * dx + (1 - adx) * this.dxPrev;
-        const cutoff = this.minCutoff + this.beta * Math.abs(this.dxPrev);
-        const ax = this._alpha(cutoff);
-        this.xPrev = ax * x + (1 - ax) * this.xPrev;
-        return this.xPrev;
-    }
-    reset() {
-        this.xPrev = null;
-        this.dxPrev = 0;
-        this.lastTime = null;
-    }
+    const dx = (x - this.xPrev) * this.freq;
+    const adx = this._alpha(this.dCutoff);
+    this.dxPrev = adx * dx + (1 - adx) * this.dxPrev;
+    const cutoff = this.minCutoff + this.beta * Math.abs(this.dxPrev);
+    const ax = this._alpha(cutoff);
+    this.xPrev = ax * x + (1 - ax) * this.xPrev;
+    return this.xPrev;
+  }
+  reset() {
+    this.xPrev = null;
+    this.dxPrev = 0;
+    this.lastTime = null;
+  }
 }
 
 class LandmarkSmoother {
-    constructor(freq = 30, minCutoff = 1.7, beta = 0.01) {
-        this.freq = freq;
-        this.minCutoff = minCutoff;
-        this.beta = beta;
-        this.filters = null;
+  constructor(freq = 30, minCutoff = 1.7, beta = 0.01) {
+    this.freq = freq;
+    this.minCutoff = minCutoff;
+    this.beta = beta;
+    this.filters = null;
+  }
+  filter(landmarks, timestamp) {
+    if (!this.filters) {
+      this.filters = landmarks.map(() => ({
+        x: new OneEuroFilter(this.freq, this.minCutoff, this.beta),
+        y: new OneEuroFilter(this.freq, this.minCutoff, this.beta),
+        z: new OneEuroFilter(this.freq, this.minCutoff, this.beta),
+      }));
     }
-    filter(landmarks, timestamp) {
-        if (!this.filters) {
-            this.filters = landmarks.map(() => ({
-                x: new OneEuroFilter(this.freq, this.minCutoff, this.beta),
-                y: new OneEuroFilter(this.freq, this.minCutoff, this.beta),
-                z: new OneEuroFilter(this.freq, this.minCutoff, this.beta),
-            }));
-        }
-        return landmarks.map((lm, i) => ({
-            ...lm,
-            x: this.filters[i].x.filter(lm.x, timestamp),
-            y: this.filters[i].y.filter(lm.y, timestamp),
-            z: this.filters[i].z.filter(lm.z, timestamp),
-        }));
-    }
-    reset() {
-        this.filters = null;
-    }
+    return landmarks.map((lm, i) => ({
+      ...lm,
+      x: this.filters[i].x.filter(lm.x, timestamp),
+      y: this.filters[i].y.filter(lm.y, timestamp),
+      z: this.filters[i].z.filter(lm.z, timestamp),
+    }));
+  }
+  reset() {
+    this.filters = null;
+  }
 }
 
 const calculateAngle = (a, b, c) => {
-    if (!a || !b || !c) return 0;
-    const radians = Math.atan2(c.y - b.y, c.x - b.x) - Math.atan2(a.y - b.y, a.x - b.x);
-    let angle = Math.abs((radians * 180.0) / Math.PI);
-    if (angle > 180.0) angle = 360 - angle;
-    return angle;
+  if (!a || !b || !c) return 0;
+  const radians =
+    Math.atan2(c.y - b.y, c.x - b.x) - Math.atan2(a.y - b.y, a.x - b.x);
+  let angle = Math.abs((radians * 180.0) / Math.PI);
+  if (angle > 180.0) angle = 360 - angle;
+  return angle;
 };
 
+const calculateAngle3D = (a, b, c) => {
+  if (!a || !b || !c) return 0;
+
+  // Wektory BA i BC
+  const ba = { x: a.x - b.x, y: a.y - b.y, z: a.z - b.z };
+  const bc = { x: c.x - b.x, y: c.y - b.y, z: c.z - b.z };
+
+  // Iloczyn skalarny
+  const dotProduct = ba.x * bc.x + ba.y * bc.y + ba.z * bc.z;
+
+  // Długości wektorów
+  const magBA = Math.sqrt(ba.x * ba.x + ba.y * ba.y + ba.z * ba.z);
+  const magBC = Math.sqrt(bc.x * bc.x + bc.y * bc.y + bc.z * bc.z);
+
+  if (magBA * magBC === 0) return 0;
+  const angleRad = Math.acos(
+    Math.max(-1, Math.min(1, dotProduct / (magBA * magBC))),
+  );
+  return (angleRad * 180.0) / Math.PI;
+};
+
+const normalizeLandmarksRelative = (landmarks) => {
+  const leftShoulder = landmarks[11]; //lewy bark
+  const rightShoulder = landmarks[12]; //prawy bark
+  const leftHip = landmarks[23]; //lewe biodro
+  const rightHip = landmarks[24]; //prawe biodro
+
+  if (!leftShoulder || !rightShoulder || !leftHip || !rightHip) {
+    return landmarks;
+  }
+
+  // Obliczenie centrum tułowia
+  const centerX =
+    (leftShoulder.x + rightShoulder.x + leftHip.x + rightHip.x) / 4;
+  const centerY =
+    (leftShoulder.y + rightShoulder.y + leftHip.y + rightHip.y) / 4;
+  const centerZ =
+    (leftShoulder.z + rightShoulder.z + leftHip.z + rightHip.z) / 4;
+
+  // Oblczeniee rozmiaru tułowia
+  const dx = leftShoulder.x - rightHip.x;
+  const dy = leftShoulder.y - rightHip.y;
+  const dz = leftShoulder.z - rightHip.z;
+  const torsoSize = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1; // Uniknięcie dzielenia przez zero
+
+  // Translacja do (0,0,0) i zastosowanie skalowania
+  return landmarks.map((lm) => ({
+    ...lm,
+    x: (lm.x - centerX) / torsoSize,
+    y: (lm.y - centerY) / torsoSize,
+    z: (lm.z - centerZ) / torsoSize,
+  }));
+};
+
+// const getPoseAngles = (landmarks) => {
+//     return {
+//         leftElbow: calculateAngle(landmarks[11], landmarks[13], landmarks[15]),
+//         rightElbow: calculateAngle(landmarks[12], landmarks[14], landmarks[16]),
+//         leftShoulder: calculateAngle(landmarks[23], landmarks[11], landmarks[13]),
+//         rightShoulder: calculateAngle(landmarks[24], landmarks[12], landmarks[14]),
+//         leftHip: calculateAngle(landmarks[11], landmarks[23], landmarks[25]),
+//         rightHip: calculateAngle(landmarks[12], landmarks[24], landmarks[26]),
+//         leftKnee: calculateAngle(landmarks[23], landmarks[25], landmarks[27]),
+//         rightKnee: calculateAngle(landmarks[24], landmarks[26], landmarks[28]),
+//     };
+// };
+
 const getPoseAngles = (landmarks) => {
-    return {
-        leftElbow: calculateAngle(landmarks[11], landmarks[13], landmarks[15]),
-        rightElbow: calculateAngle(landmarks[12], landmarks[14], landmarks[16]),
-        leftShoulder: calculateAngle(landmarks[23], landmarks[11], landmarks[13]),
-        rightShoulder: calculateAngle(landmarks[24], landmarks[12], landmarks[14]),
-        leftHip: calculateAngle(landmarks[11], landmarks[23], landmarks[25]),
-        rightHip: calculateAngle(landmarks[12], landmarks[24], landmarks[26]),
-        leftKnee: calculateAngle(landmarks[23], landmarks[25], landmarks[27]),
-        rightKnee: calculateAngle(landmarks[24], landmarks[26], landmarks[28]),
-    };
+  return {
+    leftElbow: calculateAngle3D(landmarks[11], landmarks[13], landmarks[15]),
+    rightElbow: calculateAngle3D(landmarks[12], landmarks[14], landmarks[16]),
+    leftShoulder: calculateAngle3D(landmarks[23], landmarks[11], landmarks[13]),
+    rightShoulder: calculateAngle3D(
+      landmarks[24],
+      landmarks[12],
+      landmarks[14],
+    ),
+    leftHip: calculateAngle3D(landmarks[11], landmarks[23], landmarks[25]),
+    rightHip: calculateAngle3D(landmarks[12], landmarks[24], landmarks[26]),
+    leftKnee: calculateAngle3D(landmarks[23], landmarks[25], landmarks[27]),
+    rightKnee: calculateAngle3D(landmarks[24], landmarks[26], landmarks[28]),
+  };
 };
 
 const KEY_LANDMARK_INDICES = [11, 12, 13, 14, 15, 16, 23, 24, 25, 26, 27, 28];
 
 const getKeyLandmarkConfidence = (landmarks) => {
-    let sum = 0;
-    let count = 0;
-    let visibleCount = 0;
+  let sum = 0;
+  let count = 0;
+  let visibleCount = 0;
 
-    for (const idx of KEY_LANDMARK_INDICES) {
-        const lm = landmarks[idx];
-        if (lm && typeof lm.visibility === 'number') {
-            sum += lm.visibility;
-            count++;
+  for (const idx of KEY_LANDMARK_INDICES) {
+    const lm = landmarks[idx];
+    if (lm && typeof lm.visibility === "number") {
+      sum += lm.visibility;
+      count++;
 
-            const inBounds = lm.x >= 0.02 && lm.x <= 0.98 && lm.y >= 0.02 && lm.y <= 0.98;
+      const inBounds =
+        lm.x >= 0.02 && lm.x <= 0.98 && lm.y >= 0.02 && lm.y <= 0.98;
 
-            if (lm.visibility > 0.5 && inBounds) {
-                visibleCount++;
-            }
-        }
+      if (lm.visibility > 0.5 && inBounds) {
+        visibleCount++;
+      }
     }
+  }
 
-    if (count > 0 && visibleCount < 4) {
-        return 0.0;
-    }
+  if (count > 0 && visibleCount < 4) {
+    return 0.0;
+  }
 
-    return count > 0 ? sum / count : 1.0;
+  return count > 0 ? sum / count : 1.0;
 };
 
-const PoseDetector = forwardRef(({ referenceVideoUrl = null, isPaused = false, onMetricsUpdate = null, hideControls = false, onCameraStateChange = null, onRepDetected = null }, ref) => {
+const PoseDetector = forwardRef(
+  (
+    {
+      referenceVideoUrl = null,
+      isPaused = false,
+      onMetricsUpdate = null,
+      hideControls = false,
+      onCameraStateChange = null,
+      onRepDetected = null,
+    },
+    ref,
+  ) => {
     const { t } = useTranslation();
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
@@ -166,22 +257,22 @@ const PoseDetector = forwardRef(({ referenceVideoUrl = null, isPaused = false, o
     const onRepDetectedRef = useRef(onRepDetected);
 
     useEffect(() => {
-        onMetricsUpdateRef.current = onMetricsUpdate;
+      onMetricsUpdateRef.current = onMetricsUpdate;
     }, [onMetricsUpdate]);
 
     useEffect(() => {
-        onRepDetectedRef.current = onRepDetected;
+      onRepDetectedRef.current = onRepDetected;
     }, [onRepDetected]);
 
     useImperativeHandle(ref, () => ({
-        startCamera,
-        stopCamera
+      startCamera,
+      stopCamera,
     }));
 
     useEffect(() => {
-        if (onCameraStateChange) {
-            onCameraStateChange(cameraActive);
-        }
+      if (onCameraStateChange) {
+        onCameraStateChange(cameraActive);
+      }
     }, [cameraActive, onCameraStateChange]);
 
     const [loading, setLoading] = useState(false);
@@ -201,617 +292,743 @@ const PoseDetector = forwardRef(({ referenceVideoUrl = null, isPaused = false, o
     const lastHandTimestampRef = useRef(0);
 
     const getNextPoseTs = () => {
-        const now = performance.now();
-        const next = Math.max(Math.ceil(now), lastPoseTimestampRef.current + 1);
-        lastPoseTimestampRef.current = next;
-        return next;
+      const now = performance.now();
+      const next = Math.max(Math.ceil(now), lastPoseTimestampRef.current + 1);
+      lastPoseTimestampRef.current = next;
+      return next;
     };
 
     const getNextHandTs = () => {
-        const now = performance.now();
-        const next = Math.max(Math.ceil(now), lastHandTimestampRef.current + 1);
-        lastHandTimestampRef.current = next;
-        return next;
+      const now = performance.now();
+      const next = Math.max(Math.ceil(now), lastHandTimestampRef.current + 1);
+      lastHandTimestampRef.current = next;
+      return next;
     };
 
     useEffect(() => {
-        if (referenceVideoUrl) {
-            setVideoUrl(referenceVideoUrl);
-            videoUrlRef.current = referenceVideoUrl;
-            setModeState("comparison");
-            modeRef.current = "comparison";
-            setMatchPercentage(0);
-            matchPercentageRef.current = 0;
-        }
+      if (referenceVideoUrl) {
+        setVideoUrl(referenceVideoUrl);
+        videoUrlRef.current = referenceVideoUrl;
+        setModeState("comparison");
+        modeRef.current = "comparison";
+        setMatchPercentage(0);
+        matchPercentageRef.current = 0;
+      }
     }, [referenceVideoUrl]);
 
     useEffect(() => {
-        const originalConsoleError = console.error;
-        const originalConsoleWarn = console.warn;
+      const originalConsoleError = console.error;
+      const originalConsoleWarn = console.warn;
 
-        const filterArgs = (args) => {
-            if (typeof args[0] === "string") {
-                const msg = args[0];
-                if (msg.includes("TensorFlow Lite XNNPACK delegate") ||
-                    msg.includes("[browser]") ||
-                    msg.includes("landmark_projection_calculator") ||
-                    msg.includes("Packet timestamp mismatch") ||
-                    msg.includes("gl_graph_runner")) {
-                    return true;
-                }
-            }
-            return false;
-        };
+      const filterArgs = (args) => {
+        if (typeof args[0] === "string") {
+          const msg = args[0];
+          if (
+            msg.includes("TensorFlow Lite XNNPACK delegate") ||
+            msg.includes("[browser]") ||
+            msg.includes("landmark_projection_calculator") ||
+            msg.includes("Packet timestamp mismatch") ||
+            msg.includes("gl_graph_runner")
+          ) {
+            return true;
+          }
+        }
+        return false;
+      };
 
-        console.error = (...args) => {
-            if (filterArgs(args)) return;
-            originalConsoleError.apply(console, args);
-        };
+      console.error = (...args) => {
+        if (filterArgs(args)) return;
+        originalConsoleError.apply(console, args);
+      };
 
-        console.warn = (...args) => {
-            if (filterArgs(args)) return;
-            originalConsoleWarn.apply(console, args);
-        };
+      console.warn = (...args) => {
+        if (filterArgs(args)) return;
+        originalConsoleWarn.apply(console, args);
+      };
 
-        return () => {
-            console.error = originalConsoleError;
-            console.warn = originalConsoleWarn;
-        };
+      return () => {
+        console.error = originalConsoleError;
+        console.warn = originalConsoleWarn;
+      };
     }, []);
 
     const initPoseLandmarker = useCallback(async () => {
-        try {
-            const vision = await FilesetResolver.forVisionTasks(
-                "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm"
-            );
+      try {
+        const vision = await FilesetResolver.forVisionTasks(
+          "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@latest/wasm",
+        );
 
-            const poseModelUrl =
-                "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task";
-            const handModelUrl =
-                "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task";
+        const poseModelUrl =
+          "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task";
+        const handModelUrl =
+          "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task";
 
-            const createPoseLandmarker = (delegate) =>
-                PoseLandmarker.createFromOptions(vision, {
-                    baseOptions: {
-                        modelAssetPath: poseModelUrl,
-                        delegate,
-                    },
-                    runningMode: "VIDEO",
-                    numPoses: 1,
-                });
+        const createPoseLandmarker = (delegate) =>
+          PoseLandmarker.createFromOptions(vision, {
+            baseOptions: {
+              modelAssetPath: poseModelUrl,
+              delegate,
+            },
+            runningMode: "VIDEO",
+            numPoses: 1,
+          });
 
-            const createHandLandmarker = (delegate) =>
-                HandLandmarker.createFromOptions(vision, {
-                    baseOptions: {
-                        modelAssetPath: handModelUrl,
-                        delegate,
-                    },
-                    runningMode: "VIDEO",
-                    numHands: 2,
-                });
+        const createHandLandmarker = (delegate) =>
+          HandLandmarker.createFromOptions(vision, {
+            baseOptions: {
+              modelAssetPath: handModelUrl,
+              delegate,
+            },
+            runningMode: "VIDEO",
+            numHands: 2,
+          });
 
-            const initModels = async (delegate) => {
-                poseLandmarkerRef.current = await createPoseLandmarker(delegate);
-                handLandmarkerRef.current = await createHandLandmarker(delegate);
-            };
+        const initModels = async (delegate) => {
+          poseLandmarkerRef.current = await createPoseLandmarker(delegate);
+          handLandmarkerRef.current = await createHandLandmarker(delegate);
+        };
 
-            const isFirefox = /Firefox/i.test(navigator.userAgent);
-            if (isFirefox) {
-                console.log("Firefox detected: forcing CPU for better MediaPipe performance.");
-                await initModels("CPU");
-            } else {
-                try {
-                    await initModels("GPU");
-                } catch {
-                    console.warn("GPU delegate unavailable, falling back to CPU");
-                    await initModels("CPU");
-                }
-            }
-        } catch (err) {
-            console.error("MediaPipe init error:", err);
-            setError("Failed to load MediaPipe models.");
+        const isFirefox = /Firefox/i.test(navigator.userAgent);
+        if (isFirefox) {
+          console.log(
+            "Firefox detected: forcing CPU for better MediaPipe performance.",
+          );
+          await initModels("CPU");
+        } else {
+          try {
+            await initModels("GPU");
+          } catch {
+            console.warn("GPU delegate unavailable, falling back to CPU");
+            await initModels("CPU");
+          }
         }
+      } catch (err) {
+        console.error("MediaPipe init error:", err);
+        setError("Failed to load MediaPipe models.");
+      }
     }, []);
 
     const startCamera = useCallback(async () => {
-        setLoading(true);
-        setError(null);
+      setLoading(true);
+      setError(null);
 
-        try {
-            if (!poseLandmarkerRef.current || !handLandmarkerRef.current) {
-                await initPoseLandmarker();
-            }
-
-            let stream;
-            try {
-                stream = await navigator.mediaDevices.getUserMedia({
-                    video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: "user" },
-                    audio: false,
-                });
-            } catch (initialErr) {
-                console.warn("Initial getUserMedia failed, trying fallback constraints...", initialErr);
-                stream = await navigator.mediaDevices.getUserMedia({
-                    video: true,
-                    audio: false,
-                });
-            }
-
-            streamRef.current = stream;
-            const video = videoRef.current;
-            video.srcObject = stream;
-
-            await new Promise((resolve) => {
-                video.onloadeddata = resolve;
-            });
-            await video.play();
-
-            setCameraActive(true);
-            setLoading(false);
-        } catch (err) {
-            console.error("Camera error:", err);
-            setError(`Failed to access the camera: ${err.message || "Please check permissions."}`);
-            setLoading(false);
+      try {
+        if (!poseLandmarkerRef.current || !handLandmarkerRef.current) {
+          await initPoseLandmarker();
         }
+
+        let stream;
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              width: { ideal: 640 },
+              height: { ideal: 480 },
+              facingMode: "user",
+            },
+            audio: false,
+          });
+        } catch (initialErr) {
+          console.warn(
+            "Initial getUserMedia failed, trying fallback constraints...",
+            initialErr,
+          );
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: false,
+          });
+        }
+
+        streamRef.current = stream;
+        const video = videoRef.current;
+        video.srcObject = stream;
+
+        await new Promise((resolve) => {
+          video.onloadeddata = resolve;
+        });
+        await video.play();
+
+        setCameraActive(true);
+        setLoading(false);
+      } catch (err) {
+        console.error("Camera error:", err);
+        setError(
+          `Failed to access the camera: ${err.message || "Please check permissions."}`,
+        );
+        setLoading(false);
+      }
     }, [initPoseLandmarker]);
 
     const stopCamera = useCallback(() => {
-        if (animFrameRef.current) {
-            cancelAnimationFrame(animFrameRef.current);
-            animFrameRef.current = null;
-        }
+      if (animFrameRef.current) {
+        cancelAnimationFrame(animFrameRef.current);
+        animFrameRef.current = null;
+      }
 
-        if (streamRef.current) {
-            streamRef.current.getTracks().forEach((t) => t.stop());
-            streamRef.current = null;
-        }
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((t) => t.stop());
+        streamRef.current = null;
+      }
 
-        if (videoRef.current) {
-            videoRef.current.srcObject = null;
-        }
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
+      }
 
-        if (refVideoRef.current) {
-            refVideoRef.current.pause();
-        }
+      if (refVideoRef.current) {
+        refVideoRef.current.pause();
+      }
 
-        setCameraActive(false);
-        setIsWaving(false);
-        setMatchPercentage(0);
-        isWavingRef.current = false;
-        matchPercentageRef.current = 0;
-        leftWristHistoryRef.current = [];
-        rightWristHistoryRef.current = [];
-        loopMatchSumRef.current = 0;
-        loopMatchCountRef.current = 0;
-        if (dtwAnalyzerRef.current) dtwAnalyzerRef.current.reset();
-        camSmootherRef.current.reset();
-        refSmootherRef.current.reset();
+      setCameraActive(false);
+      setIsWaving(false);
+      setMatchPercentage(0);
+      isWavingRef.current = false;
+      matchPercentageRef.current = 0;
+      leftWristHistoryRef.current = [];
+      rightWristHistoryRef.current = [];
+      loopMatchSumRef.current = 0;
+      loopMatchCountRef.current = 0;
+      if (dtwAnalyzerRef.current) dtwAnalyzerRef.current.reset();
+      camSmootherRef.current.reset();
+      refSmootherRef.current.reset();
     }, []);
 
     const changeMode = (newMode) => {
-        setModeState(newMode);
-        modeRef.current = newMode;
-        if (newMode === 'waving') {
-            setMatchPercentage(0);
-            matchPercentageRef.current = 0;
-        } else {
-            setIsWaving(false);
-            isWavingRef.current = false;
-            leftWristHistoryRef.current = [];
-            rightWristHistoryRef.current = [];
-        }
-        loopMatchSumRef.current = 0;
-        loopMatchCountRef.current = 0;
-        if (dtwAnalyzerRef.current) dtwAnalyzerRef.current.reset();
+      setModeState(newMode);
+      modeRef.current = newMode;
+      if (newMode === "waving") {
+        setMatchPercentage(0);
+        matchPercentageRef.current = 0;
+      } else {
+        setIsWaving(false);
+        isWavingRef.current = false;
+        leftWristHistoryRef.current = [];
+        rightWristHistoryRef.current = [];
+      }
+      loopMatchSumRef.current = 0;
+      loopMatchCountRef.current = 0;
+      if (dtwAnalyzerRef.current) dtwAnalyzerRef.current.reset();
     };
 
     const lastCameraPoseRef = useRef(null);
     useEffect(() => {
-        const video = videoRef.current;
-        const canvas = canvasRef.current;
-        const poseLandmarker = poseLandmarkerRef.current;
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      const poseLandmarker = poseLandmarkerRef.current;
 
-        if (!video || !canvas || !cameraActive || !poseLandmarker) return;
+      if (!video || !canvas || !cameraActive || !poseLandmarker) return;
 
-        let lastTime = -1;
-        let lastRefTime = -1;
-        let prevRefVideoTime = -1;
+      let lastTime = -1;
+      let lastRefTime = -1;
+      let prevRefVideoTime = -1;
 
-        const loop = () => {
-            if (!videoRef.current?.srcObject) return;
-            const now = performance.now();
+      const loop = () => {
+        if (!videoRef.current?.srcObject) return;
+        const now = performance.now();
 
-            const ctx = canvas.getContext("2d");
-            const drawingUtils = new DrawingUtils(ctx);
+        const ctx = canvas.getContext("2d");
+        const drawingUtils = new DrawingUtils(ctx);
 
-            if (isPaused) {
-                if (refVideoRef.current && !refVideoRef.current.paused) {
-                    refVideoRef.current.pause();
-                }
-                if (!video.paused) {
-                    video.pause();
-                }
-                animFrameRef.current = requestAnimationFrame(loop);
-                return;
-            } else {
-                if (modeRef.current === "comparison" && videoUrlRef.current && refVideoRef.current && refVideoRef.current.paused) {
-                    refVideoRef.current.play().catch(e => console.warn("Auto-play prevented", e));
-                }
-                if (video.paused) {
-                    video.play().catch(e => console.warn("Webcam play prevented", e));
-                }
-            }
-
-            if (video.currentTime !== lastTime) {
-                lastTime = video.currentTime;
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                ctx.save();
-                ctx.translate(canvas.width, 0);
-                ctx.scale(-1, 1);
-                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                ctx.restore();
-
-                let currentPose = null;
-                try {
-                    const poseResult = poseLandmarker.detectForVideo(video, getNextPoseTs());
-                    if (poseResult?.landmarks?.length > 0) {
-                        currentPose = poseResult.landmarks[0];
-                        lastCameraPoseRef.current = currentPose;
-
-                        const smoothed = camSmootherRef.current.filter(currentPose, now);
-
-                        const mirrored = smoothed.map((lm) => ({ ...lm, x: 1 - lm.x }));
-                        drawingUtils.drawConnectors(mirrored, BODY_CONNECTIONS, { color: "rgba(0, 230, 180, 0.7)", lineWidth: 4 });
-                        const bodyLandmarks = mirrored.filter((_, i) => !FACE_INDICES.has(i));
-                        drawingUtils.drawLandmarks(bodyLandmarks, { color: "rgba(255, 255, 255, 0.9)", fillColor: "rgba(0, 200, 160, 0.85)", lineWidth: 2, radius: 5 });
-
-                        if (modeRef.current === "comparison") {
-                            if (!dtwAnalyzerRef.current) {
-                                dtwAnalyzerRef.current = new DTWAnalyzer();
-                            }
-                            const camConfidence = getKeyLandmarkConfidence(currentPose);
-                            dtwAnalyzerRef.current.addCameraFrame(getPoseAngles(smoothed), camConfidence);
-                        }
-                    }
-                } catch (e) { }
-
-                if (modeRef.current === "waving" && currentPose) {
-                    const l = currentPose[15], r = currentPose[16], ls = currentPose[11], rs = currentPose[12];
-                    const checkWave = (wrist, shoulder, history) => {
-                        if (!wrist || !shoulder) return false;
-                        history.push({ x: wrist.x, time: now });
-                        while (history.length > 0 && now - history[0].time > 2000) history.shift();
-                        if (wrist.y > shoulder.y + 0.35) return false;
-                        if (history.length < 5) return false;
-                        let changes = 0, state = -1, lastX = history[0].x;
-                        for (let i = 1; i < history.length; i++) {
-                            let dx = history[i].x - lastX;
-                            if (state === -1) {
-                                if (dx > 0.05) { state = 1; lastX = history[i].x; }
-                                else if (dx < -0.05) { state = 0; lastX = history[i].x; }
-                            } else if (state === 1) {
-                                if (dx < -0.05) { state = 0; changes++; lastX = history[i].x; }
-                                else if (dx > 0) lastX = Math.max(lastX, history[i].x);
-                            } else if (state === 0) {
-                                if (dx > 0.05) { state = 1; changes++; lastX = history[i].x; }
-                                else if (dx < 0) lastX = Math.min(lastX, history[i].x);
-                            }
-                        }
-                        return changes >= 3;
-                    };
-                    const wave = checkWave(l, ls, leftWristHistoryRef.current) || checkWave(r, rs, rightWristHistoryRef.current);
-                    if (wave !== isWavingRef.current) {
-                        isWavingRef.current = wave;
-                        setIsWaving(wave);
-                    }
-                }
-            }
-
-            const refVideo = refVideoRef.current;
-            const refCanvas = refCanvasRef.current;
-
-            if (modeRef.current === "comparison" && videoUrlRef.current && refVideo && refCanvas && refVideo.readyState >= 2) {
-                if (refVideo.currentTime !== lastRefTime) {
-                    lastRefTime = refVideo.currentTime;
-
-                    if (prevRefVideoTime > 0 && refVideo.currentTime < prevRefVideoTime - 0.5) {
-                        refSmootherRef.current.reset();
-                        if (matchPercentageRef.current > 60) {
-                            if (onRepDetectedRef.current) onRepDetectedRef.current();
-                        }
-                    }
-                    prevRefVideoTime = refVideo.currentTime;
-
-                    try {
-                        const rCtx = refCanvas.getContext("2d");
-                        const rUtils = new DrawingUtils(rCtx);
-                        if (refCanvas.width !== refVideo.videoWidth || refCanvas.height !== refVideo.videoHeight) {
-                            refCanvas.width = refVideo.videoWidth;
-                            refCanvas.height = refVideo.videoHeight;
-                        }
-
-                        rCtx.save();
-                        rCtx.translate(refCanvas.width, 0);
-                        rCtx.scale(-1, 1);
-                        rCtx.drawImage(refVideo, 0, 0, refCanvas.width, refCanvas.height);
-                        rCtx.restore();
-
-                        const refPoseResult = poseLandmarker.detectForVideo(refVideo, getNextPoseTs());
-
-                        if (refPoseResult?.landmarks?.length > 0) {
-                            const refPose = refPoseResult.landmarks[0];
-
-                            const smoothedRef = refSmootherRef.current.filter(refPose, now);
-
-                            const mirroredRefPose = smoothedRef.map((lm) => ({ ...lm, x: 1 - lm.x }));
-                            rUtils.drawConnectors(mirroredRefPose, BODY_CONNECTIONS, { color: "rgba(180, 0, 230, 0.7)", lineWidth: 4 });
-                            const refBodyLandmarks = mirroredRefPose.filter((_, i) => !FACE_INDICES.has(i));
-                            rUtils.drawLandmarks(refBodyLandmarks, { color: "rgba(255, 255, 255, 0.9)", fillColor: "rgba(160, 0, 200, 0.85)", lineWidth: 2, radius: 4 });
-
-                            if (dtwAnalyzerRef.current) {
-                                const refConfidence = getKeyLandmarkConfidence(refPose);
-                                dtwAnalyzerRef.current.addReferenceFrame(getPoseAngles(smoothedRef), refConfidence);
-                                const dtwMatch = dtwAnalyzerRef.current.getMatch();
-                                if (dtwMatch !== null) {
-                                    matchPercentageRef.current = dtwMatch;
-                                    const matchVal = Math.round(dtwMatch);
-                                    
-                                    const meanVal = Math.round(dtwAnalyzerRef.current.getMeanAccuracy());
-                                    setMatchPercentage(matchVal);
-                                    if (onMetricsUpdateRef.current) {
-                                        onMetricsUpdateRef.current({
-                                            accuracy: matchVal,
-                                            meanAccuracy: meanVal,
-                                            isCameraStale: dtwAnalyzerRef.current.isCameraStale
-                                        });
-                                    }
-                                }
-                            }
-                        }
-                    } catch (e) { }
-                }
-            }
-
-            animFrameRef.current = requestAnimationFrame(loop);
-        };
-        if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
-        animFrameRef.current = requestAnimationFrame(loop);
-
-        return () => {
-            if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+        if (isPaused) {
+          if (refVideoRef.current && !refVideoRef.current.paused) {
+            refVideoRef.current.pause();
+          }
+          if (!video.paused) {
+            video.pause();
+          }
+          animFrameRef.current = requestAnimationFrame(loop);
+          return;
+        } else {
+          if (
+            modeRef.current === "comparison" &&
+            videoUrlRef.current &&
+            refVideoRef.current &&
+            refVideoRef.current.paused
+          ) {
+            refVideoRef.current
+              .play()
+              .catch((e) => console.warn("Auto-play prevented", e));
+          }
+          if (video.paused) {
+            video.play().catch((e) => console.warn("Webcam play prevented", e));
+          }
         }
+
+        if (video.currentTime !== lastTime) {
+          lastTime = video.currentTime;
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+          ctx.save();
+          ctx.translate(canvas.width, 0);
+          ctx.scale(-1, 1);
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          ctx.restore();
+
+          let currentPose = null;
+          try {
+            const poseResult = poseLandmarker.detectForVideo(
+              video,
+              getNextPoseTs(),
+            );
+            if (poseResult?.landmarks?.length > 0) {
+              currentPose = poseResult.landmarks[0];
+              lastCameraPoseRef.current = currentPose;
+
+              const smoothed = camSmootherRef.current.filter(currentPose, now);
+              const normalizedCameraPose = normalizeLandmarksRelative(smoothed);
+
+              const mirrored = smoothed.map((lm) => ({ ...lm, x: 1 - lm.x }));
+              drawingUtils.drawConnectors(mirrored, BODY_CONNECTIONS, {
+                color: "rgba(0, 230, 180, 0.7)",
+                lineWidth: 4,
+              });
+              const bodyLandmarks = mirrored.filter(
+                (_, i) => !FACE_INDICES.has(i),
+              );
+              drawingUtils.drawLandmarks(bodyLandmarks, {
+                color: "rgba(255, 255, 255, 0.9)",
+                fillColor: "rgba(0, 200, 160, 0.85)",
+                lineWidth: 2,
+                radius: 5,
+              });
+
+              if (modeRef.current === "comparison") {
+                if (!dtwAnalyzerRef.current) {
+                  dtwAnalyzerRef.current = new DTWAnalyzer();
+                }
+                const camConfidence = getKeyLandmarkConfidence(currentPose);
+                dtwAnalyzerRef.current.addCameraFrame(
+                  getPoseAngles(normalizedCameraPose),
+                  camConfidence,
+                );
+              }
+            }
+          } catch (e) {}
+
+          if (modeRef.current === "waving" && currentPose) {
+            const l = currentPose[15],
+              r = currentPose[16],
+              ls = currentPose[11],
+              rs = currentPose[12];
+            const checkWave = (wrist, shoulder, history) => {
+              if (!wrist || !shoulder) return false;
+              history.push({ x: wrist.x, time: now });
+              while (history.length > 0 && now - history[0].time > 2000)
+                history.shift();
+              if (wrist.y > shoulder.y + 0.35) return false;
+              if (history.length < 5) return false;
+              let changes = 0,
+                state = -1,
+                lastX = history[0].x;
+              for (let i = 1; i < history.length; i++) {
+                let dx = history[i].x - lastX;
+                if (state === -1) {
+                  if (dx > 0.05) {
+                    state = 1;
+                    lastX = history[i].x;
+                  } else if (dx < -0.05) {
+                    state = 0;
+                    lastX = history[i].x;
+                  }
+                } else if (state === 1) {
+                  if (dx < -0.05) {
+                    state = 0;
+                    changes++;
+                    lastX = history[i].x;
+                  } else if (dx > 0) lastX = Math.max(lastX, history[i].x);
+                } else if (state === 0) {
+                  if (dx > 0.05) {
+                    state = 1;
+                    changes++;
+                    lastX = history[i].x;
+                  } else if (dx < 0) lastX = Math.min(lastX, history[i].x);
+                }
+              }
+              return changes >= 3;
+            };
+            const wave =
+              checkWave(l, ls, leftWristHistoryRef.current) ||
+              checkWave(r, rs, rightWristHistoryRef.current);
+            if (wave !== isWavingRef.current) {
+              isWavingRef.current = wave;
+              setIsWaving(wave);
+            }
+          }
+        }
+
+        const refVideo = refVideoRef.current;
+        const refCanvas = refCanvasRef.current;
+
+        if (
+          modeRef.current === "comparison" &&
+          videoUrlRef.current &&
+          refVideo &&
+          refCanvas &&
+          refVideo.readyState >= 2
+        ) {
+          if (refVideo.currentTime !== lastRefTime) {
+            lastRefTime = refVideo.currentTime;
+
+            if (
+              prevRefVideoTime > 0 &&
+              refVideo.currentTime < prevRefVideoTime - 0.5
+            ) {
+              refSmootherRef.current.reset();
+              if (matchPercentageRef.current > 60) {
+                if (onRepDetectedRef.current) onRepDetectedRef.current();
+              }
+            }
+            prevRefVideoTime = refVideo.currentTime;
+
+            try {
+              const rCtx = refCanvas.getContext("2d");
+              const rUtils = new DrawingUtils(rCtx);
+              if (
+                refCanvas.width !== refVideo.videoWidth ||
+                refCanvas.height !== refVideo.videoHeight
+              ) {
+                refCanvas.width = refVideo.videoWidth;
+                refCanvas.height = refVideo.videoHeight;
+              }
+
+              rCtx.save();
+              rCtx.translate(refCanvas.width, 0);
+              rCtx.scale(-1, 1);
+              rCtx.drawImage(refVideo, 0, 0, refCanvas.width, refCanvas.height);
+              rCtx.restore();
+
+              const refPoseResult = poseLandmarker.detectForVideo(
+                refVideo,
+                getNextPoseTs(),
+              );
+
+              if (refPoseResult?.landmarks?.length > 0) {
+                const refPose = refPoseResult.landmarks[0];
+
+                const smoothedRef = refSmootherRef.current.filter(refPose, now);
+                const normalizedRefPose =
+                  normalizeLandmarksRelative(smoothedRef);
+
+                const mirroredRefPose = smoothedRef.map((lm) => ({
+                  ...lm,
+                  x: 1 - lm.x,
+                }));
+                rUtils.drawConnectors(mirroredRefPose, BODY_CONNECTIONS, {
+                  color: "rgba(180, 0, 230, 0.7)",
+                  lineWidth: 4,
+                });
+                const refBodyLandmarks = mirroredRefPose.filter(
+                  (_, i) => !FACE_INDICES.has(i),
+                );
+                rUtils.drawLandmarks(refBodyLandmarks, {
+                  color: "rgba(255, 255, 255, 0.9)",
+                  fillColor: "rgba(160, 0, 200, 0.85)",
+                  lineWidth: 2,
+                  radius: 4,
+                });
+
+                if (dtwAnalyzerRef.current) {
+                  const refConfidence = getKeyLandmarkConfidence(refPose);
+                  dtwAnalyzerRef.current.addReferenceFrame(
+                    getPoseAngles(normalizedRefPose),
+                    refConfidence,
+                  );
+                  const dtwMatch = dtwAnalyzerRef.current.getMatch();
+                  if (dtwMatch !== null) {
+                    matchPercentageRef.current = dtwMatch;
+                    const matchVal = Math.round(dtwMatch);
+
+                    const meanVal = Math.round(
+                      dtwAnalyzerRef.current.getMeanAccuracy(),
+                    );
+                    setMatchPercentage(matchVal);
+                    if (onMetricsUpdateRef.current) {
+                      onMetricsUpdateRef.current({
+                        accuracy: matchVal,
+                        meanAccuracy: meanVal,
+                        isCameraStale: dtwAnalyzerRef.current.isCameraStale,
+                      });
+                    }
+                  }
+                }
+              }
+            } catch (e) {}
+          }
+        }
+
+        animFrameRef.current = requestAnimationFrame(loop);
+      };
+      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+      animFrameRef.current = requestAnimationFrame(loop);
+
+      return () => {
+        if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+      };
     }, [cameraActive, isPaused]);
 
     useEffect(() => {
-        return () => {
-            stopCamera();
-            try {
-                if (poseLandmarkerRef.current) {
-                    poseLandmarkerRef.current.close();
-                    poseLandmarkerRef.current = null;
-                }
-            } catch (e) { /*nic */ }
-            try {
-                if (handLandmarkerRef.current) {
-                    handLandmarkerRef.current.close();
-                    handLandmarkerRef.current = null;
-                }
-            } catch (e) { /*nic */ }
-        };
+      return () => {
+        stopCamera();
+        try {
+          if (poseLandmarkerRef.current) {
+            poseLandmarkerRef.current.close();
+            poseLandmarkerRef.current = null;
+          }
+        } catch (e) {
+          /*nic */
+        }
+        try {
+          if (handLandmarkerRef.current) {
+            handLandmarkerRef.current.close();
+            handLandmarkerRef.current = null;
+          }
+        } catch (e) {
+          /*nic */
+        }
+      };
     }, [stopCamera]);
 
     const startBtnClass = [
-        "relative px-8 py-3 rounded-2xl font-semibold text-sm",
-        "bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500",
-        "text-white shadow-lg shadow-teal-500/30",
-        "hover:shadow-xl hover:shadow-teal-500/40",
-        "hover:scale-105 active:scale-95",
-        "transition-all duration-300 ease-out",
-        "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100",
+      "relative px-8 py-3 rounded-2xl font-semibold text-sm",
+      "bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500",
+      "text-white shadow-lg shadow-teal-500/30",
+      "hover:shadow-xl hover:shadow-teal-500/40",
+      "hover:scale-105 active:scale-95",
+      "transition-all duration-300 ease-out",
+      "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100",
     ].join(" ");
 
     const stopBtnClass = [
-        "px-8 py-3 rounded-2xl font-semibold text-sm",
-        "bg-gradient-to-r from-rose-500 to-pink-500",
-        "text-white shadow-lg shadow-rose-500/30",
-        "hover:shadow-xl hover:shadow-rose-500/40",
-        "hover:scale-105 active:scale-95",
-        "transition-all duration-300 ease-out",
+      "px-8 py-3 rounded-2xl font-semibold text-sm",
+      "bg-gradient-to-r from-rose-500 to-pink-500",
+      "text-white shadow-lg shadow-rose-500/30",
+      "hover:shadow-xl hover:shadow-rose-500/40",
+      "hover:scale-105 active:scale-95",
+      "transition-all duration-300 ease-out",
     ].join(" ");
 
     return (
-        <div className={`w-full ${mode === 'comparison' ? 'max-w-7xl' : 'max-w-4xl'} flex flex-col items-center gap-5 animate-scale-up transition-all duration-500`}>
+      <div
+        className={`w-full ${mode === "comparison" ? "max-w-7xl" : "max-w-4xl"} flex flex-col items-center gap-5 animate-scale-up transition-all duration-500`}
+      >
+        {!hasExternalVideo && (
+          <div className="flex bg-panel border border-outline rounded-2xl p-1 shadow-panel mb-2 z-10 relative">
+            <button
+              onClick={() => changeMode("waving")}
+              className={`px-6 py-2 rounded-xl text-sm font-medium transition-all duration-300 cursor-pointer ${
+                mode === "waving"
+                  ? "bg-gradient-to-r from-teal-500 to-emerald-500 text-white shadow-md shadow-teal-500/20"
+                  : "text-muted hover:text-white hover:bg-white/5"
+              }`}
+            >
+              Wave Detection
+            </button>
+            <button
+              onClick={() => changeMode("comparison")}
+              className={`px-6 py-2 rounded-xl text-sm font-medium transition-all duration-300 flex items-center gap-2 cursor-pointer ${
+                mode === "comparison"
+                  ? "bg-gradient-to-r from-fuchsia-500 to-purple-500 text-white shadow-md shadow-purple-500/20"
+                  : "text-muted hover:text-white hover:bg-white/5"
+              }`}
+            >
+              Pose Comparison
+              {mode === "comparison" && (
+                <span className="flex w-2 h-2 rounded-full bg-white animate-pulse"></span>
+              )}
+            </button>
+          </div>
+        )}
 
-            {!hasExternalVideo && (
-                <div className="flex bg-panel border border-outline rounded-2xl p-1 shadow-panel mb-2 z-10 relative">
-                    <button
-                        onClick={() => changeMode("waving")}
-                        className={`px-6 py-2 rounded-xl text-sm font-medium transition-all duration-300 cursor-pointer ${mode === "waving"
-                            ? "bg-gradient-to-r from-teal-500 to-emerald-500 text-white shadow-md shadow-teal-500/20"
-                            : "text-muted hover:text-white hover:bg-white/5"
-                            }`}
-                    >
-                        Wave Detection
-                    </button>
-                    <button
-                        onClick={() => changeMode("comparison")}
-                        className={`px-6 py-2 rounded-xl text-sm font-medium transition-all duration-300 flex items-center gap-2 cursor-pointer ${mode === "comparison"
-                            ? "bg-gradient-to-r from-fuchsia-500 to-purple-500 text-white shadow-md shadow-purple-500/20"
-                            : "text-muted hover:text-white hover:bg-white/5"
-                            }`}
-                    >
-                        Pose Comparison
-                        {mode === "comparison" && <span className="flex w-2 h-2 rounded-full bg-white animate-pulse"></span>}
-                    </button>
-                </div>
-            )}
-
-            {!hideControls && (
-                <div className="flex flex-col items-center gap-4 w-full">
-                    <div className="flex flex-wrap justify-center items-center gap-4">
-                        {!cameraActive ? (
-                        <button
-                            id="start-camera-btn"
-                            onClick={startCamera}
-                            disabled={loading}
-                            className={`cursor-pointer ${startBtnClass}`}
-                        >
-                            {loading ? (
-                                <span className="flex items-center gap-2">
-                                    <Spinner />
-                                    Loading…
-                                </span>
-                            ) : (
-                                "Start Camera"
-                            )}
-                        </button>
-                    ) : (
-                        <button
-                            id="stop-camera-btn"
-                            onClick={stopCamera}
-                            className={`cursor-pointer ${stopBtnClass}`}
-                        >
-                            Stop All
-                        </button>
-                    )}
-
-                </div>
+        {!hideControls && (
+          <div className="flex flex-col items-center gap-4 w-full">
+            <div className="flex flex-wrap justify-center items-center gap-4">
+              {!cameraActive ? (
+                <button
+                  id="start-camera-btn"
+                  onClick={startCamera}
+                  disabled={loading}
+                  className={`cursor-pointer ${startBtnClass}`}
+                >
+                  {loading ? (
+                    <span className="flex items-center gap-2">
+                      <Spinner />
+                      Loading…
+                    </span>
+                  ) : (
+                    "Start Camera"
+                  )}
+                </button>
+              ) : (
+                <button
+                  id="stop-camera-btn"
+                  onClick={stopCamera}
+                  className={`cursor-pointer ${stopBtnClass}`}
+                >
+                  Stop All
+                </button>
+              )}
             </div>
+          </div>
+        )}
+
+        {cameraActive && mode === "waving" && (
+          <div className="w-full max-w-sm bg-panel border border-outline rounded-2xl p-4 shadow-panel flex items-center justify-between animate-fade-in translate-y-1">
+            <span className="text-sm font-medium text-muted">Test:</span>
+            {isWaving ? (
+              <span className="px-3 py-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-xl text-sm font-bold flex items-center gap-2 animate-pulse shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+                Waving detected! Great job!
+              </span>
+            ) : (
+              <span className="px-3 py-1 bg-panel border border-outline rounded-xl text-sm text-muted">
+                Wave at the camera…
+              </span>
             )}
+          </div>
+        )}
 
-            {cameraActive && mode === "waving" && (
-                <div className="w-full max-w-sm bg-panel border border-outline rounded-2xl p-4 shadow-panel flex items-center justify-between animate-fade-in translate-y-1">
-                    <span className="text-sm font-medium text-muted">Test:</span>
-                    {isWaving ? (
-                        <span className="px-3 py-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-xl text-sm font-bold flex items-center gap-2 animate-pulse shadow-[0_0_15px_rgba(16,185,129,0.2)]">
-                            Waving detected! Great job!
-                        </span>
-                    ) : (
-                        <span className="px-3 py-1 bg-panel border border-outline rounded-xl text-sm text-muted">
-                            Wave at the camera…
-                        </span>
-                    )}
+        {cameraActive &&
+          mode === "comparison" &&
+          videoUrl &&
+          !onMetricsUpdate && (
+            <div className="w-full max-w-sm flex items-center justify-center p-3 animate-fade-in translate-y-1 bg-panel border border-outline rounded-2xl shadow-panel">
+              <div className="flex flex-col items-center w-full">
+                <span className="text-sm font-semibold text-muted mb-2">
+                  DTW Movement Accuracy:
+                </span>
+                <div className="w-full h-4 bg-black/50 rounded-full overflow-hidden relative border border-outline">
+                  <div
+                    className={`absolute top-0 left-0 h-full transition-all duration-300 ease-out ${
+                      matchPercentage > 80
+                        ? "bg-emerald-500"
+                        : matchPercentage > 50
+                          ? "bg-amber-400"
+                          : "bg-rose-500"
+                    }`}
+                    style={{ width: `${matchPercentage}%` }}
+                  />
                 </div>
-            )}
-
-            {cameraActive && mode === "comparison" && videoUrl && !onMetricsUpdate && (
-                <div className="w-full max-w-sm flex items-center justify-center p-3 animate-fade-in translate-y-1 bg-panel border border-outline rounded-2xl shadow-panel">
-                    <div className="flex flex-col items-center w-full">
-                        <span className="text-sm font-semibold text-muted mb-2">DTW Movement Accuracy:</span>
-                        <div className="w-full h-4 bg-black/50 rounded-full overflow-hidden relative border border-outline">
-                            <div
-                                className={`absolute top-0 left-0 h-full transition-all duration-300 ease-out ${matchPercentage > 80 ? 'bg-emerald-500' :
-                                    matchPercentage > 50 ? 'bg-amber-400' : 'bg-rose-500'
-                                    }`}
-                                style={{ width: `${matchPercentage}%` }}
-                            />
-                        </div>
-                        <span className={`text-3xl font-black mt-2 transition-colors duration-300 ${matchPercentage > 80 ? 'text-emerald-400 drop-shadow-[0_0_10px_rgba(52,211,153,0.5)]' :
-                            matchPercentage > 50 ? 'text-amber-400 drop-shadow-[0_0_10px_rgba(251,191,36,0.3)]' : 'text-rose-500'
-                            }`}>
-                            {matchPercentage}%
-                        </span>
-                    </div>
-                </div>
-            )}
-
-            {
-                error && (
-                    <div className="px-6 py-3 rounded-xl text-sm bg-danger-panel border border-danger-outline text-danger animate-fade-in">
-                        ⚠️ {error}
-                    </div>
-                )
-            }
-
-            <div className={`grid gap-6 w-full transition-all duration-500 ${mode === 'comparison' ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1'}`}>
-
-                <div className={`relative w-full aspect-video rounded-2xl overflow-hidden bg-panel border border-outline shadow-panel flex-1 transition-all duration-300 ${mode === 'comparison' && cameraActive ? 'ring-2 ring-emerald-500/50 shadow-[0_0_30px_rgba(16,185,129,0.1)]' : ''}`}>
-                    {mode === 'comparison' && (
-                        <div className="absolute top-4 left-4 z-10 px-3 py-1 bg-black/50 backdrop-blur-md text-emerald-400 rounded-lg text-xs font-semibold border border-emerald-500/30 uppercase tracking-widest">
-                            {t('dashboard.pose.youCamera')}
-                        </div>
-                    )}
-                    <video
-                        ref={videoRef}
-                        playsInline
-                        muted
-                        className="absolute inset-0 w-full h-full object-cover opacity-0 pointer-events-none"
-                    />
-                    <canvas
-                        ref={canvasRef}
-                        className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${cameraActive ? "opacity-100" : "opacity-0"}`}
-                    />
-                    {!cameraActive && !loading && (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-muted">
-                            <span className="text-sm font-medium">{t('dashboard.pose.waitingCamera')}</span>
-                        </div>
-                    )}
-                    {loading && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-panel/80 backdrop-blur-sm">
-                            <Spinner size="lg" />
-                        </div>
-                    )}
-                </div>
-
-                {mode === "comparison" && (
-                    <div className="relative w-full aspect-video rounded-2xl overflow-hidden bg-panel border-2 border-dashed border-purple-500/20 shadow-panel flex-1 transition-all duration-300 hover:border-purple-500/40 flex items-center justify-center">
-                        {videoUrl && (
-                            <div className="absolute top-4 right-4 z-10 px-3 py-1 bg-purple-500/20 text-purple-300 backdrop-blur-md rounded-lg text-xs font-semibold border border-purple-500/30 uppercase tracking-widest">
-                                {t('dashboard.pose.referenceVideo')}
-                            </div>
-                        )}
-                        <video
-                            ref={refVideoRef}
-                            src={videoUrl || undefined}
-                            crossOrigin="anonymous"
-                            playsInline
-                            muted
-                            autoPlay
-                            loop
-                            className="absolute inset-0 w-full h-full object-cover opacity-0 pointer-events-none"
-                        />
-                        <canvas
-                            ref={refCanvasRef}
-                            className={`absolute z-0 inset-0 w-full h-full object-cover transition-opacity duration-500 ${videoUrl ? "opacity-100" : "opacity-0"}`}
-                        />
-                        {!videoUrl && (
-                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-purple-400/50">
-                                <svg className="w-16 h-16 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                <span className="text-sm font-medium">{t('dashboard.pose.noReference')}</span>
-                            </div>
-                        )}
-                    </div>
-                )}
+                <span
+                  className={`text-3xl font-black mt-2 transition-colors duration-300 ${
+                    matchPercentage > 80
+                      ? "text-emerald-400 drop-shadow-[0_0_10px_rgba(52,211,153,0.5)]"
+                      : matchPercentage > 50
+                        ? "text-amber-400 drop-shadow-[0_0_10px_rgba(251,191,36,0.3)]"
+                        : "text-rose-500"
+                  }`}
+                >
+                  {matchPercentage}%
+                </span>
+              </div>
             </div>
-        </div >
+          )}
+
+        {error && (
+          <div className="px-6 py-3 rounded-xl text-sm bg-danger-panel border border-danger-outline text-danger animate-fade-in">
+            ⚠️ {error}
+          </div>
+        )}
+
+        <div
+          className={`grid gap-6 w-full transition-all duration-500 ${mode === "comparison" ? "grid-cols-1 lg:grid-cols-2" : "grid-cols-1"}`}
+        >
+          <div
+            className={`relative w-full aspect-video rounded-2xl overflow-hidden bg-panel border border-outline shadow-panel flex-1 transition-all duration-300 ${mode === "comparison" && cameraActive ? "ring-2 ring-emerald-500/50 shadow-[0_0_30px_rgba(16,185,129,0.1)]" : ""}`}
+          >
+            {mode === "comparison" && (
+              <div className="absolute top-4 left-4 z-10 px-3 py-1 bg-black/50 backdrop-blur-md text-emerald-400 rounded-lg text-xs font-semibold border border-emerald-500/30 uppercase tracking-widest">
+                {t("dashboard.pose.youCamera")}
+              </div>
+            )}
+            <video
+              ref={videoRef}
+              playsInline
+              muted
+              className="absolute inset-0 w-full h-full object-cover opacity-0 pointer-events-none"
+            />
+            <canvas
+              ref={canvasRef}
+              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${cameraActive ? "opacity-100" : "opacity-0"}`}
+            />
+            {!cameraActive && !loading && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-muted">
+                <span className="text-sm font-medium">
+                  {t("dashboard.pose.waitingCamera")}
+                </span>
+              </div>
+            )}
+            {loading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-panel/80 backdrop-blur-sm">
+                <Spinner size="lg" />
+              </div>
+            )}
+          </div>
+
+          {mode === "comparison" && (
+            <div className="relative w-full aspect-video rounded-2xl overflow-hidden bg-panel border-2 border-dashed border-purple-500/20 shadow-panel flex-1 transition-all duration-300 hover:border-purple-500/40 flex items-center justify-center">
+              {videoUrl && (
+                <div className="absolute top-4 right-4 z-10 px-3 py-1 bg-purple-500/20 text-purple-300 backdrop-blur-md rounded-lg text-xs font-semibold border border-purple-500/30 uppercase tracking-widest">
+                  {t("dashboard.pose.referenceVideo")}
+                </div>
+              )}
+              <video
+                ref={refVideoRef}
+                src={videoUrl || undefined}
+                crossOrigin="anonymous"
+                playsInline
+                muted
+                autoPlay
+                loop
+                className="absolute inset-0 w-full h-full object-cover opacity-0 pointer-events-none"
+              />
+              <canvas
+                ref={refCanvasRef}
+                className={`absolute z-0 inset-0 w-full h-full object-cover transition-opacity duration-500 ${videoUrl ? "opacity-100" : "opacity-0"}`}
+              />
+              {!videoUrl && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-purple-400/50">
+                  <svg
+                    className="w-16 h-16 opacity-50"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  <span className="text-sm font-medium">
+                    {t("dashboard.pose.noReference")}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
     );
-});
+  },
+);
 
 export default PoseDetector;
 
 function Spinner({ size = "sm" }) {
-    const dim = size === "lg" ? "w-8 h-8" : "w-4 h-4";
-    return (
-        <svg
-            className={`${dim} animate-spin`}
-            viewBox="0 0 24 24"
-            fill="none"
-        >
-            <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-            />
-            <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-            />
-        </svg>
-    );
+  const dim = size === "lg" ? "w-8 h-8" : "w-4 h-4";
+  return (
+    <svg className={`${dim} animate-spin`} viewBox="0 0 24 24" fill="none">
+      <circle
+        className="opacity-25"
+        cx="12"
+        cy="12"
+        r="10"
+        stroke="currentColor"
+        strokeWidth="4"
+      />
+      <path
+        className="opacity-75"
+        fill="currentColor"
+        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+      />
+    </svg>
+  );
 }
