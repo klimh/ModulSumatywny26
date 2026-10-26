@@ -20,6 +20,17 @@ import { useTranslation } from "@/hooks/useTranslation";
 const POSE_CONNECTIONS = PoseLandmarker.POSE_CONNECTIONS;
 const HAND_CONNECTIONS = HandLandmarker.HAND_CONNECTIONS;
 
+const POSE_JOINT_WEIGHTS = {
+  leftElbow: 1.0,
+  rightElbow: 1.0,
+  leftShoulder: 1.2,
+  rightShoulder: 1.2,
+  leftHip: 1.5,
+  rightHip: 1.5,
+  leftKnee: 1.4,
+  rightKnee: 1.4,
+};
+
 const FACE_INDICES = new Set([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
 const BODY_CONNECTIONS = POSE_CONNECTIONS.filter(
   (c) => !FACE_INDICES.has(c.start) && !FACE_INDICES.has(c.end),
@@ -592,7 +603,9 @@ const PoseDetector = forwardRef(
 
               if (modeRef.current === "comparison") {
                 if (!dtwAnalyzerRef.current) {
-                  dtwAnalyzerRef.current = new DTWAnalyzer();
+                  dtwAnalyzerRef.current = new DTWAnalyzer({
+                    jointWeights: POSE_JOINT_WEIGHTS,
+                  });
                 }
                 const camConfidence = getKeyLandmarkConfidence(currentPose);
                 dtwAnalyzerRef.current.addCameraFrame(
