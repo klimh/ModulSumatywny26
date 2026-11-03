@@ -16,6 +16,7 @@ import {
 } from "@mediapipe/tasks-vision";
 import { DTWAnalyzer } from "./dtwAnalyzer";
 import { useTranslation } from "@/hooks/useTranslation";
+import { computeTrunkMetrics } from "./trunkStability";
 
 const POSE_CONNECTIONS = PoseLandmarker.POSE_CONNECTIONS;
 const HAND_CONNECTIONS = HandLandmarker.HAND_CONNECTIONS;
@@ -29,6 +30,9 @@ const POSE_JOINT_WEIGHTS = {
   rightHip: 1.5,
   leftKnee: 1.4,
   rightKnee: 1.4,
+  trunkLateralTilt: 1.2,
+  trunkTwist: 1.2,
+  trunkPitch: 1.0,
 };
 
 const FACE_INDICES = new Set([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
@@ -166,20 +170,9 @@ const normalizeLandmarksRelative = (landmarks) => {
   }));
 };
 
-// const getPoseAngles = (landmarks) => {
-//     return {
-//         leftElbow: calculateAngle(landmarks[11], landmarks[13], landmarks[15]),
-//         rightElbow: calculateAngle(landmarks[12], landmarks[14], landmarks[16]),
-//         leftShoulder: calculateAngle(landmarks[23], landmarks[11], landmarks[13]),
-//         rightShoulder: calculateAngle(landmarks[24], landmarks[12], landmarks[14]),
-//         leftHip: calculateAngle(landmarks[11], landmarks[23], landmarks[25]),
-//         rightHip: calculateAngle(landmarks[12], landmarks[24], landmarks[26]),
-//         leftKnee: calculateAngle(landmarks[23], landmarks[25], landmarks[27]),
-//         rightKnee: calculateAngle(landmarks[24], landmarks[26], landmarks[28]),
-//     };
-// };
-
 const getPoseAngles = (landmarks) => {
+  const trunk = computeTrunkMetrics(landmarks);
+
   return {
     leftElbow: calculateAngle3D(landmarks[11], landmarks[13], landmarks[15]),
     rightElbow: calculateAngle3D(landmarks[12], landmarks[14], landmarks[16]),
@@ -193,6 +186,10 @@ const getPoseAngles = (landmarks) => {
     rightHip: calculateAngle3D(landmarks[12], landmarks[24], landmarks[26]),
     leftKnee: calculateAngle3D(landmarks[23], landmarks[25], landmarks[27]),
     rightKnee: calculateAngle3D(landmarks[24], landmarks[26], landmarks[28]),
+
+    trunkLateralTilt: trunk ? Math.min(180, trunk.lateralTiltDev) : 0,
+    trunkTwist: trunk ? Math.min(180, trunk.trunkTwist) : 0,
+    trunkPitch: trunk ? Math.min(180, trunk.pitchAngle) : 0,
   };
 };
 
@@ -497,6 +494,8 @@ const PoseDetector = forwardRef(
       rightWristHistoryRef.current = [];
       loopMatchSumRef.current = 0;
       loopMatchCountRef.current = 0;
+      lastCameraPoseRef.current = null;
+      lastNormalizedCameraPoseRef.current = null;
       if (dtwAnalyzerRef.current) dtwAnalyzerRef.current.reset();
       camSmootherRef.current.reset();
       refSmootherRef.current.reset();
@@ -520,6 +519,7 @@ const PoseDetector = forwardRef(
     };
 
     const lastCameraPoseRef = useRef(null);
+    const lastNormalizedCameraPoseRef = useRef(null);
     useEffect(() => {
       const video = videoRef.current;
       const canvas = canvasRef.current;
@@ -585,6 +585,7 @@ const PoseDetector = forwardRef(
 
               const smoothed = camSmootherRef.current.filter(currentPose, now);
               const normalizedCameraPose = normalizeLandmarksRelative(smoothed);
+              lastNormalizedCameraPoseRef.current = normalizedCameraPose;
 
               const mirrored = smoothed.map((lm) => ({ ...lm, x: 1 - lm.x }));
               drawingUtils.drawConnectors(mirrored, BODY_CONNECTIONS, {
@@ -746,18 +747,32 @@ const PoseDetector = forwardRef(
                   );
                   const dtwMatch = dtwAnalyzerRef.current.getMatch();
                   if (dtwMatch !== null) {
-                    matchPercentageRef.current = dtwMatch;
                     const matchVal = Math.round(dtwMatch);
 
                     const meanVal = Math.round(
                       dtwAnalyzerRef.current.getMeanAccuracy(),
                     );
-                    setMatchPercentage(matchVal);
+                    const trunkMetrics = computeTrunkMetrics(lastNormalizedCameraPoseRef.current);
+                    const stabilityFactor = trunkMetrics
+                      ? trunkMetrics.stabilityIndex / 100
+                      : 1.0;
+                    const penalizedMatch = Math.round(
+                      matchVal * (0.4 + 0.6 * stabilityFactor),
+                    );
+                    matchPercentageRef.current = penalizedMatch;
+                    setMatchPercentage(penalizedMatch);
+
                     if (onMetricsUpdateRef.current) {
                       onMetricsUpdateRef.current({
-                        accuracy: matchVal,
+                        accuracy: penalizedMatch,
                         meanAccuracy: meanVal,
                         isCameraStale: dtwAnalyzerRef.current.isCameraStale,
+                        trunkStability: trunkMetrics
+                          ? Math.round(trunkMetrics.stabilityIndex)
+                          : 100,
+                        trunkCompensation: trunkMetrics
+                          ? Math.round(trunkMetrics.compensationScore)
+                          : 0,
                       });
                     }
                   }
