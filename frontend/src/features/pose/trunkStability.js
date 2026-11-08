@@ -1,5 +1,58 @@
 const RAD2DEG = 180 / Math.PI;
 
+export class RepetitionStabilityTracker {
+  constructor({
+    unstableStabilityThreshold = 64,
+    unstableFrameRatioThreshold = 0.25,
+    minValidFrames = 10,
+    minConfidence = 0.1,
+  } = {}) {
+    this.unstableStabilityThreshold = unstableStabilityThreshold;
+    this.unstableFrameRatioThreshold = unstableFrameRatioThreshold;
+    this.minValidFrames = minValidFrames;
+    this.minConfidence = minConfidence;
+    this.state = "waiting";
+    this.validFrames = 0;
+    this.unstableFrames = 0;
+  }
+
+  startCycle() {
+    this.state = "tracking";
+    this.validFrames = 0;
+    this.unstableFrames = 0;
+  }
+
+  recordFrame(stabilityIndex, confidence) {
+    if (
+      this.state !== "tracking" ||
+      !Number.isFinite(stabilityIndex) ||
+      !Number.isFinite(confidence) ||
+      confidence < this.minConfidence
+    ) {
+      return;
+    }
+
+    this.validFrames++;
+    if (stabilityIndex < this.unstableStabilityThreshold) {
+      this.unstableFrames++;
+    }
+  }
+
+  completeCycle() {
+    if (this.state !== "tracking") return null;
+
+    this.state = "completed";
+    if (this.validFrames < this.minValidFrames) return null;
+
+    const unstableFrameRatio = this.unstableFrames / this.validFrames;
+    return {
+      shouldWarn: unstableFrameRatio >= this.unstableFrameRatioThreshold,
+      unstableFrameRatio,
+      validFrames: this.validFrames,
+    };
+  }
+}
+
 function applyDeadZone(value, deadZoneThreshold) {
   if (Math.abs(value) <= deadZoneThreshold) return 0;
   return value > 0 ? value - deadZoneThreshold : value + deadZoneThreshold;

@@ -26,6 +26,9 @@ export default function SessionPage() {
 
     const [currentReps, setCurrentReps] = useState(0);
     const [currentSet, setCurrentSet] = useState(1);
+    const [repQualityNotice, setRepQualityNotice] = useState(false);
+    const [repQualityMessage, setRepQualityMessage] = useState('dashboard.session.trunkRepFeedback');
+    const repQualityNoticeShownRef = useRef(false);
     const [showNextMessage, setShowNextMessage] = useState(false);
     const [nextMessageType, setNextMessageType] = useState("exercise");
     const autoNextTimeoutRef = useRef(null);
@@ -55,7 +58,25 @@ export default function SessionPage() {
         setCurrentReps(0);
         setCurrentSet(1);
         setShowNextMessage(false);
+        setRepQualityNotice(false);
+        setRepQualityMessage('dashboard.session.trunkRepFeedback');
+        repQualityNoticeShownRef.current = false;
     };
+
+    useEffect(() => {
+        if (!repQualityNotice) return undefined;
+        const timeout = setTimeout(() => setRepQualityNotice(false), 5000);
+        return () => clearTimeout(timeout);
+    }, [repQualityNotice]);
+
+    const handleRepQualityFeedback = useCallback((assessment) => {
+        if (!assessment.shouldWarn || repQualityNoticeShownRef.current) return;
+        repQualityNoticeShownRef.current = true;
+        if (assessment.type === "trunkMovement") {
+            setRepQualityMessage('dashboard.session.trunkMovementFeedback');
+        }
+        setRepQualityNotice(true);
+    }, []);
 
     const handleMetricsUpdate = useCallback((metrics) => {
         setCurrentMetrics(prev => ({
@@ -387,12 +408,12 @@ export default function SessionPage() {
                             {t('dashboard.session.adjustCamera')}
                         </div>
                     )}
-                    {currentMetrics.trunkCompensation > 36 && !currentMetrics.isCameraStale && !isPaused && (
+                    {repQualityNotice && !currentMetrics.isCameraStale && (
                         <div className="absolute top-8 left-1/2 -translate-x-1/2 z-50 bg-amber-500/90 text-white px-6 py-3 rounded-full font-bold shadow-xl shadow-amber-500/30 flex items-center gap-3 animate-fade-in backdrop-blur-md border border-amber-400 pointer-events-none">
                             <svg className="w-6 h-6 animate-pulse text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                             </svg>
-                            {t('dashboard.session.trunkWarning')}
+                            {t(repQualityMessage)}
                         </div>
                     )}
                     <div className="w-full h-full max-h-full overflow-hidden flex items-center justify-center">
@@ -402,6 +423,7 @@ export default function SessionPage() {
                             isPaused={isPaused}
                             onMetricsUpdate={handleMetricsUpdate}
                             onRepDetected={handleRepDetected}
+                            onRepQualityFeedback={handleRepQualityFeedback}
                             hideControls={true}
                             onCameraStateChange={setCameraActive}
                         />

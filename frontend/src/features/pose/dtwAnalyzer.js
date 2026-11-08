@@ -61,6 +61,24 @@ function motionEnergy(seq) {
   return total / ((seq.length - 1) * keys.length);
 }
 
+function jointMotionRanges(seq) {
+  if (seq.length < 10) return {};
+  const keys = Object.keys(seq[0]);
+  const ranges = {};
+  for (const key of keys) {
+    const values = seq
+      .map((frame) => frame[key])
+      .filter(Number.isFinite)
+      .sort((a, b) => a - b);
+    if (values.length < 10) continue;
+
+    const lowIndex = Math.floor((values.length - 1) * 0.1);
+    const highIndex = Math.ceil((values.length - 1) * 0.9);
+    ranges[key] = values[highIndex] - values[lowIndex];
+  }
+  return ranges;
+}
+
 function computeJointWeights(seq) {
   if (seq.length < 2) return null;
 
@@ -132,27 +150,6 @@ export function computeDTW(seq1, seq2, bandRatio = 0.3, weights = null) {
   return prev[m] / pathLength;
 }
 
-function staticMatchScore(camBuffer, refBuffer, weights) {
-  const count = Math.min(camBuffer.length, refBuffer.length, 10);
-  if (count === 0) return 100;
-
-  let distSum = 0;
-  let cosSum = 0;
-
-  for (let i = 0; i < count; i++) {
-    const ci = camBuffer[camBuffer.length - 1 - i];
-    const ri = refBuffer[refBuffer.length - 1 - i];
-    distSum += frameDistance(ci, ri, weights);
-    cosSum += cosineSimilarity(ci, ri);
-  }
-
-  const avgDist = distSum / count;
-  const avgCos = cosSum / count;
-  const distScore = gaussianScore(avgDist, 0.15);
-  const cosFactor = Math.max(0, (avgCos + 1) / 2);
-  return distScore * (0.7 + 0.3 * cosFactor);
-}
-
 function detectLoopReset(buffer, threshold = 0.25) {
   if (buffer.length < 2) return false;
   const prev = buffer[buffer.length - 2];
@@ -175,6 +172,12 @@ export class DTWAnalyzer {
     this.smoothingFactor = opts.smoothingFactor ?? 0.5;
     this.bandRatio = opts.bandRatio ?? 0.3;
     this.idleThreshold = opts.idleThreshold ?? 0.003;
+    this.minReferenceJointRange = opts.minReferenceJointRange ?? 12;
+    this.minCameraJointRange = opts.minCameraJointRange ?? 7;
+    this.minMovementCoverage = opts.minMovementCoverage ?? 0.4;
+    this.movementWindowSize = opts.movementWindowSize ?? 33;
+    this.staleReferenceFrameThreshold =
+      opts.staleReferenceFrameThreshold ?? 20;
     this.minConfidence = opts.minConfidence ?? 0.1;
     this.spikeDampenThreshold = opts.spikeDampenThreshold ?? 25;
     this.spikeSmoothingFactor = opts.spikeSmoothingFactor ?? 0.92;
@@ -237,8 +240,10 @@ export class DTWAnalyzer {
       return this._initialized ? this._currentMatch : null;
     }
 
+    const movementCoverage = this.getMovementCoverage();
+
     if (this._refsSinceLastCam > 5 && this._initialized) {
-      const decayRate = 0.97;
+      const decayRate = 0.8;
       this._currentMatch *= decayRate;
       this._smoothedMatch *= decayRate;
 
@@ -260,17 +265,10 @@ export class DTWAnalyzer {
     this.lastJointWeights = jointWeights;
     const camEnergy = motionEnergy(this.cameraBuffer);
     const refEnergy = motionEnergy(this.referenceBuffer);
-    const bothIdle =
-      camEnergy < this.idleThreshold && refEnergy < this.idleThreshold;
-
     let blended;
 
-    if (bothIdle) {
-      blended = staticMatchScore(
-        this.cameraBuffer,
-        this.referenceBuffer,
-        jointWeights,
-      );
+    if (camEnergy < this.idleThreshold || refEnergy < this.idleThreshold) {
+      blended = 0;
     } else {
       const rawDist = computeDTW(
         this.cameraBuffer,
@@ -309,16 +307,15 @@ export class DTWAnalyzer {
 
       if (refEnergy > this.idleThreshold) {
         const energyRatio = camEnergy / Math.max(refEnergy, 1e-6);
-        if (energyRatio < 0.5) {
-          const penalty = Math.max(0.05, Math.pow(energyRatio / 0.5, 1.5));
-          score *= penalty;
-        }
+        const motionPenalty = Math.min(1, energyRatio / 0.5) ** 1.5;
+        score *= motionPenalty;
       }
 
       blended = score;
     }
 
-    blended = Math.max(0, Math.min(100, blended));
+    const movementFactor = 0.6 + 0.4 * movementCoverage;
+    blended = Math.max(0, Math.min(100, blended * movementFactor));
 
     const delta = Math.abs(blended - this._smoothedMatch);
     let alpha;
@@ -350,12 +347,41 @@ export class DTWAnalyzer {
     return this.cameraBuffer.length;
   }
 
+  getMovementCoverage() {
+    const recentCameraFrames = this.cameraBuffer.slice(-this.movementWindowSize);
+    const cameraRanges = jointMotionRanges(recentCameraFrames);
+    const referenceRanges = jointMotionRanges(this.referenceBuffer);
+    const activeJoints = Object.keys(referenceRanges).filter(
+      (key) => referenceRanges[key] >= this.minReferenceJointRange,
+    );
+
+    if (activeJoints.length === 0) return 0;
+
+    const movementRatios = activeJoints.map((key) => {
+      const cameraRange = cameraRanges[key] ?? 0;
+      if (cameraRange < this.minCameraJointRange) return 0;
+      return Math.min(1, cameraRange / referenceRanges[key]);
+    });
+
+    return (
+      movementRatios.reduce((sum, ratio) => sum + ratio, 0) /
+      activeJoints.length
+    );
+  }
+
+  get hasSufficientMovement() {
+    return this.getMovementCoverage() >= this.minMovementCoverage;
+  }
+
   get referenceFrameCount() {
     return this.referenceBuffer.length;
   }
 
   get isCameraStale() {
-    return this._refsSinceLastCam > 5 && this._initialized;
+    return (
+      this._refsSinceLastCam > this.staleReferenceFrameThreshold &&
+      this._initialized
+    );
   }
 
   getMeanAccuracy() {

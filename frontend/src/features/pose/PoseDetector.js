@@ -16,7 +16,10 @@ import {
 } from "@mediapipe/tasks-vision";
 import { DTWAnalyzer } from "./dtwAnalyzer";
 import { useTranslation } from "@/hooks/useTranslation";
-import { computeTrunkMetrics } from "./trunkStability";
+import {
+  computeTrunkMetrics,
+  RepetitionStabilityTracker,
+} from "./trunkStability";
 
 const POSE_CONNECTIONS = PoseLandmarker.POSE_CONNECTIONS;
 const HAND_CONNECTIONS = HandLandmarker.HAND_CONNECTIONS;
@@ -39,6 +42,9 @@ const FACE_INDICES = new Set([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
 const BODY_CONNECTIONS = POSE_CONNECTIONS.filter(
   (c) => !FACE_INDICES.has(c.start) && !FACE_INDICES.has(c.end),
 );
+const KEY_LANDMARK_INDICES = [
+  11, 12, 13, 14, 15, 16, 23, 24, 25, 26, 27, 28,
+];
 
 class OneEuroFilter {
   constructor(freq = 30, minCutoff = 1.0, beta = 0.007, dCutoff = 1.0) {
@@ -193,33 +199,62 @@ const getPoseAngles = (landmarks) => {
   };
 };
 
-const KEY_LANDMARK_INDICES = [11, 12, 13, 14, 15, 16, 23, 24, 25, 26, 27, 28];
-
 const getKeyLandmarkConfidence = (landmarks) => {
-  let sum = 0;
-  let count = 0;
-  let visibleCount = 0;
-
-  for (const idx of KEY_LANDMARK_INDICES) {
-    const lm = landmarks[idx];
-    if (lm && typeof lm.visibility === "number") {
-      sum += lm.visibility;
-      count++;
-
-      const inBounds =
-        lm.x >= 0.02 && lm.x <= 0.98 && lm.y >= 0.02 && lm.y <= 0.98;
-
-      if (lm.visibility > 0.5 && inBounds) {
-        visibleCount++;
-      }
+  const confidenceValues = KEY_LANDMARK_INDICES.map((idx) => {
+    const landmark = landmarks[idx];
+    if (
+      !landmark ||
+      !Number.isFinite(landmark.x) ||
+      !Number.isFinite(landmark.y) ||
+      landmark.x < 0 ||
+      landmark.x > 1 ||
+      landmark.y < 0 ||
+      landmark.y > 1
+    ) {
+      return null;
     }
+
+    return typeof landmark.visibility === "number"
+      ? landmark.visibility
+      : typeof landmark.presence === "number"
+        ? landmark.presence
+        : 1;
+  }).filter((confidence) => confidence !== null && confidence >= 0.1);
+
+  if (confidenceValues.length === 0) return 0;
+
+  return (
+    confidenceValues.reduce((sum, confidence) => sum + confidence, 0) /
+    confidenceValues.length
+  );
+};
+
+const getRelativeShoulderPosition = (landmarks) => {
+  const leftShoulder = landmarks[11];
+  const rightShoulder = landmarks[12];
+  const leftHip = landmarks[23];
+  const rightHip = landmarks[24];
+
+  if (!leftShoulder || !rightShoulder || !leftHip || !rightHip) return null;
+
+  const shoulderX = (leftShoulder.x + rightShoulder.x) / 2;
+  const shoulderY = (leftShoulder.y + rightShoulder.y) / 2;
+  const hipX = (leftHip.x + rightHip.x) / 2;
+  const hipY = (leftHip.y + rightHip.y) / 2;
+  const torsoLength = Math.hypot(shoulderX - hipX, shoulderY - hipY);
+
+  if (
+    !Number.isFinite(torsoLength) ||
+    torsoLength < 0.05 ||
+    torsoLength > 0.8
+  ) {
+    return null;
   }
 
-  if (count > 0 && visibleCount < 4) {
-    return 0.0;
-  }
-
-  return count > 0 ? sum / count : 1.0;
+  return {
+    x: (shoulderX - hipX) / torsoLength,
+    y: (shoulderY - hipY) / torsoLength,
+  };
 };
 
 const PoseDetector = forwardRef(
@@ -231,6 +266,7 @@ const PoseDetector = forwardRef(
       hideControls = false,
       onCameraStateChange = null,
       onRepDetected = null,
+      onRepQualityFeedback = null,
     },
     ref,
   ) => {
@@ -246,6 +282,7 @@ const PoseDetector = forwardRef(
     const animFrameRef = useRef(null);
     const streamRef = useRef(null);
     const dtwAnalyzerRef = useRef(null);
+    const repStabilityTrackerRef = useRef(new RepetitionStabilityTracker());
     const camSmootherRef = useRef(new LandmarkSmoother());
     const refSmootherRef = useRef(new LandmarkSmoother());
 
@@ -263,6 +300,7 @@ const PoseDetector = forwardRef(
 
     const onMetricsUpdateRef = useRef(onMetricsUpdate);
     const onRepDetectedRef = useRef(onRepDetected);
+    const onRepQualityFeedbackRef = useRef(onRepQualityFeedback);
 
     useEffect(() => {
       onMetricsUpdateRef.current = onMetricsUpdate;
@@ -271,6 +309,10 @@ const PoseDetector = forwardRef(
     useEffect(() => {
       onRepDetectedRef.current = onRepDetected;
     }, [onRepDetected]);
+
+    useEffect(() => {
+      onRepQualityFeedbackRef.current = onRepQualityFeedback;
+    }, [onRepQualityFeedback]);
 
     useImperativeHandle(ref, () => ({
       startCamera,
@@ -292,6 +334,7 @@ const PoseDetector = forwardRef(
     const matchPercentageRef = useRef(0);
     const leftWristHistoryRef = useRef([]);
     const rightWristHistoryRef = useRef([]);
+    const trunkMotionSamplesRef = useRef([]);
 
     const loopMatchSumRef = useRef(0);
     const loopMatchCountRef = useRef(0);
@@ -492,8 +535,10 @@ const PoseDetector = forwardRef(
       matchPercentageRef.current = 0;
       leftWristHistoryRef.current = [];
       rightWristHistoryRef.current = [];
+      trunkMotionSamplesRef.current = [];
       loopMatchSumRef.current = 0;
       loopMatchCountRef.current = 0;
+      repStabilityTrackerRef.current.startCycle();
       lastCameraPoseRef.current = null;
       lastNormalizedCameraPoseRef.current = null;
       if (dtwAnalyzerRef.current) dtwAnalyzerRef.current.reset();
@@ -515,6 +560,7 @@ const PoseDetector = forwardRef(
       }
       loopMatchSumRef.current = 0;
       loopMatchCountRef.current = 0;
+      repStabilityTrackerRef.current.startCycle();
       if (dtwAnalyzerRef.current) dtwAnalyzerRef.current.reset();
     };
 
@@ -530,6 +576,8 @@ const PoseDetector = forwardRef(
       let lastTime = -1;
       let lastRefTime = -1;
       let prevRefVideoTime = -1;
+      trunkMotionSamplesRef.current = [];
+      repStabilityTrackerRef.current.startCycle();
 
       const loop = () => {
         if (!videoRef.current?.srcObject) return;
@@ -586,6 +634,46 @@ const PoseDetector = forwardRef(
               const smoothed = camSmootherRef.current.filter(currentPose, now);
               const normalizedCameraPose = normalizeLandmarksRelative(smoothed);
               lastNormalizedCameraPoseRef.current = normalizedCameraPose;
+
+              if (modeRef.current === "comparison") {
+                const cameraConfidence = getKeyLandmarkConfidence(currentPose);
+                const trunkMetrics = computeTrunkMetrics(normalizedCameraPose);
+                if (trunkMetrics) {
+                  repStabilityTrackerRef.current.recordFrame(
+                    trunkMetrics.stabilityIndex,
+                    cameraConfidence,
+                  );
+                }
+
+                const relativeShoulderPosition =
+                  getRelativeShoulderPosition(smoothed);
+                if (relativeShoulderPosition) {
+                  const samples = trunkMotionSamplesRef.current;
+                  samples.push({ ...relativeShoulderPosition, time: now });
+                  while (samples.length && now - samples[0].time > 400) {
+                    samples.shift();
+                  }
+
+                  const baseline = samples.find(
+                    (sample) => now - sample.time >= 120,
+                  );
+                  if (
+                    baseline &&
+                    Math.hypot(
+                      relativeShoulderPosition.x - baseline.x,
+                      relativeShoulderPosition.y - baseline.y,
+                    ) >= 0.1
+                  ) {
+                    onRepQualityFeedbackRef.current?.({
+                      shouldWarn: true,
+                      type: "trunkMovement",
+                    });
+                    trunkMotionSamplesRef.current = [
+                      { ...relativeShoulderPosition, time: now },
+                    ];
+                  }
+                }
+              }
 
               const mirrored = smoothed.map((lm) => ({ ...lm, x: 1 - lm.x }));
               drawingUtils.drawConnectors(mirrored, BODY_CONNECTIONS, {
@@ -686,7 +774,19 @@ const PoseDetector = forwardRef(
               refVideo.currentTime < prevRefVideoTime - 0.5
             ) {
               refSmootherRef.current.reset();
-              if (matchPercentageRef.current > 60) {
+              const stabilityResult =
+                repStabilityTrackerRef.current.completeCycle();
+              repStabilityTrackerRef.current.startCycle();
+              if (
+                stabilityResult?.shouldWarn &&
+                onRepQualityFeedbackRef.current
+              ) {
+                onRepQualityFeedbackRef.current(stabilityResult);
+              }
+              if (
+                matchPercentageRef.current > 65 &&
+                dtwAnalyzerRef.current?.hasSufficientMovement
+              ) {
                 if (onRepDetectedRef.current) onRepDetectedRef.current();
               }
             }
@@ -757,7 +857,7 @@ const PoseDetector = forwardRef(
                       ? trunkMetrics.stabilityIndex / 100
                       : 1.0;
                     const penalizedMatch = Math.round(
-                      matchVal * (0.4 + 0.6 * stabilityFactor),
+                      matchVal * (0.25 + 0.75 * stabilityFactor),
                     );
                     matchPercentageRef.current = penalizedMatch;
                     setMatchPercentage(penalizedMatch);
