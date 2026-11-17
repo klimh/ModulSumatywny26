@@ -1,0 +1,530 @@
+\documentclass[11pt,a4paper]{article}
+
+% ====================== PAKIETY ======================
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[polish]{babel}
+\usepackage[a4paper,margin=2.3cm]{geometry}
+\usepackage{lmodern}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{array}
+\usepackage{float}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{enumitem}
+\usepackage[table]{xcolor}
+\usepackage{listings}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, fit, backgrounds, calc}
+\usepackage[hidelinks]{hyperref}
+\usepackage{caption}
+\usepackage{placeins}
+
+% ====================== KOLORY ======================
+\definecolor{primary}{RGB}{30,90,150}
+\definecolor{accent}{RGB}{0,140,120}
+\definecolor{lightgray}{RGB}{240,242,245}
+\definecolor{midgray}{RGB}{170,178,186}
+\definecolor{codebg}{RGB}{248,249,251}
+\definecolor{codecomment}{RGB}{110,120,130}
+\definecolor{statusdone}{RGB}{40,150,70}
+\definecolor{statusprog}{RGB}{220,150,40}
+\definecolor{statusplan}{RGB}{120,128,136}
+\definecolor{statuspart}{RGB}{200,110,30}
+
+% ====================== STYLE NAGŁÓWKÓW ======================
+\titleformat{\section}{\normalfont\Large\bfseries\color{primary}}{\thesection.}{0.6em}{}
+\titleformat{\subsection}{\normalfont\large\bfseries\color{accent}}{\thesubsection.}{0.6em}{}
+\titleformat{\subsubsection}{\normalfont\normalsize\bfseries\color{primary!80!black}}{\thesubsubsection.}{0.5em}{}
+\titlespacing*{\section}{0pt}{16pt}{6pt}
+\titlespacing*{\subsection}{0pt}{12pt}{4pt}
+
+% ====================== STOPKA / NAGŁÓWEK ======================
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}
+\fancyhead[L]{\small\color{primary}\textbf{RehabSense 2.0} -- Raport śródsemestralny}
+\fancyhead[R]{\small Modernizacja modułu MediaPipe AI}
+\fancyfoot[L]{\small Projekt Kompetencyjny}
+\fancyfoot[R]{\small Strona \thepage}
+
+% ====================== POMOCNICZE ======================
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcommand{\sysname}{\textbf{RehabSense}}
+\newcommand{\done}{\textcolor{statusdone}{\textbf{Zrealizowane}}}
+\newcommand{\inprog}{\textcolor{statusprog}{\textbf{W toku}}}
+\newcommand{\planned}{\textcolor{statusplan}{\textbf{Zaplanowane}}}
+\newcommand{\partly}{\textcolor{statuspart}{\textbf{Częściowo}}}
+\newcommand{\commit}[1]{\texttt{#1}}
+\setlist{itemsep=2pt, topsep=3pt}
+
+% ====================== LISTINGI ======================
+\lstdefinelanguage{JavaScript}{
+  keywords={const, let, var, return, if, else, function, export, class, new,
+            for, of, in, this, null, true, false, while, typeof},
+  sensitive=true,
+  comment=[l]{//},
+  morecomment=[s]{/*}{*/},
+  string=[b]",
+  morestring=[b]',
+}
+\lstset{
+  language=JavaScript,
+  basicstyle=\ttfamily\footnotesize,
+  keywordstyle=\color{primary}\bfseries,
+  commentstyle=\color{codecomment}\itshape,
+  stringstyle=\color{accent},
+  backgroundcolor=\color{codebg},
+  frame=single,
+  rulecolor=\color{midgray},
+  breaklines=true,
+  columns=fullflexible,
+  keepspaces=true,
+  showstringspaces=false,
+  numbers=left,
+  numberstyle=\tiny\color{codecomment},
+  xleftmargin=1.8em,
+  framexleftmargin=1.5em,
+  captionpos=b,
+  literate={ą}{{\k{a}}}1 {ć}{{\'c}}1 {ę}{{\k{e}}}1 {ł}{{\l{}}}1 {ń}{{\'n}}1
+           {ó}{{\'o}}1 {ś}{{\'s}}1 {ź}{{\'z}}1 {ż}{{\.z}}1
+           {Ą}{{\k{A}}}1 {Ć}{{\'C}}1 {Ę}{{\k{E}}}1 {Ł}{{\L{}}}1 {Ń}{{\'N}}1
+           {Ó}{{\'O}}1 {Ś}{{\'S}}1 {Ź}{{\'Z}}1 {Ż}{{\.Z}}1
+}
+\renewcommand{\lstlistingname}{Listing}
+
+% ---- Style diagramów TikZ ----
+\tikzset{
+  layer/.style={rectangle, rounded corners, draw=primary, thick, fill=lightgray,
+                minimum width=3.4cm, minimum height=1cm, align=center, font=\small},
+  ext/.style={rectangle, rounded corners, draw=accent, thick, fill=white,
+              minimum width=2.8cm, minimum height=0.9cm, align=center, font=\small},
+  box/.style={rectangle, rounded corners=3pt, draw=primary, thick, fill=white,
+              text width=3.2cm, minimum height=1.2cm, align=center, font=\small},
+  newbox/.style={rectangle, rounded corners=3pt, draw=accent, very thick, fill=accent!12,
+                 text width=3.2cm, minimum height=1.2cm, align=center, font=\small},
+  todobox/.style={rectangle, rounded corners=3pt, draw=statusprog, very thick, dashed,
+                  fill=statusprog!8, text width=3.2cm, minimum height=1.2cm, align=center, font=\small},
+  arr/.style={-{Stealth[length=3mm]}, thick, draw=primary!80},
+}
+
+\begin{document}
+
+\pagenumbering{gobble}
+
+% ====================== STRONA TYTUŁOWA ======================
+\begin{titlepage}
+\centering
+\vspace*{1.5cm}
+{\Huge\bfseries\color{primary} RAPORT ŚRÓDSEMESTRALNY\par}
+\vspace{0.4cm}
+{\LARGE\bfseries System wspomagania rehabilitacji\par}
+\vspace{0.3cm}
+{\Huge\bfseries\color{accent} RehabSense 2.0\par}
+\vspace{0.8cm}
+{\large\textsc{Modernizacja modułu analizy ruchu AI opartego na Google MediaPipe}\par}
+\vspace{1.2cm}
+\rule{0.75\textwidth}{1.2pt}\par
+\vspace{1.2cm}
+
+
+{\large\textbf{Przedmiot:} Projekt Kompetencyjny\par}
+\vspace{0.3cm}
+{\large\textbf{Prowadzący:} dr inż. Michał Pawlak\par}
+\vspace{0.3cm}
+{\large\textbf{Data:} 17 listopada 2026\par}
+
+
+\end{titlepage}
+
+\newpage
+\pagenumbering{arabic}
+
+% ====================== LISTA CZŁONKÓW ZESPOŁU ======================
+\section*{Lista członków zespołu}
+\addcontentsline{toc}{section}{Lista członków zespołu}
+\begin{table}[ht]
+\centering
+\begin{tabularx}{0.85\textwidth}{>{\raggedright\arraybackslash\bfseries}p{6.0cm} Y}
+\toprule
+\textbf{Imię i nazwisko} & \textbf{Rola w projekcie} \\
+\midrule
+Kacper Błaszczyk (251485) & Project Manager \\
+Klim Hudzenko (253833) & Backend Developer \\
+Maciej Miazek (251589) & Frontend \& AI Engineer \\
+Remigiusz Tomecki (251652) & Frontend Developer \\
+Kacper Romek (251619) & Tester \\
+\bottomrule
+\end{tabularx}
+\caption{Skład zespołu projektowego RehabSense.}
+\end{table}
+
+\newpage
+\tableofcontents
+\newpage
+
+% ====================================================
+\section{Informacje o dokumencie}
+% ====================================================
+
+\subsection{Wstęp}
+Niniejszy dokument stanowi \textbf{raport na ocenę śródsemestralną} projektu \sysname{}~2.0. Przedstawia stan realizacji prac względem harmonogramu z \textit{Dokumentu Wizji RehabSense 2.0}, wykonane zadania wraz z dowodami ich realizacji oraz zidentyfikowane ryzyka. Raport obejmuje okres \textbf{12.10.2026 -- 17.11.2026}, w którym prace dotyczyły modułu analizy ruchu AI. Odbiorcami są prowadzący przedmiot oraz członkowie zespołu projektowego.
+
+\subsection{Definicje i skróty}
+\begin{itemize}
+    \item \textbf{MediaPipe:} biblioteka Google uruchamiana w przeglądarce, wykrywająca 33 punkty kluczowe (\textit{landmarks}) sylwetki w każdej klatce obrazu; każdy punkt ma współrzędne $x, y$ (znormalizowane do rozmiaru obrazu), szacowaną głębię $z$ oraz wskaźnik widoczności.
+    \item \textbf{Punkt kluczowy (landmark):} pojedynczy punkt szkieletu zwracany przez MediaPipe, np. bark (11, 12), biodro (23, 24), łokieć (13, 14), kolano (25, 26).
+    \item \textbf{Normalizacja względem tułowia (względny układ punktów):} przeliczenie współrzędnych punktów kluczowych do układu, którego środkiem jest środek tułowia, a jednostką długości -- rozmiar tułowia pacjenta. Uniezależnia analizę od odległości i położenia pacjenta względem kamery.
+    \item \textbf{DTW (Dynamic Time Warping):} algorytm dopasowania dwóch sekwencji czasowych o różnym tempie; w projekcie porównuje sekwencję kątów stawowych pacjenta z sekwencją z wideo wzorcowego.
+    \item \textbf{Wagi stawów:} współczynniki określające wpływ poszczególnych kątów stawowych na odległość DTW; stawy wykonujące ruch w danym ćwiczeniu mają wagę większą niż stawy, które powinny pozostać nieruchome.
+    \item \textbf{Roll / Yaw / Pitch tułowia:} odpowiednio przechył boczny (różnica nachylenia linii barków i linii bioder), skręt (rotacja linii barków względem linii bioder w osi głębi) oraz pochylenie (odchylenie wektora kręgosłupa od pionu w przód/tył).
+    \item \textbf{Wskaźnik kompensacji (Compensation Score):} ważona suma odchyleń tułowia (0--100); im wyższy, tym silniejsza kompensacja ruchu całym ciałem.
+    \item \textbf{Indeks stabilności tułowia (Stability Index):} $100 - \text{wskaźnik kompensacji}$; wartość 100 oznacza całkowicie stabilny tułów.
+    \item \textbf{Martwa strefa:} próg, poniżej którego odchylenie tułowia jest traktowane jako szum pomiarowy i pomijane.
+    \item \textbf{Cykl powtórzenia:} fragment sesji odpowiadający jednemu powtórzeniu ćwiczenia; w obecnej wersji wyznaczany przez zapętlenie wideo wzorcowego.
+    \item \textbf{Oszustwo:} próba zaliczenia ćwiczenia ruchem tułowia lub całego ciała zamiast ruchu ćwiczonego stawu.
+    \item \textbf{W1--W10:} kolejne tygodnie harmonogramu z Dokumentu Wizji.
+\end{itemize}
+
+% ====================================================
+\section{Podsumowanie postępu}
+% ====================================================
+
+\subsection{Podsumowanie wykonanych prac}
+
+\sysname{} to webowy system wspomagania domowej rehabilitacji, w którym moduł AI działający w przeglądarce (Google MediaPipe + DTW) porównuje ruch pacjenta przed kamerą z wzorcowym wideo i ocenia poprawność ćwiczeń. Celem wersji 2.0 jest \textbf{modernizacja modułu analizy ruchu}: odporność na położenie względem kamery, większy wpływ stawów kluczowych, wykrywanie oszustw oraz licznik powtórzeń niezależny od wzorcowego nagrania.
+
+Zrealizowano kolejne etapy: \textbf{normalizację punktów względem tułowia} (z kątami stawów liczonymi w 3D), \textbf{automatyczne wagi stawów} w DTW, \textbf{pomiar stabilności tułowia} (przechył, skręt, pochylenie) oraz \textbf{wykrywanie oszustw} -- niestabilny tułów obniża wynik dopasowania, a pacjent otrzymuje komunikat na ekranie. Obecnie trwają prace nad detekcją faz ruchu (W6).
+
+\subsubsection*{Aktualna architektura}
+Architektura wysokopoziomowa systemu nie uległa zmianie - wszystkie modyfikacje dotyczą modułu AI działającego w przeglądarce.
+
+\begin{figure}[H]
+\centering
+\resizebox{0.85\textwidth}{!}{%
+\begin{tikzpicture}[node distance=0.9cm and 1.4cm]
+\node[layer] (front) {\textbf{Warstwa Prezentacji}\\ Frontend (Next.js)\\ \footnotesize Pacjent / Fizjoterapeuta / Admin};
+\node[ext, below left=1.1cm and 1.1cm of front, draw=accent, very thick, fill=accent!12] (ai) {\textbf{Moduł AI}\\ MediaPipe + ważone DTW\\ + stabilność tułowia};
+\node[layer, below=2.6cm of front] (back) {\textbf{Warstwa Logiki}\\ Backend (FastAPI / Python)\\ \footnotesize Auth, Pacjent, Fizjo, Admin, Chat, Passy};
+\node[layer, below=1.2cm of back] (db) {\textbf{Warstwa Danych}\\ NeonDB (PostgreSQL) + SQLAlchemy\\ \footnotesize profile, wyniki, plany, wiadomości};
+\node[ext, right=2.2cm of back] (cloud) {\textbf{Usługi zewn.}\\ Cloudinary\\ \footnotesize (multimedia)};
+\node[ext, right=2.2cm of front] (extapi) {\textbf{API zewn.}\\ \texttt{/external/v1} };
+\draw[arr] (front) -- node[right, font=\scriptsize] {REST / JWT} (back);
+\draw[arr] (back) -- (db);
+\draw[arr] (ai.south) |- (back.west);
+\draw[arr] (back.east) -- (cloud.west);
+\draw[arr] (extapi.south) -- (back.north east);
+\end{tikzpicture}}
+\caption{Architektura trójwarstwowa systemu RehabSense.}
+\label{fig:arch}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}
+  % Wejścia
+  \node[box] (cam) at (0,0.9) {\textbf{Kamera pacjenta}\\ \footnotesize ok. 30 FPS};
+  \node[box] (ref) at (0,-0.9) {\textbf{Wideo wzorcowe}\\ \footnotesize (Cloudinary)};
+  \node[box] (mp) at (4.4,0) {\textbf{Google MediaPipe}\\ \footnotesize 33 punkty + wygładzanie};
+  \node[newbox] (norm) at (8.8,0) {\textbf{Normalizacja względem tułowia}\\ \footnotesize W2};
+
+  % Gałąź oceny ruchu
+  \node[newbox] (ang) at (8.8,-2.6) {\textbf{Kąty stawów 3D}\\ \footnotesize 8 stawów + 3 kąty tułowia};
+  \node[newbox] (dtw) at (8.8,-5.2) {\textbf{DTW z wagami stawów}\\ \footnotesize W3};
+
+  % Gałąź stabilności tułowia
+  \node[newbox] (trunk) at (13.2,-2.6) {\textbf{Metryki tułowia}\\ \footnotesize roll, yaw, pitch $\rightarrow$ indeks stabilności\\ W4};
+  \node[newbox] (pen) at (13.2,-5.2) {\textbf{Kara za niestabilność}\\ \footnotesize $m' = m\,(0.25 + 0.75\,S/100)$\\ W5};
+  \node[newbox] (track) at (13.2,-7.8) {\textbf{Ocena powtórzenia}\\ \footnotesize udział klatek niestabilnych, gwałtowne ruchy barków};
+
+  % Licznik i UI
+  \node[todobox] (rep) at (4.4,-5.2) {\textbf{Licznik powtórzeń}\\ \footnotesize pętla wideo + próg 65\%\\ do przebudowy: W6--W8};
+  \node[layer, minimum width=8.5cm] (ui) at (6.6,-10.2) {\textbf{Interfejs sesji ćwiczeń}\\ \footnotesize wynik dopasowania, liczba powtórzeń, komunikaty o błędach (PL/EN)};
+
+  \draw[arr] (cam) -- (mp);
+  \draw[arr] (ref) -- (mp);
+  \draw[arr] (mp) -- (norm);
+  \draw[arr] (norm) -- (ang);
+  \draw[arr] (norm.east) -| (trunk.north);
+  \draw[arr] (ang) -- (dtw);
+  \draw[arr] (trunk) -- (pen);
+  \draw[arr] (dtw) -- (pen);
+  \draw[arr] (trunk.east) -- ++(0.6,0) |- (track.east);
+  \draw[arr] (pen.north west) -- (rep.north east);
+  \draw[arr] (dtw) -- (rep);
+  \draw[arr] (rep) -- (ui.north);
+  \draw[arr] (track) |- (ui.east);
+  \draw[arr] (pen.south) -- ++(0,-0.2) -| ([xshift=1.5cm]ui.north);
+
+  % Legenda
+  \node[newbox, text width=2.2cm, minimum height=0.6cm, font=\scriptsize] (l1) at (0,-7.6) {nowe / zmienione};
+  \node[box, text width=2.2cm, minimum height=0.6cm, font=\scriptsize] (l2) at (0,-8.5) {bez zmian};
+  \node[todobox, text width=2.2cm, minimum height=0.6cm, font=\scriptsize] (l3) at (0,-9.4) {do realizacji};
+\end{tikzpicture}}
+\caption{Przepływ danych w module analizy ruchu po modyfikacjach.}
+\label{fig:ai}
+\end{figure}
+
+\subsection{Plan a realizacja}
+Tabela~\ref{tab:plan} zestawia zadania z roadmapy Dokumentu Wizji z faktycznym przebiegiem prac.
+
+{\small
+\begin{longtable}{p{1.3cm} p{5.7cm} p{2.0cm} p{5.0cm}}
+\caption{Zestawienie harmonogramu z realizacją.}\label{tab:plan}\\
+\toprule
+\textbf{Tydzień} & \textbf{Zadanie} & \textbf{Status} & \textbf{Uwagi} \\
+\midrule
+\endfirsthead
+\toprule
+\textbf{Tydz.} & \textbf{Zadanie} & \textbf{Status} & \textbf{Uwagi} \\
+\midrule
+\endhead
+\bottomrule
+\endfoot
+W1 & Przygotowanie i konsultacja Dokumentu Wizji 2.0 & \done & Wersja wstępna oraz poprawki po konsultacji. \\
+\addlinespace
+W2 & Normalizacja współrzędnych, względny układ punktów kluczowych niezależny od pozycji kamery & \done & Dodatkowo kąty stawów liczone w 3D. \\
+\addlinespace
+W3 & Wagi stawów w algorytmie DTW & \done & Wagi wyznaczane automatycznie z wariancji ruchu wzorcowego. \\
+\addlinespace
+W4 & Wskaźniki i odchylenia stabilności tułowia (rotacja, przechył, kompensacja) & \done & Wraz z komunikatem ostrzegawczym w interfejsie. \\
+\addlinespace
+W5 & Algorytmy i progi wykrywania oszustw na podstawie przekroczeń stabilności & \done & Progi wymagają kalibracji (W9). \\
+\addlinespace
+-- & Raport śródsemestralny & \done & Niniejszy dokument. \\
+\addlinespace
+W6 & Logika detekcji kątowej dla faz zgięcia i wyprostu & \inprog & Bieżący tydzień. \\
+\addlinespace
+W7 & Algorytm śledzenia kątów w stawach do identyfikacji faz ruchu & \planned & Zależy od W6. \\
+\addlinespace
+W8 & Integracja niezależnego licznika powtórzeń, weryfikacja pełnego zakresu ruchu & \planned & Zastąpi obecne zliczanie oparte na zapętleniu wideo. \\
+\addlinespace
+W9 & Testy dokładności, kalibracja progów, testy wydajnościowe & \planned & Weryfikacja kryteriów sukcesu z Dokumentu Wizji. \\
+\addlinespace
+W10 & Finalizacja kodu i przygotowanie prezentacji końcowej & \planned & -- \\
+\end{longtable}
+}
+
+\noindent Poniższa tabela przedstawia stopień realizacji kluczowych wymagań biznesowych zdefiniowanych w \textit{Dokumencie Wizji}.
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabularx}{\textwidth}{l p{3.6cm} c Y}
+\toprule
+\textbf{ID} & \textbf{Wymaganie} & \textbf{Status} & \textbf{Komentarz} \\
+\midrule
+1 & Normalizacja pozycji ciała & \done & Punkty przeliczane względem środka i rozmiaru tułowia (zarówno dla kamery, jak i wideo wzorcowego). \\
+\addlinespace
+2 & Blokada potencjalnych oszustw & \partly & Niestabilność tułowia obniża wynik dopasowania (nawet o 75\%), co pośrednio uniemożliwia zaliczenie (próg 65\%); pacjent otrzymuje ostrzeżenie. Brak jeszcze twardej blokady zaliczenia powtórzenia oznaczonego jako niestabilne. \\
+\addlinespace
+3 & Niezależny licznik powtórzeń & \inprog & Obecnie powtórzenie jest nadal zaliczane przy zapętleniu wideo wzorcowego. \\
+\addlinespace
+4 & Ocena DTW z wagami stawów & \done & Wagi wyznaczane automatycznie dla każdego ćwiczenia; możliwość ręcznego podania wag). \\
+\addlinespace
+5 & Komunikat o błędzie techniki & \done & Komunikaty o niestabilnym tułowiu i gwałtownym ruchu górnej części ciała, wyświetlane przez 5~s. \\
+\bottomrule
+\end{tabularx}
+\caption{Stan realizacji kluczowych wymagań biznesowych.}
+\label{tab:req}
+\end{table}
+
+\subsection{Zrealizowane zadania}
+Poniżej opisano wykonane zadania wraz z dowodami ich realizacji. 
+
+\subsubsection{Z1. Dokument Wizji RehabSense 2.0 (W1)}
+Dokument definiuje problem biznesowy (podatność analizy 2D na perspektywę, brak detekcji oszustw, licznik zależny od wideo), wizję produktu, pięć kluczowych wymagań biznesowych, kryteria sukcesu (błąd zliczania $<5\%$, wykrywalność oszustw $\geq 80\%$, płynność 25--30 FPS) oraz dziesięciotygodniową roadmapę, według której prowadzone są dalsze prace.
+
+\subsubsection{Z2. Względny układ punktów kluczowych (W2)}
+Współrzędne punktów zwracane przez MediaPipe są wyrażone w układzie obrazu, więc zależą od tego, jak daleko i w którym miejscu kadru stoi pacjent. Wprowadzona funkcja \texttt{normalizeLandmarksRelative} przenosi środek układu do środka tułowia (średnia z barków i bioder) i skaluje wszystkie punkty przez rozmiar tułowia:
+\[
+\mathbf{c} = \tfrac{1}{4}\left(\mathbf{s}_L + \mathbf{s}_R + \mathbf{h}_L + \mathbf{h}_R\right), \qquad
+d = \lVert \mathbf{s}_L - \mathbf{h}_R \rVert, \qquad
+\mathbf{p}' = \frac{\mathbf{p} - \mathbf{c}}{d},
+\]
+gdzie $\mathbf{s}_{L/R}$ -- barki, $\mathbf{h}_{L/R}$ -- biodra. Normalizacja jest stosowana jednocześnie do obrazu z kamery i do wideo wzorcowego, a kąty stawowe liczone z uwzględnieniem współrzędnej $z$.
+
+\begin{lstlisting}[caption={Normalizacja punktów względem tułowia (\texttt{PoseDetector.js}).}]
+const normalizeLandmarksRelative = (landmarks) => {
+  const leftShoulder = landmarks[11]; //lewy bark
+  const rightShoulder = landmarks[12]; //prawy bark
+  const leftHip = landmarks[23]; //lewe biodro
+  const rightHip = landmarks[24]; //prawe biodro
+  if (!leftShoulder || !rightShoulder || !leftHip || !rightHip) {
+    return landmarks;
+  }
+  // Obliczenie centrum tułowia
+  const centerX = (leftShoulder.x + rightShoulder.x + leftHip.x + rightHip.x) / 4;
+  const centerY = (leftShoulder.y + rightShoulder.y + leftHip.y + rightHip.y) / 4;
+  const centerZ = (leftShoulder.z + rightShoulder.z + leftHip.z + rightHip.z) / 4;
+  // Obliczenie rozmiaru tułowia
+  const dx = leftShoulder.x - rightHip.x;
+  const dy = leftShoulder.y - rightHip.y;
+  const dz = leftShoulder.z - rightHip.z;
+  const torsoSize = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
+  // Translacja do (0,0,0) i zastosowanie skalowania
+  return landmarks.map((lm) => ({
+    ...lm,
+    x: (lm.x - centerX) / torsoSize,
+    y: (lm.y - centerY) / torsoSize,
+    z: (lm.z - centerZ) / torsoSize,
+  }));
+};
+\end{lstlisting}
+
+\subsubsection{Z3. Wagi stawów w algorytmie DTW (W3)}
+W wersji 1.0 wszystkie kąty stawowe miały jednakowy wpływ na odległość DTW, przez co np. przy zginaniu łokcia nieruchome kolana „rozmywały'' ocenę. Obecnie dla sekwencji wzorcowej obliczana jest wariancja $\sigma_k^2$ każdego kąta $k$, a waga stawu wynosi:
+\[
+\tilde{w}_k = 0.3 + 2.5\cdot\frac{\sigma_k^2}{\max_j \sigma_j^2}, \qquad
+w_k = \frac{\tilde{w}_k}{\tfrac{1}{K}\sum_{j}\tilde{w}_j},
+\]
+gdzie stała $0.3$ gwarantuje, że stawy nieruchome nadal wpływają na wynik (np. wykrywają niepożądany ruch), a normalizacja do średniej zachowuje skalę odległości. Odległość pojedynczej klatki w DTW jest średnią ważoną różnic kątów. Mechanizm pozwala też przekazać wagi ręcznie.
+
+\begin{lstlisting}[caption={Wyznaczanie wag stawów i ważona odległość klatek (\texttt{dtwAnalyzer.js}).}]
+const frameDistance = (a, b, weights = null) => {
+  ...
+    const w = weights ? (weights[k] ?? 1.0) : 1.0;
+    sum += Math.abs(normalizeAngle(a[k]) - normalizeAngle(b[k])) * w;
+    weightSum += w;
+  ...
+  return weightSum > 0 ? sum / weightSum : 0;
+};
+
+function computeJointWeights(seq) {
+  const FLOOR = 0.3;
+  const BOOST_FACTOR = 2.5;
+  ... // średnie i wariancje kątów w sekwencji wzorcowej
+  for (const k of keys) {
+    weights[k] = FLOOR + BOOST_FACTOR * (variances[k] / maxVar);
+  }
+  let wSum = 0;
+  for (const k of keys) wSum += weights[k];
+  const wMean = wSum / keys.length;
+  for (const k of keys) weights[k] /= wMean;
+  return weights;
+}
+\end{lstlisting}
+
+\subsubsection{Z4. Pomiar stabilności tułowia (W4)}
+Funkcja \texttt{computeTrunkMetrics} wyznacza na podstawie znormalizowanych barków i bioder trzy miary odchylenia tułowia: \textbf{przechył boczny} $T$ (różnica kąta nachylenia linii barków i linii bioder), \textbf{skręt} $R$ (różnica rotacji tych linii w osi głębi) oraz \textbf{pochylenie} $P$ (odchylenie wektora biodra$\rightarrow$barki od pionu). Każda miara przechodzi przez strefę martwą (odpowiednio $3^\circ$, $8^\circ$, $10^\circ$), która tłumi szum detekcji, a następnie:
+\[
+C = \min\left(100,\; 1.0\,T + 0.8\,R + 0.6\,P\right), \qquad S = 100 - C,
+\]
+gdzie $C$ to wskaźnik kompensacji, a $S$ -- indeks stabilności tułowia. Kąty tułowia dołączono również do wektora cech porównywanego przez DTW (obok 8 kątów stawowych), a w interfejsie dodano ostrzeżenie \textit{„Ustabilizuj tułów! Unikaj kompensacji i bujania ciałem.''}.
+
+\begin{lstlisting}[caption={Wyznaczanie wskaźnika kompensacji i indeksu stabilności (\texttt{trunkStability.js}).}]
+const filteredTilt = applyDeadZone(lateralTiltDev, 3.0);
+const filteredTwist = applyDeadZone(trunkTwist, 8.0);
+const filteredPitch = applyDeadZone(pitchAngle, 10.0);
+
+const compensationScore = Math.min(
+  100,
+  1.0 * filteredTilt + 0.8 * filteredTwist + 0.6 * filteredPitch,
+);
+const stabilityIndex = Math.max(0, 100 - compensationScore);
+\end{lstlisting}
+
+\subsubsection{Z5. Logika ostrzeżeń, wykrywanie oszustw i korekta wyniku powtórzenia (W5)}
+Wprowadzono trzy mechanizmy:
+\begin{enumerate}
+    \item \textbf{Ocena stabilności w cyklu powtórzenia}: w trakcie każdego powtórzenia zliczane są klatki o wystarczającej pewności detekcji ($\geq 0.1$) oraz klatki niestabilne ($S < 64$). Po zakończeniu cyklu, jeśli zebrano co najmniej 10 klatek, a udział klatek niestabilnych wynosi $\geq 25\%$, pacjent otrzymuje ostrzeżenie o niestabilnym tułowiu.
+    \item \textbf{Wykrywanie gwałtownych ruchów tułowia:} położenie barków względem bioder (znormalizowane długością tułowia) jest śledzone w oknie 120--400~ms; przesunięcie o co najmniej $0.1$ długości tułowia generuje komunikat o gwałtownym ruchu górnej części ciała -- typowym dla „bujania'' przy ćwiczeniach kończyn.
+    \item \textbf{Kara za niestabilność w wyniku dopasowania:} bieżący wynik DTW $m$ jest skalowany indeksem stabilności, $m' = m\,(0.25 + 0.75\,S/100)$. Ponieważ powtórzenie jest zaliczane tylko przy $m' > 65\%$ i wystarczającym zakresie ruchu, wykonanie ćwiczenia ruchem całego ciała nie zostaje zaliczone.
+\end{enumerate}
+
+\begin{lstlisting}[caption={Ocena stabilności w cyklu powtórzenia (\texttt{trunkStability.js}).}]
+recordFrame(stabilityIndex, confidence) {
+  if (this.state !== "tracking" || confidence < this.minConfidence) return;
+  this.validFrames++;
+  if (stabilityIndex < this.unstableStabilityThreshold) { // 64
+    this.unstableFrames++;
+  }
+}
+
+completeCycle() {
+  if (this.state !== "tracking") return null;
+  this.state = "completed";
+  if (this.validFrames < this.minValidFrames) return null; // 10
+  const unstableFrameRatio = this.unstableFrames / this.validFrames;
+  return {
+    shouldWarn: unstableFrameRatio >= this.unstableFrameRatioThreshold, // 0.25
+    unstableFrameRatio,
+    validFrames: this.validFrames,
+  };
+}
+\end{lstlisting}
+
+\begin{lstlisting}[caption={Obniżenie wyniku dopasowania przy niestabilnym tułowiu (\texttt{PoseDetector.js}).}]
+const trunkMetrics = computeTrunkMetrics(lastNormalizedCameraPoseRef.current);
+const stabilityFactor = trunkMetrics
+  ? trunkMetrics.stabilityIndex / 100
+  : 1.0;
+const penalizedMatch = Math.round(
+  matchVal * (0.25 + 0.75 * stabilityFactor),
+);
+matchPercentageRef.current = penalizedMatch;
+\end{lstlisting}
+
+% ====================================================
+\section{Produkty i rezultaty projektu}
+% ====================================================
+\begin{table}[H]
+\centering
+\small
+\begin{tabularx}{\textwidth}{p{4.6cm} p{2.8cm} Y}
+\toprule
+\textbf{Produkt} & \textbf{Wersja (data)} & \textbf{Opis i stan} \\
+\midrule
+\multicolumn{3}{l}{\textit{\textbf{Aplikacje}}}\\
+Aplikacja webowa \sysname{} & 1.0 (06.2026) & Frontend Next.js, backend FastAPI, baza NeonDB, konteneryzacja Docker. Wdrożona; moduły backendowe bez zmian w bieżącym okresie. \\
+\addlinespace
+Zmodernizowany moduł analizy ruchu & 2.0 (w toku) & \texttt{PoseDetector.js}, \texttt{dtwAnalyzer.js}, nowy \texttt{trunkStability.js}: normalizacja względem tułowia, wagi stawów, stabilność tułowia, wykrywanie oszustw i komunikaty. \\
+\addlinespace
+\multicolumn{3}{l}{\textit{\textbf{Dokumentacja}}}\\
+Dokument Wizji 2.0 & 13/19.10.2026 & \texttt{DokumentWizji.tex/.pdf} -- wizja, wymagania i roadmapa wersji 2.0.  \\
+\addlinespace
+Raport śródsemestralny & 17.11.2026 & Niniejszy dokument (\texttt{RaportSrodsemstralny.tex}).  \\
+\addlinespace
+Dokument Architektury & 1.0 (19.06.2026) & Przypadki użycia, komponenty, model danych, diagramy sekwencji, stack technologiczny. \\
+\addlinespace
+Plan Testów & 1.0 (16.06.2026) & Strategia, zakres i środowisko testów wersji 1.0. \\
+\addlinespace
+Raport z Testów & 1.0 (18.06.2026) & Wyniki 49 automatycznych testów backendowych. \\
+\addlinespace
+Szablon dokumentu wizji & 10.2026 & Struktura Dokumentu Wizji. \\
+\addlinespace
+\multicolumn{3}{l}{\textit{\textbf{Prezentacje}}}\\
+Prezentacja projektu & 01.04.2026 & Prezentacja systemu RehabSense. \\
+\bottomrule
+\end{tabularx}
+\caption{Aktualne produkty projektu.}
+\end{table}
+
+% ====================================================
+\section{Wyniki testów}
+% ====================================================
+W projekcie istnieje zestaw \textbf{49 automatycznych testów backendowych} (\texttt{backend/tests/}, pytest), obejmujący bezpieczeństwo, parowanie, moduł fizjoterapeuty, postępy, passy oraz API zewnętrzne. Według Raportu z Testów 1.0 (18.06.2026) wszystkie 49 testów zakończyły się wynikiem pozytywnym. Kod backendu nie był modyfikowany, dlatego zakres i wyniki tych testów pozostają aktualne.
+
+Zmodernizowany moduł analizy ruchu \textbf{nie posiada jeszcze testów automatycznych}. Zmiany były weryfikowane manualnie podczas sesji ćwiczeń przed kamerą. Zgodnie z harmonogramem w tygodniu~9 zaplanowano testy dokładności (zliczanie powtórzeń, wykrywalność oszustw), kalibrację progów oraz testy wydajnościowe, które pozwolą zweryfikować kryteria sukcesu z Dokumentu Wizji.
+
+% ====================================================
+\section{Podsumowanie}
+% ====================================================
+Projekt przebiega pomyślnie: zadania z tygodni 1-5 zostały ukończone. Zrealizowano w pełni trzy z pięciu kluczowych wymagań biznesowych (normalizacja pozycji ciała, wagi stawów w DTW, komunikaty o błędach techniki), jedno częściowo (blokada oszustw), a prace nad ostatnim (niezależny licznik powtórzeń) rozpoczęły się zgodnie z planem.
+
+\subsubsection*{Zidentyfikowane problemy i ryzyka}
+\begin{itemize}
+    \item \textbf{Licznik powtórzeń nadal zależy od wideo wzorcowego.} Jest to najważniejszy niezrealizowany element wizji i największy zakres pozostałej pracy (W6--W8). Opóźnienie tych zadań bezpośrednio skróciłoby czas na testy i kalibrację.
+    \item \textbf{Brak twardej blokady oszustw.} Niestabilność tułowia obniża wynik i generuje ostrzeżenie, ale powtórzenie oznaczone jako niestabilne nie jest jawnie odrzucane. Należy zdecydować, czy obecne rozwiązanie jest wystarczające, czy blokadę należy zintegrować z nowym licznikiem faz ruchu.
+    \item \textbf{Nieskalibrowane progi.} Wartości progów (np. $S<64$, udział 25\%, przesunięcie 0,1 tułowia, strefy martwe) zostały dobrane eksperymentalnie i wymagają walidacji na większej liczbie nagrań i uczestników (W9).
+    \item \textbf{Brak testów automatycznych modułu AI.} Pokrycie testami zmniejszy ryzyko błędów podczas przebudowy licznika powtórzeń.
+\end{itemize}
+
+\end{document}
